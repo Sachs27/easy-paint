@@ -11,7 +11,8 @@ void init(void) {
     glDisable(GL_DEPTH_TEST);
     glDrawBuffer(GL_FRONT);
 
-    g_app.canvas = canvas_create(NULL, 0, 0, g_app.window->w, g_app.window->h);
+    g_app.canvas = canvas_create(texture_load_2d("backgrounds/canvas1_1.png"),
+                                 0, 0, 512, 512);
 
     pencil = brush_pencil_create();
     brush_set_color(pencil, 0.0f, 0.0f, 0.0f, 1.0f);
@@ -42,8 +43,5 @@ void update(double dt) {
 }
 
 void render(void) {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
     canvas_draw(g_app.canvas);
 }

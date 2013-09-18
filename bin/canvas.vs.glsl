@@ -1,14 +1,12 @@
 #version 330 core
 
-uniform mat4 mmvp;
 
 layout(location = 0) in vec4 vposition;
-layout(location = 1) in vec4 vcolor;
+layout(location = 1) in vec2 vtexcoord;
 
-out vec4 color;
+out vec2 texcoord;
 
 void main(void) {
-    gl_Position = mmvp * vposition;
-
-    color = vcolor;
+    gl_Position = vposition;
+    texcoord = vtexcoord;
 }

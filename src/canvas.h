@@ -2,16 +2,21 @@
 #define CANVAS_H
 
 #include <GL/gl.h>
-#include <sf_array.h>
+#include <sf_list.h>
 
 #include "sf_rect.h"
 #include "3dmath.h"
 #include "texture.h"
 
 
-struct pixel {
-    struct vec2 position;
-    struct vec4 color;
+struct canvas_tile {
+    struct sf_rect area;
+
+    int isdirty;
+    struct sf_rect dirty_rect;
+
+    struct texture *texture;
+    struct vec4 *colors;
 };
 
 /**
@@ -21,11 +26,9 @@ struct canvas {
     struct texture     *background;
     struct sf_rect      viewport;
     struct ivec2        offset;
-    struct sf_array    *pixels;
+    struct sf_list     *tiles;
 
     GLuint              vao, vbo;
-
-    int                 isdirty;
 };
 
 
@@ -35,7 +38,7 @@ struct canvas *canvas_create(struct texture *background,
 void canvas_draw(struct canvas *canvas);
 
 void canvas_set_pixel(struct canvas *canvas, int mode, int x, int y,
-                      float r, float g, float b, float a);
+                      scalar_t r, scalar_t g, scalar_t b, scalar_t a);
 
 
 #endif /* CANVAS_H */

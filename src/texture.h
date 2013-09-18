@@ -15,6 +15,10 @@ struct texture {
 
 struct texture *texture_load_2d(const char *pathname);
 
+struct texture *texture_create_2d(int w, int h);
+
+void texture_set_parameteri(struct texture *tex, GLenum pname, GLint param);
+
 void texture_destroy(struct texture *tex);
 
 

@@ -71,8 +71,8 @@ struct texture *texture_load_2d(const char *pathname) {
     glTexImage2D(GL_TEXTURE_2D, 0, tex_inner.format,
                  tex_inner.width, tex_inner.height, 0,
                  tex_inner.format, tex_inner.type, tex_inner.pixels);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     texture_inner_uninit(&tex_inner);
@@ -87,6 +87,29 @@ sf_texture_load_failed:
     fprintf(stderr, "Failed to load texture: %s.\n", pathname);
     texture_destroy(tex);
     return NULL;
+}
+
+struct texture *texture_create_2d(int w, int h) {
+    struct texture *tex;
+
+    tex = malloc(sizeof(*tex));
+    tex->type = GL_TEXTURE_2D;
+    tex->w = w;
+    tex->h = h;
+    glGenTextures(1, &tex->tid);
+    glBindTexture(GL_TEXTURE_2D, tex->tid);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return tex;
+}
+
+void texture_set_parameteri(struct texture *tex, GLenum pname, GLint param) {
+    glBindTexture(tex->type, tex->tid);
+    glTexParameteri(tex->type, pname, param);
+    glBindTexture(tex->type, 0);
 }
 
 void texture_destroy(struct texture *tex) {

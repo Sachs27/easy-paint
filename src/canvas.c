@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <GL/glew.h>
+#include <sf_utils.h>
 
 #include "app.h"
 #include "canvas.h"
@@ -16,41 +17,46 @@ static struct shader_info canvas_shaders[] = {
 };
 static struct mat4 mmvp;
 
+static struct vertex {
+    GLfloat x, y;
+    GLfloat u, v;
+} quad_data[4] = {
+    {-1.0f, 1.0f, 0.0f, 0.0f},
+    {-1.0f,-1.0f, 0.0f, 1.0f},
+    { 1.0f,-1.0f, 1.0f, 1.0f},
+    { 1.0f, 1.0f, 1.0f, 0.0f},
+};
 
-static struct pixel *find_pixel(struct canvas *canvas, int x, int y) {
-    SF_ARRAY_BEGIN(canvas->pixels, struct pixel, ptr);
-        if (ptr->position.x == x && ptr->position.y == y) {
-            return ptr;
-        }
-    SF_ARRAY_END();
 
-    return NULL;
+static void canvas_tile_set_color(struct canvas_tile *ct, int mode,
+                                  int x, int y, scalar_t r, scalar_t g,
+                                  scalar_t b, scalar_t a) {
+    /* blend color */
+    struct vec4 *color = ct->colors + (y * ct->area.w + x);
+
+    color->r = color->r * (1.0f - a) + r * a;
+    SCALAR_CLAMP(color->r, 0.0f, 1.0f);
+
+    color->g = color->g * (1.0f - a) + g * a;
+    SCALAR_CLAMP(color->g, 0.0f, 1.0f);
+
+    color->b = color->b * (1.0f - a) + b * a;
+    SCALAR_CLAMP(color->b, 0.0f, 1.0f);
+
+    color->a = color->a * (1.0f - a) + a * a;
+    SCALAR_CLAMP(color->a, 0.0f, 1.0f);
+
+    if (ct->isdirty) {
+        /* calculate the dirty rectangle */
+    } else {
+        ct->isdirty = 1;
+        ct->dirty_rect.x = x;
+        ct->dirty_rect.y = y;
+        ct->dirty_rect.w = 1;
+        ct->dirty_rect.h = 1;
+    }
 }
 
-/*
- * ÏÖÔÚÊÇÃ¿´Î¸üÐÂ¶¼È«²¿Ìæ»» OpenGL µÄ Buffer, ¿ÉÒÔÖ»²¿·ÖÌæ»»¡£
- */
-static void update_render_buf(struct canvas *canvas) {
-    glBindVertexArray(canvas->vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, canvas->vbo);
-    glBufferData(GL_ARRAY_BUFFER,
-                 canvas->pixels->nalloc * canvas->pixels->size,
-                 SF_ARRAY_NTH(canvas->pixels, 0), GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, canvas->pixels->size, 0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE,
-                         canvas->pixels->size, &((struct pixel *) 0)->color);
-    glEnableVertexAttribArray(1);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-
-    canvas->isdirty = 0;
-}
 
 struct canvas *canvas_create(struct texture *background,
                              int x, int y, int w, int h) {
@@ -69,10 +75,32 @@ struct canvas *canvas_create(struct texture *background,
     canvas->viewport.h = h;
     canvas->offset.x = 0;
     canvas->offset.y = 0;
-    canvas->pixels = sf_array_create(sizeof(struct pixel), 1024);
+    canvas->tiles = sf_list_create(sizeof(struct canvas_tile));
+
+
     glGenVertexArrays(1, &canvas->vao);
+    glBindVertexArray(canvas->vao);
     glGenBuffers(1, &canvas->vbo);
-    canvas->isdirty = 0;
+    glBindBuffer(GL_ARRAY_BUFFER, canvas->vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STATIC_DRAW);
+    /* vposition */
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex), 0);
+    glEnableVertexAttribArray(0);
+    /* vtexcoord */
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex),
+                          &((struct vertex *) 0)->u);
+    glEnableVertexAttribArray(1);
+
+    struct canvas_tile ct;
+    ct.texture = texture_create_2d(sf_uint_next_power_of_two(w),
+                                   sf_uint_next_power_of_two(h));
+    ct.area.x = ct.area.y = 0;
+    ct.area.w = ct.texture->w;
+    ct.area.h = ct.texture->h;
+    ct.isdirty = 0;
+    ct.dirty_rect.x = ct.dirty_rect.y = ct.dirty_rect.w = ct.dirty_rect.h = 0;
+    ct.colors = calloc(w * h, sizeof(*ct.colors));
+    sf_list_push(canvas->tiles, &ct);
 
     return canvas;
 }
@@ -85,55 +113,44 @@ void canvas_draw(struct canvas *canvas) {
     glViewport(canvas->viewport.x,
                g_app.window->h - (canvas->viewport.y + canvas->viewport.h),
                canvas->viewport.w, canvas->viewport.h);
+    glUseProgram(canvas_prog);
+    glBindVertexArray(canvas->vao);
+
 
     /* draw background */
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
     /* draw pixels */
-    if (canvas->isdirty) {
-        update_render_buf(canvas);
+    /* æœªå®Œå…¨å®žçŽ°ï¼Œç›®å‰åªç”»ç¬¬ä¸€ä¸ª tile */
+    struct canvas_tile *ct = canvas->tiles->head->next->elt;
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, ct->texture->tid);
+    if (ct->isdirty) {
+        /* è¿™é‡Œæ›´æ–°äº†å…¨éƒ¨ textureï¼Œ æ²¡ç”¨ä½¿ç”¨è„çŸ©é˜µ */
+        glTexSubImage2D(GL_TEXTURE_2D, 0,
+                        0, 0, ct->texture->w, ct->texture->h,
+                        GL_RGBA, GL_FLOAT, ct->colors);
+        ct->isdirty = 0;
     }
 
-    glUseProgram(canvas_prog);
-    glBindVertexArray(canvas->vao);
+    glUniform1i(glGetUniformLocation(canvas_prog, "tex0"), 0);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-    mat4_orthographic(&mmvp, 0.0f, canvas->viewport.w, canvas->viewport.h,
-                      0.0f, 1.0f, -1.0f);
-    mat4_translate(&tmp, -canvas->offset.x,-canvas->offset.y, 0.0f);
-    mat4_mul(&mmvp, &mmvp, &tmp);
-
-    glUniformMatrix4fv(glGetUniformLocation(canvas_prog, "mmvp"), 1,
-                       MATRIX_GL_TRANSPOSE, (float *) &mmvp);
-
-    glDrawArrays(GL_POINTS, 0, canvas->pixels->nelts);
-    glBindVertexArray(0);
     glUseProgram(0);
 
     glViewport(oviewport[0], oviewport[1], oviewport[2], oviewport[3]);
 }
 
 void canvas_set_pixel(struct canvas *canvas, int mode, int x, int y,
-                      float r, float g, float b, float a) {
-    struct pixel buf;
-    struct pixel *ptr;
+                      scalar_t r, scalar_t g, scalar_t b, scalar_t a) {
+    SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
+        if (sf_rect_iscontain(&ct->area, x, y)) {
+            canvas_tile_set_color(ct, mode,
+                                  x - ct->area.x, y - ct->area.y,
+                                  r, g, b, a);
+            return;
+        }
+    SF_LIST_END();
 
-    if ((ptr = find_pixel(canvas, x, y)) == NULL) {
-        memset(&buf, 0, sizeof(buf));
-        buf.position.x = x;
-        buf.position.y = y;
-        sf_array_push(canvas->pixels, &buf);
-        ptr = SF_ARRAY_NTH(canvas->pixels, canvas->pixels->nelts - 1);
-    }
-
-    ptr->color.r = ptr->color.r * (1.0f - a) + r * a;
-    SCALAR_CLAMP(ptr->color.r, 0.0f, 1.0f);
-    ptr->color.g += ptr->color.g * (1.0f - a) + g * a;
-    SCALAR_CLAMP(ptr->color.g, 0.0f, 1.0f);
-    ptr->color.b += ptr->color.b * (1.0f - a) + b * a;
-    SCALAR_CLAMP(ptr->color.b, 0.0f, 1.0f);
-    ptr->color.a = ptr->color.a * (1.0f - a) + a * a;
-    SCALAR_CLAMP(ptr->color.a, 0.0f, 1.0f);
-
-    canvas->isdirty = 1;
+    /* create new canvas tile */
 }
