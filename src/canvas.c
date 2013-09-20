@@ -15,7 +15,6 @@ static struct shader_info canvas_shaders[] = {
     {GL_FRAGMENT_SHADER, "canvas.fs.glsl"},
     {GL_NONE, NULL}
 };
-static struct mat4 mmvp;
 
 static struct vertex {
     GLfloat x, y;
@@ -43,7 +42,7 @@ static void canvas_tile_set_color(struct canvas_tile *ct, int mode,
     color->b = color->b * (1.0f - a) + b * a;
     SCALAR_CLAMP(color->b, 0.0f, 1.0f);
 
-    color->a = color->a * (1.0f - a) + a * a;
+    color->a = color->a + a;
     SCALAR_CLAMP(color->a, 0.0f, 1.0f);
 
     if (ct->isdirty) {
@@ -106,7 +105,6 @@ struct canvas *canvas_create(struct texture *background,
 }
 
 void canvas_draw(struct canvas *canvas) {
-    struct mat4 tmp;
     GLint oviewport[4];
 
     glGetIntegerv(GL_VIEWPORT, oviewport);

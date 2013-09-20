@@ -11,11 +11,10 @@ void init(void) {
     glDisable(GL_DEPTH_TEST);
     glDrawBuffer(GL_FRONT);
 
-    g_app.canvas = canvas_create(texture_load_2d("backgrounds/canvas1_1.png"),
-                                 0, 0, 512, 512);
+    g_app.canvas = canvas_create(NULL, 0, 0, 512, 512);
 
     pencil = brush_pencil_create();
-    brush_set_color(pencil, 0.0f, 0.0f, 0.0f, 1.0f);
+    brush_set_color(pencil, 0.0f, 0.0f, 0.0f, 0.2f);
 }
 
 void update(double dt) {
