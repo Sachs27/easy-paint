@@ -7,8 +7,8 @@
 struct app g_app;
 
 static char *WINDOW_TITLE = "Easy Paint";
-static int WINDOW_WIDTH = 800;
-static int WINDOW_HEIGHT = 480;
+static int WINDOW_WIDTH = 512;
+static int WINDOW_HEIGHT = 512;
 
 void init(void);
 void update(double dt);

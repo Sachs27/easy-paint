@@ -9,16 +9,6 @@
 #include "texture.h"
 
 
-struct canvas_tile {
-    struct sf_rect area;
-
-    int isdirty;
-    struct sf_rect dirty_rect;
-
-    struct texture *texture;
-    struct vec4 *colors;
-};
-
 /**
  * The default origin locate at up left of the viewport.
  */
@@ -37,6 +27,10 @@ struct canvas *canvas_create(struct texture *background,
 
 void canvas_draw(struct canvas *canvas);
 
+/*
+ * @param x
+ * @param y point relative to the canvas' origin.
+ */
 void canvas_set_pixel(struct canvas *canvas, int mode, int x, int y,
                       scalar_t r, scalar_t g, scalar_t b, scalar_t a);
 
