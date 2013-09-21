@@ -93,12 +93,16 @@ struct canvas *canvas_create(struct texture *background,
     struct canvas_tile ct;
     ct.texture = texture_create_2d(sf_uint_next_power_of_two(w),
                                    sf_uint_next_power_of_two(h));
+    ct.colors = calloc(w * h, sizeof(*ct.colors));
+    glBindTexture(GL_TEXTURE_2D, ct.texture->tid);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ct.texture->w, ct.texture->h,
+                    GL_RGBA, GL_FLOAT, ct.colors);
+    glBindTexture(GL_TEXTURE_2D, 0);
     ct.area.x = ct.area.y = 0;
     ct.area.w = ct.texture->w;
     ct.area.h = ct.texture->h;
     ct.isdirty = 0;
     ct.dirty_rect.x = ct.dirty_rect.y = ct.dirty_rect.w = ct.dirty_rect.h = 0;
-    ct.colors = calloc(w * h, sizeof(*ct.colors));
     sf_list_push(canvas->tiles, &ct);
 
     return canvas;

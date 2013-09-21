@@ -9,4 +9,12 @@ aux_source_directory(src EASY_PAINT_SRC)
 add_executable(easy_paint ${EASY_PAINT_SRC})
 set_target_properties(easy_paint PROPERTIES RUNTIME_OUTPUT_DIRECTORY
                       ${PROJECT_SOURCE_DIR}/bin)
-target_link_libraries(easy_paint sf glfw3 glew32s glu32 opengl32 DevIL)
+
+if (WIN32)
+    set(LIBS sf glfw3 glew32s glu32 opengl32 DevIL)
+else (WIN32)
+    set(LIBS sf m glfw GLEW GL GLU IL)
+endif (WIN32)
+
+
+target_link_libraries(easy_paint ${LIBS})
