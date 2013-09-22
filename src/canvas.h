@@ -29,10 +29,12 @@ void canvas_draw(struct canvas *canvas);
 
 /*
  * @param x
- * @param y point relative to the canvas' origin.
+ * @param y point at the screen coordinate.
  */
 void canvas_set_pixel(struct canvas *canvas, int mode, int x, int y,
                       scalar_t r, scalar_t g, scalar_t b, scalar_t a);
+
+void canvas_offset(struct canvas *canvas, int xoff, int yoff);
 
 
 #endif /* CANVAS_H */

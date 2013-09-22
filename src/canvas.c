@@ -43,24 +43,29 @@ static struct shader_info canvas_shaders[] = {
     {GL_NONE, NULL}
 };
 
-static struct vertex {
-    GLfloat x, y;
-    GLfloat u, v;
-} quad_data[4] = {
-    {-1.0f, 1.0f, 0.0f, 0.0f},
-    {-1.0f,-1.0f, 0.0f, 1.0f},
-    { 1.0f,-1.0f, 1.0f, 1.0f},
-    { 1.0f, 1.0f, 1.0f, 0.0f},
+static struct vec2 vtexcoord[4] = {
+    {0.0f, 1.0f},   /* left-top */
+    {0.0f, 0.0f},   /* left-bottom */
+    {1.0f, 0.0f},   /* right-bottom */
+    {1.0f, 1.0f},   /* right-top */
 };
+
+static struct vec2 vposition[4];
 
 static GLuint canvas_vao = 0, canvas_vbo = 0;
 
-static struct mat4 mmvp;
 
+/**
+ * @param x
+ * @param y point relative to the origin of tile's texture.
+ */
 static void canvas_tile_set_color(struct canvas_tile *ct, int mode,
                                   int x, int y, scalar_t r, scalar_t g,
                                   scalar_t b, scalar_t a) {
     struct pixel p;
+
+    /* let the origin at the left-bottom corner */
+    y = ct->texture->h - y;
 
     ct->isdirty = 1;
     p.color.r = r;
@@ -99,6 +104,10 @@ static void canvas_tile_update(struct canvas_tile *ct) {
         glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(struct pixel),
                               &((struct pixel *) 0)->color);
         glEnableVertexAttribArray(1);
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
     }
 
     /* save state */
@@ -107,12 +116,13 @@ static void canvas_tile_update(struct canvas_tile *ct) {
 
     /* update texture */
     glUseProgram(canvas_texture_prog);
+    glBindVertexArray(canvas_texture_vao);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, canvas_fbo);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                            GL_TEXTURE_2D, ct->texture->tid, 0);
+    glViewport(0, 0, ct->texture->w, ct->texture->h);
 
-    glBindVertexArray(canvas_texture_vao);
-
+    glBindBuffer(GL_ARRAY_BUFFER, canvas_texture_vbo);
     if (canvas_texture_vbo_size < ct->dirty_pixels->nalloc) {
         glBufferData(GL_ARRAY_BUFFER,
                      ct->dirty_pixels->nalloc * sizeof(struct pixel),
@@ -155,15 +165,16 @@ struct canvas *canvas_create(struct texture *background,
 
         glGenBuffers(1, &canvas_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, canvas_vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data,
-                     GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vposition) + sizeof(vtexcoord),
+                     NULL, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, sizeof(vposition), sizeof(vtexcoord),
+                        vtexcoord);
         /* vposition */
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex),
-                              0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(0);
         /* vtexcoord */
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex),
-                              &((struct vertex *) 0)->u);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0,
+                              (void *) sizeof(vposition));
         glEnableVertexAttribArray(1);
 
         glBindVertexArray(0);
@@ -185,6 +196,8 @@ struct canvas *canvas_create(struct texture *background,
 
     ct.texture = texture_create_2d(sf_uint_next_power_of_two(w),
                                    sf_uint_next_power_of_two(h));
+    /* need to clear the texture's content */
+
     ct.area.x = ct.area.y = 0;
     ct.area.w = ct.texture->w;
     ct.area.h = ct.texture->h;
@@ -217,19 +230,27 @@ void canvas_draw(struct canvas *canvas) {
 
     glUseProgram(canvas_prog);
     glBindVertexArray(canvas_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, canvas_vbo);
+    vposition[0].x = ct->area.x - canvas->offset.x;
+    vposition[0].y = canvas->viewport.h - (ct->area.y - canvas->offset.y);
+
+    vposition[0].x = vposition[0].x * 2.0f / canvas->viewport.w - 1.0f;
+    vposition[0].y = vposition[0].y * 2.0f / canvas->viewport.h - 1.0f;
+    float nw = ((float) ct->texture->w) / canvas->viewport.w * 2.0f;
+    float nh = ((float) ct->texture->h) / canvas->viewport.h * 2.0f;
+    vposition[1].x = vposition[0].x;
+    vposition[1].y = vposition[0].y - nh;
+    vposition[2].x = vposition[0].x + nw;
+    vposition[2].y = vposition[1].y;
+    vposition[3].x = vposition[2].x;
+    vposition[3].y = vposition[0].y;
+
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vposition), vposition);
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, ct->texture->tid);
     glUniform1i(glGetUniformLocation(canvas_prog, "tex0"), 0);
-#if 0
-    struct mat4 tmp;
-    mat4_orthographic(&mmvp, 0, canvas->viewport.w, canvas->viewport.h, 0,
-                      1.0f, -1.0f);
-    mat4_scale(&tmp, ct->texture->w, ct->texture->h, 1.0f);
-    mat4_mul(&mmvp, &mmvp, &tmp);
 
-    glUniformMatrix4fv(glGetUniformLocation(canvas_prog, "mmvp"), 1,
-                       MATRIX_GL_TRANSPOSE, (float *) &mmvp);
-#endif
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     glUseProgram(0);
@@ -239,15 +260,22 @@ void canvas_draw(struct canvas *canvas) {
 
 void canvas_set_pixel(struct canvas *canvas, int mode, int x, int y,
                       scalar_t r, scalar_t g, scalar_t b, scalar_t a) {
+    x += canvas->offset.x - canvas->viewport.x;
+    y += canvas->offset.y - canvas->viewport.y;
+
+
     SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
         if (sf_rect_iscontain(&ct->area, x, y)) {
-            canvas_tile_set_color(ct, mode,
-                                  x - ct->area.x,
-                                  y - ct->area.y,
+            canvas_tile_set_color(ct, mode, x - ct->area.x, y - ct->area.y,
                                   r, g, b, a);
             return;
         }
     SF_LIST_END();
 
     /* create new canvas tile */
+}
+
+void canvas_offset(struct canvas *canvas, int xoff, int yoff) {
+    canvas->offset.x += xoff;
+    canvas->offset.y += yoff;
 }

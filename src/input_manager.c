@@ -33,6 +33,15 @@ static void handle_mouse_button(struct input_manager *im,
             im->mouse.mb1.state = KEY_RELEASE;
         }
         break;
+    case GLFW_MOUSE_BUTTON_2:
+        if (action == GLFW_PRESS) {
+            im->mouse.mb2.state = KEY_PRESS;
+            im->mouse.mb2.x = im->mouse.x;
+            im->mouse.mb2.y = im->mouse.y;
+        } else if (action == GLFW_RELEASE) {
+            im->mouse.mb2.state = KEY_RELEASE;
+        }
+        break;
     }
 }
 

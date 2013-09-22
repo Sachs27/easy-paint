@@ -13,15 +13,17 @@ void init(void) {
     /*glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA);*/
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
     glDisable(GL_DEPTH_TEST);
+    /* use single buffer */
     glDrawBuffer(GL_FRONT);
 
-    g_app.canvas = canvas_create(NULL, 0, 0, 512, 512);
+    g_app.canvas = canvas_create(texture_load_2d("backgrounds/tex0.jpg"),
+                                 0, 0, g_app.window->w, g_app.window->h);
 
     pencil = brush_pencil_create();
     brush_set_color(pencil, 0.0f, 0.0f, 0.0f, 0.2f);
 }
 
-void update(double dt) {
+static void handle_mouse_button1(void) {
     static int ispressd = 0;
     static int lastx, lasty;
 
@@ -37,24 +39,46 @@ void update(double dt) {
         && (g_app.im->mouse.x != lastx || g_app.im->mouse.y != lasty)) {
         if (sf_rect_iscontain(&g_app.canvas->viewport,
                               g_app.im->mouse.x, g_app.im->mouse.y)) {
-            int dx, dy;
-
-            dx = g_app.canvas->offset.x - g_app.canvas->viewport.x;
-            dy = g_app.canvas->offset.y - g_app.canvas->viewport.y;
-
-            brush_drawline(pencil, lastx + dx, lasty + dy,
-                           g_app.im->mouse.x + dx,
-                           g_app.im->mouse.y + dx);
+            brush_drawline(pencil, lastx, lasty,
+                           g_app.im->mouse.x,
+                           g_app.im->mouse.y);
         }
         lastx = g_app.im->mouse.x;
         lasty = g_app.im->mouse.y;
     }
 }
 
+static void handle_mouse_button2(void) {
+    static int ispressed = 0;
+    static int lastx, lasty;
+
+    if (ispressed == 0 && g_app.im->mouse.mb2.state == KEY_PRESS) {
+        ispressed = 1;
+        lastx = g_app.im->mouse.mb2.x;
+        lasty = g_app.im->mouse.mb2.y;
+    } else if (g_app.im->mouse.mb2.state == KEY_RELEASE) {
+        ispressed = 0;
+    }
+
+    if (ispressed
+        && (g_app.im->mouse.x != lastx || g_app.im->mouse.y != lasty)) {
+        canvas_offset(g_app.canvas, lastx - g_app.im->mouse.x,
+                      lasty - g_app.im->mouse.y);
+        lastx = g_app.im->mouse.x;
+        lasty = g_app.im->mouse.y;
+    }
+
+}
+
+void update(double dt) {
+    handle_mouse_button1();
+    handle_mouse_button2();
+}
+
 void render(void) {
     uint64_t ticks;
-    static int cnt = 0;
-    static int totalticks = 0;
+    static uint64_t cnt = 0;
+    static uint64_t totalticks = 0;
 
     ticks = sf_get_ticks();
     canvas_draw(g_app.canvas);
@@ -62,9 +86,12 @@ void render(void) {
     totalticks += sf_get_ticks() - ticks;
     ++cnt;
 
-    if (cnt > 100) {
+    if (cnt > 10000) {
         fprintf(stdout, "canvas_draw costs %"PRIu64" ns/frame.\n", (uint64_t) (totalticks * 1.0f / cnt));
         cnt = 0;
         totalticks = 0;
     }
+
+    /* use single buffer */
+    glFlush();
 }
