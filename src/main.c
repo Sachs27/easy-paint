@@ -1,5 +1,6 @@
-#include <stdio.h>
 #include <sf_utils.h>
+#include <sf_debug.h>
+
 #include "app.h"
 #include "brush.h"
 
@@ -87,7 +88,8 @@ void render(void) {
     ++cnt;
 
     if (cnt > 10000) {
-        fprintf(stdout, "canvas_draw costs %"PRIu64" ns/frame.\n", (uint64_t) (totalticks * 1.0f / cnt));
+        dprintf("canvas_draw costs %"PRIu64" ns/frame.\n",
+                (uint64_t) (totalticks * 1.0f / cnt));
         cnt = 0;
         totalticks = 0;
     }
