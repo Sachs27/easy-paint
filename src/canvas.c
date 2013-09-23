@@ -50,6 +50,7 @@ static struct vec2 vtexcoord[4] = {
 static struct vec2 vposition[4];
 
 static GLuint canvas_vao = 0, canvas_vbo = 0;
+static struct vec4 zero_color[CANVAS_TILE_WIDTH * CANVAS_TILE_HEIGHT];
 
 
 static void init_canvas(void) {
@@ -105,7 +106,12 @@ static void init_canvas(void) {
 
 static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
     ct->texture = texture_create_2d(CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
-    /* need to clear the texture's content */
+    /* clear the texture's content */
+    glBindTexture(GL_TEXTURE_2D, ct->texture->tid);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+                    CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT,
+                    GL_RGBA, GL_FLOAT, zero_color);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     ct->area.x = x;
     ct->area.y = y;

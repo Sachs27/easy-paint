@@ -12,10 +12,7 @@ void init(void) {
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    /*glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);*/
     glDisable(GL_DEPTH_TEST);
-    /* use single buffer */
-    glDrawBuffer(GL_FRONT);
 
     g_app.canvas = canvas_create(texture_load_2d("backgrounds/tex0.jpg"),
                                  0, 0, g_app.window->w, g_app.window->h);
@@ -87,13 +84,10 @@ void render(void) {
     totalticks += sf_get_ticks() - ticks;
     ++cnt;
 
-    if (cnt > 10000) {
+    if (cnt > 100) {
         dprintf("canvas_draw costs %"PRIu64" ns/frame.\n",
                 (uint64_t) (totalticks * 1.0f / cnt));
         cnt = 0;
         totalticks = 0;
     }
-
-    /* use single buffer */
-    glFlush();
 }

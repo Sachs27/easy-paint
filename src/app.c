@@ -63,6 +63,7 @@ int main(int argc, char *argv[]) {
     while (window_isopen(g_app.window)) {
         g_app.update_cb(0.0f);
         g_app.render_cb();
+        glfwSwapBuffers(g_app.window->handle);
         glfwPollEvents();
     }
 
