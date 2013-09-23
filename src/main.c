@@ -10,8 +10,8 @@ static struct brush *pencil;
 void init(void) {
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
-    /*glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA);*/
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    /*glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);*/
     glDisable(GL_DEPTH_TEST);
     /* use single buffer */
     glDrawBuffer(GL_FRONT);
@@ -39,7 +39,7 @@ static void handle_mouse_button1(void) {
         && (g_app.im->mouse.x != lastx || g_app.im->mouse.y != lasty)) {
         if (sf_rect_iscontain(&g_app.canvas->viewport,
                               g_app.im->mouse.x, g_app.im->mouse.y)) {
-            brush_drawline(pencil, lastx, lasty,
+            brush_drawline(pencil, g_app.canvas, lastx, lasty,
                            g_app.im->mouse.x,
                            g_app.im->mouse.y);
         }

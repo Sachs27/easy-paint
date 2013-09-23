@@ -26,12 +26,6 @@ struct canvas_tile {
 
 
 static GLuint canvas_fbo;
-static GLuint canvas_texture_prog = 0;
-static struct shader_info canvas_texture_shaders[] = {
-    {GL_VERTEX_SHADER, "canvas_texture.vs.glsl"},
-    {GL_FRAGMENT_SHADER, "canvas_texture.fs.glsl"},
-    {GL_NONE, NULL}
-};
 static GLuint canvas_texture_vao = 0, canvas_texture_vbo = 0;
 static int canvas_texture_vbo_size = 0;
 #define CANVAS_TEXTURE_INIT_SIZE 1024
@@ -55,32 +49,11 @@ static struct vec2 vposition[4];
 static GLuint canvas_vao = 0, canvas_vbo = 0;
 
 
-/**
- * @param x
- * @param y point relative to the origin of tile's texture.
- */
-static void canvas_tile_set_color(struct canvas_tile *ct, int mode,
-                                  int x, int y, scalar_t r, scalar_t g,
-                                  scalar_t b, scalar_t a) {
-    struct pixel p;
-
-    /* let the origin at the left-bottom corner */
-    y = ct->texture->h - y;
-
-    ct->isdirty = 1;
-    p.color.r = r;
-    p.color.g = g;
-    p.color.b = b;
-    p.color.a = a;
-    p.position.x = x * 2.0f / ct->texture->w - 1.0f;
-    p.position.y = y * 2.0f / ct->texture->h - 1.0f;
-
-    sf_array_push(ct->dirty_pixels, &p);
-}
-
-static void canvas_tile_update(struct canvas_tile *ct) {
+static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
+    GLuint prog = canvas->cur_brush->prog;
     GLint oviewport[4];
     GLint oprog;
+    GLboolean oblend;
 
     if (canvas_fbo == 0) {
         glGenFramebuffers(1, &canvas_fbo);
@@ -113,9 +86,10 @@ static void canvas_tile_update(struct canvas_tile *ct) {
     /* save state */
     glGetIntegerv(GL_CURRENT_PROGRAM, &oprog);
     glGetIntegerv(GL_VIEWPORT, oviewport);
+    glGetBooleanv(GL_BLEND, &oblend);
 
     /* update texture */
-    glUseProgram(canvas_texture_prog);
+    glUseProgram(prog);
     glBindVertexArray(canvas_texture_vao);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, canvas_fbo);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -130,10 +104,15 @@ static void canvas_tile_update(struct canvas_tile *ct) {
         canvas_texture_vbo_size = ct->dirty_pixels->nalloc;
     }
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, ct->texture->tid);
+    glUniform1i(glGetUniformLocation(prog, "tex0"), 0);
+
     glBufferSubData(GL_ARRAY_BUFFER, 0,
                     ct->dirty_pixels->nelts * sizeof(struct pixel),
                     SF_ARRAY_NTH(ct->dirty_pixels, 0));
 
+    glDisable(GL_BLEND);
     glDrawArrays(GL_POINTS, 0, ct->dirty_pixels->nelts);
 
     /* restore previous state */
@@ -141,6 +120,9 @@ static void canvas_tile_update(struct canvas_tile *ct) {
     glBindVertexArray(0);
     glUseProgram(oprog);
     glViewport(oviewport[0], oviewport[1], oviewport[2], oviewport[3]);
+    if (oblend == GL_TRUE) {
+        glEnable(GL_BLEND);
+    }
 
     ct->isdirty = 0;
     sf_array_clear(ct->dirty_pixels, NULL);
@@ -153,10 +135,6 @@ struct canvas *canvas_create(struct texture *background,
 
     if (canvas_prog == 0) {
         canvas_prog = load_shaders(canvas_shaders);
-    }
-
-    if (canvas_texture_prog == 0) {
-        canvas_texture_prog = load_shaders(canvas_texture_shaders);
     }
 
     if (canvas_vao == 0 || canvas_vbo == 0) {
@@ -193,9 +171,9 @@ struct canvas *canvas_create(struct texture *background,
     canvas->offset.x = 0;
     canvas->offset.y = 0;
     canvas->tiles = sf_list_create(sizeof(struct canvas_tile));
+    canvas->cur_brush = NULL;
 
-    ct.texture = texture_create_2d(sf_uint_next_power_of_two(w),
-                                   sf_uint_next_power_of_two(h));
+    ct.texture = texture_create_2d(CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
     /* need to clear the texture's content */
 
     ct.area.x = ct.area.y = 0;
@@ -225,7 +203,7 @@ void canvas_draw(struct canvas *canvas) {
     /* draw pixels */
     /* 未完全实现，目前只画第一个 tile */
     if (ct->isdirty) {
-        canvas_tile_update(ct);
+        canvas_update_tile(canvas, ct);
     }
 
     glUseProgram(canvas_prog);
@@ -258,16 +236,30 @@ void canvas_draw(struct canvas *canvas) {
     glViewport(oviewport[0], oviewport[1], oviewport[2], oviewport[3]);
 }
 
-void canvas_set_pixel(struct canvas *canvas, int mode, int x, int y,
-                      scalar_t r, scalar_t g, scalar_t b, scalar_t a) {
+void canvas_plot(struct canvas *canvas, int x, int y,
+                 float r, float g, float b, float a) {
+    /* convert coordinate to canvas' */
     x += canvas->offset.x - canvas->viewport.x;
     y += canvas->offset.y - canvas->viewport.y;
 
-
     SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
         if (sf_rect_iscontain(&ct->area, x, y)) {
-            canvas_tile_set_color(ct, mode, x - ct->area.x, y - ct->area.y,
-                                  r, g, b, a);
+            struct pixel p;
+
+            ct->isdirty = 1;
+            /* conver coordinate to canvas tile's */
+            x -= ct->area.x;
+            y -= ct->area.y;
+            y = ct->texture->h - y;
+
+            p.color.r = r;
+            p.color.g = g;
+            p.color.b = b;
+            p.color.a = a;
+            p.position.x = x * 2.0f / ct->texture->w - 1.0f;
+            p.position.y = y * 2.0f / ct->texture->h - 1.0f;
+
+            sf_array_push(ct->dirty_pixels, &p);
             return;
         }
     SF_LIST_END();
@@ -278,4 +270,17 @@ void canvas_set_pixel(struct canvas *canvas, int mode, int x, int y,
 void canvas_offset(struct canvas *canvas, int xoff, int yoff) {
     canvas->offset.x += xoff;
     canvas->offset.y += yoff;
+}
+
+void canvas_set_current_brush(struct canvas *canvas, struct brush *brush) {
+    /* update the dirty tiles */
+    if (canvas->cur_brush && canvas->cur_brush != brush) {
+        SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
+            if (ct->isdirty) {
+                canvas_update_tile(canvas, ct);
+            }
+        SF_LIST_END();
+    }
+
+    canvas->cur_brush = brush;
 }

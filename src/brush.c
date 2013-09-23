@@ -3,8 +3,8 @@
 
 #include "brush.h"
 
-
-void brush_drawline(struct brush *brush, int x0, int y0, int x1, int y1) {
+void brush_drawline(struct brush *brush, struct canvas *canvas,
+                    int x0, int y0, int x1, int y1) {
 #define int_swap(x, y) do {     \
     int __int_swap_tmp__ = x;   \
     x = y;                      \
@@ -20,6 +20,8 @@ void brush_drawline(struct brush *brush, int x0, int y0, int x1, int y1) {
     if (brush->plot == NULL) {
         return;
     }
+
+    canvas_set_current_brush(canvas, brush);
 
     if (steep) {
         int_swap(x0, y0);
@@ -48,7 +50,7 @@ void brush_drawline(struct brush *brush, int x0, int y0, int x1, int y1) {
             py = x;
         }
         /* plot(px, py) */
-        brush->plot(brush, px, py);
+        brush->plot(brush, canvas, px, py);
 
         err -= dy;
         if (err < 0) {
