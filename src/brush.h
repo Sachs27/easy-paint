@@ -15,7 +15,8 @@ struct brush {
 
     struct vec4 color;
 
-    void (*plot)(struct brush *brush, struct canvas *canvas, int x, int y);
+    int point_size;
+    int maxtype;
 };
 
 

@@ -9,6 +9,8 @@ static struct brush *pencil;
 
 
 void init(void) {
+    glEnable(GL_PROGRAM_POINT_SIZE);
+    glPointParameteri(GL_POINT_SPRITE_COORD_ORIGIN, GL_LOWER_LEFT);
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -84,7 +86,7 @@ void render(void) {
     totalticks += sf_get_ticks() - ticks;
     ++cnt;
 
-    if (cnt > 100) {
+    if (cnt > 10000) {
         dprintf("canvas_draw costs %"PRIu64" ns/frame.\n",
                 (uint64_t) (totalticks * 1.0f / cnt));
         cnt = 0;
