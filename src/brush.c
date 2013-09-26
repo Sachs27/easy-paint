@@ -21,8 +21,6 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
         return;
     }
 
-    canvas_set_current_brush(canvas, brush);
-
     if (steep) {
         int_swap(x0, y0);
         int_swap(x1, y1);
@@ -62,10 +60,10 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
 }
 
 void brush_set_color(struct brush *brush,
-                     scalar_t r, scalar_t g, scalar_t b, scalar_t a) {
-    brush->color.r = r;
-    brush->color.g = g;
-    brush->color.b = b;
-    brush->color.a = a;
+                     uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    brush->color[0] = r;
+    brush->color[1] = g;
+    brush->color[2] = b;
+    brush->color[3] = a;
 }
 

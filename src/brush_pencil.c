@@ -2,18 +2,36 @@
 #include <stdlib.h>
 #include <GL/glew.h>
 
-#include "load_shaders.h"
 #include "brush.h"
 
 
+static void pencil_blend(struct canvas *canvas, int x, int y,
+                         uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    float   alpha;
+    uint8_t dst_color[4];
+
+    canvas_pick(canvas, x, y, dst_color, dst_color + 1, dst_color + 2,
+                dst_color + 3);
+
+    alpha = dst_color[3] / 255.0f;
+    dst_color[0] = r * alpha + dst_color[0] * (1 - alpha);
+    dst_color[1] = g * alpha + dst_color[1] * (1 - alpha);
+    dst_color[2] = b * alpha + dst_color[2] * (1 - alpha);
+    alpha = a + dst_color[3];
+    dst_color[3] = alpha >= 255.0f ? 255 : (uint8_t) alpha;
+
+    canvas_plot(canvas, x, y, dst_color[0], dst_color[1], dst_color[2],
+                dst_color[3]);
+}
+
 static void pencil_plot(struct brush *brush, struct canvas *canvas,
                         int px, int py) {
-    scalar_t r = brush->color.r;
-    scalar_t g = brush->color.g;
-    scalar_t b = brush->color.b;
-    scalar_t a0 = brush->color.a;
-    scalar_t a1 = a0 * a0;
-    scalar_t a2 = a1 * a1;
+    uint8_t r = brush->color[0];
+    uint8_t g = brush->color[1];
+    uint8_t b = brush->color[2];
+    uint8_t a0 = brush->color[3];
+    uint8_t a1 = (a0 / 255.0f) * (a0 / 255.0f) * 255;
+    uint8_t a2 = (a1 / 255.0f) * (a1 / 255.0f) * 255;
 
     switch (rand() % 5) {
     case 0:
@@ -21,40 +39,40 @@ static void pencil_plot(struct brush *brush, struct canvas *canvas,
          *  o x
          *  x x
          */
-        canvas_plot(canvas, px, py, r, g, b, a0);
-        canvas_plot(canvas, px + 1, py, r, g, b, a1);
-        canvas_plot(canvas, px, py + 1, r, g, b, a1);
-        canvas_plot(canvas, px + 1, py + 1, r, g, b, a2);
+        pencil_blend(canvas, px, py, r, g, b, a0);
+        pencil_blend(canvas, px + 1, py, r, g, b, a1);
+        pencil_blend(canvas, px, py + 1, r, g, b, a1);
+        pencil_blend(canvas, px + 1, py + 1, r, g, b, a2);
         break;
     case 1:
         /*
          * x o
          * x x
          */
-        canvas_plot(canvas, px, py, r, g, b, a1);
-        canvas_plot(canvas, px + 1, py, r, g, b, a0);
-        canvas_plot(canvas, px, py + 1, r, g, b, a2);
-        canvas_plot(canvas, px + 1, py + 1, r, g, b, a1);
+        pencil_blend(canvas, px, py, r, g, b, a1);
+        pencil_blend(canvas, px + 1, py, r, g, b, a0);
+        pencil_blend(canvas, px, py + 1, r, g, b, a2);
+        pencil_blend(canvas, px + 1, py + 1, r, g, b, a1);
         break;
     case 2:
         /*
          * x x
          * o x
          */
-        canvas_plot(canvas, px, py, r, g, b, a1);
-        canvas_plot(canvas, px + 1, py, r, g, b, a2);
-        canvas_plot(canvas, px, py + 1, r, g, b, a0);
-        canvas_plot(canvas, px + 1, py + 1, r, g, b, a1);
+        pencil_blend(canvas, px, py, r, g, b, a1);
+        pencil_blend(canvas, px + 1, py, r, g, b, a2);
+        pencil_blend(canvas, px, py + 1, r, g, b, a0);
+        pencil_blend(canvas, px + 1, py + 1, r, g, b, a1);
         break;
     case 3:
         /*
          * x x
          * x o
          */
-        canvas_plot(canvas, px, py, r, g, b, a2);
-        canvas_plot(canvas, px + 1, py, r, g, b, a1);
-        canvas_plot(canvas, px, py + 1, r, g, b, a1);
-        canvas_plot(canvas, px + 1, py + 1, r, g, b, a0);
+        pencil_blend(canvas, px, py, r, g, b, a2);
+        pencil_blend(canvas, px + 1, py, r, g, b, a1);
+        pencil_blend(canvas, px, py + 1, r, g, b, a1);
+        pencil_blend(canvas, px + 1, py + 1, r, g, b, a0);
         break;
     case 4:
         /*
@@ -62,28 +80,23 @@ static void pencil_plot(struct brush *brush, struct canvas *canvas,
          * x o x
          *   x
          */
-        canvas_plot(canvas, px, py - 1, r, g, b, a1);
-        canvas_plot(canvas, px - 1, py, r, g, b, a1);
-        canvas_plot(canvas, px, py, r, g, b, a0);
-        canvas_plot(canvas, px + 1, py, r, g, b, a1);
-        canvas_plot(canvas, px, py + 1, r, g, b, a1);
+        pencil_blend(canvas, px, py - 1, r, g, b, a1);
+        pencil_blend(canvas, px - 1, py, r, g, b, a1);
+        pencil_blend(canvas, px, py, r, g, b, a0);
+        pencil_blend(canvas, px + 1, py, r, g, b, a1);
+        pencil_blend(canvas, px, py + 1, r, g, b, a1);
         break;
     }
 }
 
 
 struct brush *brush_pencil_create(void) {
-    static struct shader_info pencils[] = {
-        {GL_VERTEX_SHADER, "brush/pencil.vs.glsl"},
-        {GL_FRAGMENT_SHADER, "brush/pencil.fs.glsl"},
-        {GL_NONE, NULL}
-    };
     struct brush *pencil;
 
     pencil = malloc(sizeof(*pencil));
     assert(pencil != NULL);
-    pencil->prog = load_shaders(pencils);
     pencil->plot = pencil_plot;
+    brush_set_color(pencil, 0, 0, 0, 50);
 
     return pencil;
 }

@@ -22,9 +22,6 @@ struct canvas {
     struct sf_rect      viewport;
     struct ivec2        offset;
     struct sf_list     *tiles;
-    struct brush       *cur_brush;
-
-    GLuint              vao, vbo;
 };
 
 
@@ -39,11 +36,12 @@ void canvas_draw(struct canvas *canvas);
  * @param y point at the screen coordinate.
  */
 void canvas_plot(struct canvas *canvas, int x, int y,
-                 float r, float g, float b, float a);
+                 uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+void canvas_pick(struct canvas *canvas, int x, int y,
+                 uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a);
 
 void canvas_offset(struct canvas *canvas, int xoff, int yoff);
-
-void canvas_set_current_brush(struct canvas *canvas, struct brush *brush);
 
 
 #endif /* CANVAS_H */

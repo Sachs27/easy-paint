@@ -18,7 +18,6 @@ void init(void) {
                                  0, 0, g_app.window->w, g_app.window->h);
 
     pencil = brush_pencil_create();
-    brush_set_color(pencil, 0.0f, 0.0f, 0.0f, 0.2f);
 }
 
 static void handle_mouse_button1(void) {
@@ -84,7 +83,7 @@ void render(void) {
     totalticks += sf_get_ticks() - ticks;
     ++cnt;
 
-    if (cnt > 100) {
+    if (cnt > 10000) {
         dprintf("canvas_draw costs %"PRIu64" ns/frame.\n",
                 (uint64_t) (totalticks * 1.0f / cnt));
         cnt = 0;
