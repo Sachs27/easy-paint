@@ -16,7 +16,7 @@ void init(void) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
 
-    g_app.canvas = canvas_create(texture_load_2d("backgrounds/tex0.jpg"),
+    g_app.canvas = canvas_create(NULL,
                                  0, 0, g_app.window->w, g_app.window->h);
 
     pencil = brush_pencil_create();
@@ -35,8 +35,10 @@ static void handle_mouse_button1(void) {
         ispressd = 1;
         lastx = g_app.im->mouse.mb1.x;
         lasty = g_app.im->mouse.mb1.y;
+        canvas_record_begin(g_app.canvas);
     } else if (g_app.im->mouse.mb1.state == KEY_RELEASE) {
         ispressd = 0;
+        canvas_record_end(g_app.canvas);
     }
 
     if (ispressd
@@ -82,6 +84,10 @@ void update(double dt) {
         cur_brush = pencil;
     } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
         cur_brush = eraser;
+    }
+
+    if (g_app.im->keys[KEY_LEFT] == KEY_PRESS) {
+        canvas_record_undo(g_app.canvas);
     }
 }
 

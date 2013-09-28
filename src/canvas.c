@@ -12,10 +12,18 @@
 #include "load_shaders.h"
 
 
-struct pixel {
-    struct vec2 position;   /* normalized [-1, 1] */
-    struct vec4 color;
+#define CANVAS_RECORD_NALLOC 2048
+
+struct record {
+    struct ivec2    position;
+    uint8_t         new_color[4];
+    uint8_t         old_color[4];
 };
+
+
+#define CANVAS_TILE_WIDTH 512
+
+#define CANVAS_TILE_HEIGHT 512
 
 struct canvas_tile {
     struct sf_rect      area;
@@ -129,6 +137,7 @@ static void canvas_tile_plot(struct canvas_tile *ct, int x, int y,
     color[3] = a;
 
     if (!sf_rect_iscontain(&ct->dirty_rect, x, y)) {
+        /* calc the dirty rect */
         if (ct->dirty_rect.w == 0) {
             ct->dirty_rect.x = x;
             ct->dirty_rect.y = y;
@@ -208,6 +217,35 @@ static struct canvas_tile *canvas_add_tile(struct canvas *canvas,
     return sf_list_push(canvas->tiles, &ct);
 }
 
+static void canvas_record(struct canvas *canvas, int x, int y,
+                          uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    struct record record;
+    uint8_t old_color[4];
+
+    if (canvas->isrecording == 0) {
+        return;
+    }
+
+    canvas_pick(canvas, x, y, old_color, old_color + 1, old_color + 2,
+                old_color + 3);
+
+    record.position.x = x;
+    record.position.y = y;
+    record.old_color[0] = old_color[0];
+    record.old_color[1] = old_color[1];
+    record.old_color[2] = old_color[2];
+    record.old_color[3] = old_color[3];
+    record.new_color[0] = r;
+    record.new_color[1] = g;
+    record.new_color[2] = b;
+    record.new_color[3] = a;
+
+    sf_array_push(*(struct sf_array **)
+                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment),
+                  &record);
+}
+
+
 struct canvas *canvas_create(struct texture *background,
                              int x, int y, int w, int h) {
     struct canvas *canvas;
@@ -226,6 +264,10 @@ struct canvas *canvas_create(struct texture *background,
     canvas->offset.x = 0;
     canvas->offset.y = 0;
     canvas->tiles = sf_list_create(sizeof(struct canvas_tile));
+    canvas->isrecording = 0;
+    canvas->cur_segment = -1;
+    canvas->segments = sf_array_create(sizeof(struct sf_array *),
+                                       SF_ARRAY_NALLOC);
 
     return canvas;
 }
@@ -292,12 +334,15 @@ void canvas_plot(struct canvas *canvas, int x, int y,
 
     SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
         if (sf_rect_iscontain(&ct->area, x, y)) {
-            return canvas_tile_plot(ct, x, y, r, g, b, a);
+            canvas_record(canvas, x, y, r, g, b, a);
+            canvas_tile_plot(ct, x, y, r, g, b, a);
+            return;
         }
     SF_LIST_END();
 
     /* it is reasonable to add a new tile for the plotting only if a != 0 */
     if (a != 0) {
+        canvas_record(canvas, x, y, r, g, b, a);
         canvas_tile_plot(canvas_add_tile(canvas, x, y), x, y, r, g, b, a);
     }
 }
@@ -349,4 +394,54 @@ void canvas_pick(struct canvas *canvas, int x, int y,
 void canvas_offset(struct canvas *canvas, int xoff, int yoff) {
     canvas->offset.x += xoff;
     canvas->offset.y += yoff;
+}
+
+void canvas_record_begin(struct canvas *canvas) {
+    if (canvas->isrecording != 0) {
+        return;
+    }
+
+    ++canvas->cur_segment;
+
+    if (canvas->cur_segment >= canvas->segments->nelts) {
+        struct sf_array *segment = sf_array_create(sizeof(struct record),
+                                                   CANVAS_RECORD_NALLOC);
+        sf_array_push(canvas->segments, &segment);
+    } else {
+        int i;
+        /* make sure cur_segment is the last segment */
+        for (i = canvas->cur_segment; i < canvas->segments->nelts; ++i) {
+            sf_array_clear(*(struct sf_array **)
+                            SF_ARRAY_NTH(canvas->segments, i), NULL);
+        }
+    }
+
+    canvas->isrecording = 1;
+}
+
+void canvas_record_end(struct canvas *canvas) {
+    canvas->isrecording = 0;
+}
+
+void canvas_record_undo(struct canvas *canvas) {
+    struct record record;
+    struct sf_array *segment;
+
+    if (canvas->isrecording || canvas->cur_segment < 0) {
+        return;
+    }
+
+    segment = *(struct sf_array **)
+               SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+
+    while (segment->nelts) {
+        sf_array_pop(segment, &record);
+
+        /* canvas->isrecoding is 0, so canvas_plot will not record. */
+        canvas_plot(canvas, record.position.x, record.position.y,
+                    record.old_color[0], record.old_color[1],
+                    record.old_color[2], record.old_color[3]);
+    }
+
+    --canvas->cur_segment;
 }
