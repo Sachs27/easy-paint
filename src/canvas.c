@@ -29,11 +29,7 @@ struct canvas_tile {
 };
 
 
-#define CANVAS_TILE_INIT_NPIXELS 1024
-
-
 static GLuint canvas_fbo;
-
 static GLuint canvas_prog = 0;
 static struct shader_info canvas_shaders[] = {
     {GL_VERTEX_SHADER, "canvas.vs.glsl"},
@@ -83,6 +79,7 @@ static void init_canvas(void) {
 
 static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
     GLfloat oclear_color[4];
+    GLint oviewport[4];
 
     ct->texture = texture_create_2d(CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
     /* clear the texture's content */
@@ -91,12 +88,16 @@ static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
                          ct->texture->tid, 0);
 
     glGetFloatv(GL_COLOR_CLEAR_VALUE, oclear_color);
+    glGetIntegerv(GL_VIEWPORT, oviewport);
+
+    glViewport(0, 0, ct->texture->w, ct->texture->h);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glClearColor(oclear_color[0], oclear_color[1],
                  oclear_color[2], oclear_color[3]);
+    glViewport(oviewport[0], oviewport[1], oviewport[2], oviewport[3]);
 
     ct->area.x = x;
     ct->area.y = y;
@@ -295,7 +296,10 @@ void canvas_plot(struct canvas *canvas, int x, int y,
         }
     SF_LIST_END();
 
-    canvas_tile_plot(canvas_add_tile(canvas, x, y), x, y, r, g, b, a);
+    /* it is reasonable to add a new tile for the plotting only if a != 0 */
+    if (a != 0) {
+        canvas_tile_plot(canvas_add_tile(canvas, x, y), x, y, r, g, b, a);
+    }
 }
 
 void canvas_pick(struct canvas *canvas, int x, int y,

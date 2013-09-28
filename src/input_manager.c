@@ -79,6 +79,15 @@ static void handle_key(struct input_manager *im, int key, int scancode,
     case GLFW_KEY_ESCAPE:
         im->keys[KEY_ESC] = action;
         break;
+    case GLFW_KEY_0:
+        im->keys[KEY_0] = action;
+        break;
+    case GLFW_KEY_1:
+        im->keys[KEY_1] = action;
+        break;
+    case GLFW_KEY_2:
+        im->keys[KEY_2] = action;
+        break;
     }
 }
 

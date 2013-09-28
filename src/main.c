@@ -5,7 +5,9 @@
 #include "brush.h"
 
 
+static struct brush *cur_brush;
 static struct brush *pencil;
+static struct brush *eraser;
 
 
 void init(void) {
@@ -18,6 +20,11 @@ void init(void) {
                                  0, 0, g_app.window->w, g_app.window->h);
 
     pencil = brush_pencil_create();
+    eraser = brush_eraser_create();
+
+    cur_brush = pencil;
+
+    eraser->plot(eraser, g_app.canvas, 100, 100);
 }
 
 static void handle_mouse_button1(void) {
@@ -36,7 +43,7 @@ static void handle_mouse_button1(void) {
         && (g_app.im->mouse.x != lastx || g_app.im->mouse.y != lasty)) {
         if (sf_rect_iscontain(&g_app.canvas->viewport,
                               g_app.im->mouse.x, g_app.im->mouse.y)) {
-            brush_drawline(pencil, g_app.canvas, lastx, lasty,
+            brush_drawline(cur_brush, g_app.canvas, lastx, lasty,
                            g_app.im->mouse.x,
                            g_app.im->mouse.y);
         }
@@ -70,6 +77,12 @@ static void handle_mouse_button2(void) {
 void update(double dt) {
     handle_mouse_button1();
     handle_mouse_button2();
+
+    if (g_app.im->keys[KEY_1] == KEY_PRESS) {
+        cur_brush = pencil;
+    } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
+        cur_brush = eraser;
+    }
 }
 
 void render(void) {

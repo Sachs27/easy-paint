@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdlib.h>
 #include <GL/glew.h>
 
@@ -94,7 +93,6 @@ struct brush *brush_pencil_create(void) {
     struct brush *pencil;
 
     pencil = malloc(sizeof(*pencil));
-    assert(pencil != NULL);
     pencil->plot = pencil_plot;
     brush_set_color(pencil, 0, 0, 0, 50);
 

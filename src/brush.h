@@ -25,5 +25,7 @@ void brush_set_color(struct brush *brush,
 
 struct brush *brush_pencil_create(void);
 
+struct brush *brush_eraser_create(void);
+
 
 #endif /* BRUSH_H */
