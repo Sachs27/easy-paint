@@ -467,14 +467,14 @@ void canvas_record_redo(struct canvas *canvas) {
         return;
     }
 
+    ++canvas->cur_segment;
+
     segment = *(struct sf_array **)
-               SF_ARRAY_NTH(canvas->segments, canvas->cur_segment + 1);
+               SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
 
     SF_ARRAY_BEGIN(segment, struct record, record);
         canvas_plot(canvas, record->position.x, record->position.y,
                     record->new_color[0], record->new_color[1],
                     record->new_color[2], record->new_color[3]);
     SF_ARRAY_END();
-
-    ++canvas->cur_segment;
 }

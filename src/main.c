@@ -7,6 +7,7 @@
 
 static struct brush *cur_brush;
 static struct brush *pencil;
+static struct brush *pen;
 static struct brush *eraser;
 
 
@@ -20,6 +21,7 @@ void init(void) {
                                  0, 0, g_app.window->w, g_app.window->h);
 
     pencil = brush_pencil_create();
+    pen = brush_pen_create();
     eraser = brush_eraser_create();
 
     cur_brush = pencil;
@@ -76,6 +78,8 @@ void update(double dt) {
     if (g_app.im->keys[KEY_1] == KEY_PRESS) {
         cur_brush = pencil;
     } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
+        cur_brush = pen;
+    } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
         cur_brush = eraser;
     }
 

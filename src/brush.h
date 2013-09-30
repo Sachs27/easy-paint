@@ -30,5 +30,7 @@ struct brush *brush_pencil_create(void);
 
 struct brush *brush_eraser_create(void);
 
+struct brush *brush_pen_create(void);
+
 
 #endif /* BRUSH_H */
