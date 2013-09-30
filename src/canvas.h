@@ -11,9 +11,8 @@
 #include "brush.h"
 
 
-/**
- * The default origin locate at upper left of the viewport.
- */
+ /* The default origin of canvas' coordinate locate at upper left of the
+  * viewport, and from left to right, top to bottom.  */
 struct canvas {
     struct texture     *background;
     struct sf_rect      viewport;
@@ -31,13 +30,17 @@ struct canvas *canvas_create(struct texture *background,
 
 void canvas_draw(struct canvas *canvas);
 
-/*
- * @param x
- * @param y point at the screen coordinate.
- */
+/* Convert point (x, y) from screen's coordinate to canvas' coordinate.  */
+void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
+                             int *o_x, int *o_y);
+
+/* Set the color at (x, y) where the point is in canvas' coordinate,
+ * caller can use 'canvas_screen_to_canvas' to convert cooridinate.  */
 void canvas_plot(struct canvas *canvas, int x, int y,
                  uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
+/* Get the color at (x, y) where the point is in canvas' coordinate,
+ * caller can use 'canvas_screen_to_canvas' to convert cooridinate.  */
 void canvas_pick(struct canvas *canvas, int x, int y,
                  uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a);
 
@@ -47,7 +50,13 @@ void canvas_record_begin(struct canvas *canvas);
 
 void canvas_record_end(struct canvas *canvas);
 
+int canvas_record_canundo(struct canvas *canvas);
+
 void canvas_record_undo(struct canvas *canvas);
+
+int canvas_record_canredo(struct canvas *canvas);
+
+void canvas_record_redo(struct canvas *canvas);
 
 
 #endif /* CANVAS_H */

@@ -13,6 +13,11 @@ static void eraser_blend(struct canvas *canvas, int x, int y, uint8_t a) {
 
     alpha = dst_color[3] - a < 0 ? 0 : dst_color[3] - a;
 
+    /* no need to plot the same color */
+    if (alpha == dst_color[3]) {
+        return;
+    }
+
     canvas_plot(canvas, x, y, dst_color[0], dst_color[1], dst_color[2],
                 alpha);
 }

@@ -42,6 +42,15 @@ static void handle_mouse_button(struct input_manager *im,
             im->mouse.mb2.state = KEY_RELEASE;
         }
         break;
+    case GLFW_MOUSE_BUTTON_3:
+        if (action == GLFW_PRESS) {
+            im->mouse.mb3.state = KEY_PRESS;
+            im->mouse.mb3.x = im->mouse.x;
+            im->mouse.mb3.y = im->mouse.y;
+        } else if (action == GLFW_RELEASE) {
+            im->mouse.mb3.state = KEY_RELEASE;
+        }
+        break;
     }
 }
 
@@ -117,4 +126,28 @@ struct input_manager *input_manager_create(struct window *win) {
     glfwSetKeyCallback(win->handle, on_key);
 
     return im;
+}
+
+void input_manager_update(struct input_manager *im) {
+    int k;
+
+    for (k = 0; k < NKEYS; ++k) {
+        if (im->last_keys[k] == KEY_PRESS) {
+            im->keys[k] = KEY_REPEAT;
+        }
+        im->last_keys[k] = im->keys[k];
+    }
+
+    for (k = 0; k < 3; ++k) {
+        if (im->mouse.last_mbs[k] == KEY_PRESS) {
+            im->mouse.mbs[k].state = KEY_REPEAT;
+        }
+
+        if (im->mouse.mbs[k].state == KEY_REPEAT) {
+            im->mouse.mbs[k].x = im->mouse.x;
+            im->mouse.mbs[k].y = im->mouse.y;
+        }
+
+        im->mouse.last_mbs[k] = im->mouse.mbs[k].state;
+    }
 }

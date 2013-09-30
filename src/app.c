@@ -25,9 +25,9 @@ static int app_init(int argc, char *argv[]) {
     if (sf_init(argc, argv)) {
         return -1;
     }
+#if 0
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-#if 0
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
     g_app.window = window_create(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -36,12 +36,10 @@ static int app_init(int argc, char *argv[]) {
         return -1;
     }
     fprintf(stdout, "OpenGL Version: %s\n", glGetString(GL_VERSION));
-    /*
-     * GLEW has a problem with core contexts.
+    /* GLEW has a problem with core contexts.
      * It calls glGetString(GL_EXTENSIONS), which causes GL_INVALID_ENUM
      * on GL 3.2+ core context as soon as glewInit() is called.
-     * It also doesn't fetch the function pointers.
-     */
+     * It also doesn't fetch the function pointers.  */
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
         return -1;
@@ -61,6 +59,7 @@ int main(int argc, char *argv[]) {
     }
 
     while (window_isopen(g_app.window)) {
+        input_manager_update(g_app.im);
         g_app.update_cb(0.0f);
         g_app.render_cb();
         glfwSwapBuffers(g_app.window->handle);

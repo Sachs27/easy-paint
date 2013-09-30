@@ -8,6 +8,7 @@
 enum key_state {
     KEY_RELEASE,
     KEY_PRESS,
+    KEY_REPEAT,
 };
 
 enum key {
@@ -20,7 +21,7 @@ enum key {
     KEY_DOWN,
     KEY_UP,
     KEY_ESC,
-    NKEY,
+    NKEYS,
 };
 
 struct mouse_button {
@@ -32,16 +33,28 @@ struct mouse_button {
 struct input_manager {
     struct {
         int x, y;
-        struct mouse_button mb1, mb2, mb3;
+
+        enum key_state last_mbs[3];
+        union {
+            struct {
+                 struct mouse_button mb1;
+                 struct mouse_button mb2;
+                 struct mouse_button mb3;
+            };
+
+            struct mouse_button mbs[3];
+        };
     } mouse;
 
-    enum key_state keys[NKEY];
+    enum key_state keys[NKEYS];
+    enum key_state last_keys[NKEYS];
 
     struct window *win;
 };
 
 
 struct input_manager *input_manager_create(struct window *win);
+void input_manager_update(struct input_manager *im);
 
 
 #endif /* INPUT_MANAGER_H */

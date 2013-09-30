@@ -8,19 +8,24 @@ static void pencil_blend(struct canvas *canvas, int x, int y,
                          uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     float   alpha;
     uint8_t dst_color[4];
+    uint8_t color[4];
 
     canvas_pick(canvas, x, y, dst_color, dst_color + 1, dst_color + 2,
                 dst_color + 3);
 
     alpha = dst_color[3] / 255.0f;
-    dst_color[0] = r * alpha + dst_color[0] * (1 - alpha);
-    dst_color[1] = g * alpha + dst_color[1] * (1 - alpha);
-    dst_color[2] = b * alpha + dst_color[2] * (1 - alpha);
+    color[0] = r * alpha + dst_color[0] * (1 - alpha);
+    color[1] = g * alpha + dst_color[1] * (1 - alpha);
+    color[2] = b * alpha + dst_color[2] * (1 - alpha);
     alpha = a + dst_color[3];
-    dst_color[3] = alpha >= 255.0f ? 255 : (uint8_t) alpha;
+    color[3] = alpha >= 255.0f ? (uint8_t) 255 : (uint8_t) alpha;
 
-    canvas_plot(canvas, x, y, dst_color[0], dst_color[1], dst_color[2],
-                dst_color[3]);
+    /* no need to plot the same color */
+    if (color[0] == dst_color[0] && color[1] == dst_color[1]
+        && color[2] == dst_color[2] && color[3] == dst_color[3]) {
+        return;
+    }
+    canvas_plot(canvas, x, y, color[0], color[1], color[2], color[3]);
 }
 
 static void pencil_plot(struct brush *brush, struct canvas *canvas,
