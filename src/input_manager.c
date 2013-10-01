@@ -24,31 +24,31 @@ static void on_mouse_pos(GLFWwindow *handle, double xpos, double ypos) {
 static void handle_mouse_button(struct input_manager *im,
                                 int button, int action, int mods) {
     switch (button) {
-    case GLFW_MOUSE_BUTTON_1:
+    case GLFW_MOUSE_BUTTON_LEFT:
         if (action == GLFW_PRESS) {
-            im->mouse.mb1.state = KEY_PRESS;
-            im->mouse.mb1.x = im->mouse.x;
-            im->mouse.mb1.y = im->mouse.y;
+            im->mouse.left.state = KEY_PRESS;
+            im->mouse.left.x = im->mouse.x;
+            im->mouse.left.y = im->mouse.y;
         } else if (action == GLFW_RELEASE) {
-            im->mouse.mb1.state = KEY_RELEASE;
+            im->mouse.left.state = KEY_RELEASE;
         }
         break;
-    case GLFW_MOUSE_BUTTON_2:
+    case GLFW_MOUSE_BUTTON_RIGHT:
         if (action == GLFW_PRESS) {
-            im->mouse.mb2.state = KEY_PRESS;
-            im->mouse.mb2.x = im->mouse.x;
-            im->mouse.mb2.y = im->mouse.y;
+            im->mouse.right.state = KEY_PRESS;
+            im->mouse.right.x = im->mouse.x;
+            im->mouse.right.y = im->mouse.y;
         } else if (action == GLFW_RELEASE) {
-            im->mouse.mb2.state = KEY_RELEASE;
+            im->mouse.right.state = KEY_RELEASE;
         }
         break;
-    case GLFW_MOUSE_BUTTON_3:
+    case GLFW_MOUSE_BUTTON_MIDDLE:
         if (action == GLFW_PRESS) {
-            im->mouse.mb3.state = KEY_PRESS;
-            im->mouse.mb3.x = im->mouse.x;
-            im->mouse.mb3.y = im->mouse.y;
+            im->mouse.middle.state = KEY_PRESS;
+            im->mouse.middle.x = im->mouse.x;
+            im->mouse.middle.y = im->mouse.y;
         } else if (action == GLFW_RELEASE) {
-            im->mouse.mb3.state = KEY_RELEASE;
+            im->mouse.right.state = KEY_RELEASE;
         }
         break;
     }

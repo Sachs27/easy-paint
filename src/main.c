@@ -27,18 +27,18 @@ void init(void) {
     cur_brush = pencil;
 }
 
-static void handle_mouse_button1(void) {
+static void handle_mouse_button_left(void) {
     static int lastx, lasty;
 
-    if (g_app.im->mouse.mb1.state == KEY_PRESS) {
-        lastx = g_app.im->mouse.mb1.x;
-        lasty = g_app.im->mouse.mb1.y;
+    if (g_app.im->mouse.left.state == KEY_PRESS) {
+        lastx = g_app.im->mouse.left.x;
+        lasty = g_app.im->mouse.left.y;
         canvas_record_begin(g_app.canvas);
-    } else if (g_app.im->mouse.mb1.state == KEY_RELEASE) {
+    } else if (g_app.im->mouse.left.state == KEY_RELEASE) {
         canvas_record_end(g_app.canvas);
     }
 
-    if (g_app.im->mouse.mb1.state == KEY_REPEAT
+    if (g_app.im->mouse.left.state == KEY_REPEAT
         && (g_app.im->mouse.x != lastx || g_app.im->mouse.y != lasty)) {
         if (sf_rect_iscontain(&g_app.canvas->viewport,
                               g_app.im->mouse.x, g_app.im->mouse.y)) {
@@ -53,15 +53,15 @@ static void handle_mouse_button1(void) {
     }
 }
 
-static void handle_mouse_button2(void) {
+static void handle_mouse_button_right(void) {
     static int lastx, lasty;
 
-    if (g_app.im->mouse.mb2.state == KEY_PRESS) {
-        lastx = g_app.im->mouse.mb2.x;
-        lasty = g_app.im->mouse.mb2.y;
+    if (g_app.im->mouse.right.state == KEY_PRESS) {
+        lastx = g_app.im->mouse.right.x;
+        lasty = g_app.im->mouse.right.y;
     }
 
-    if (g_app.im->mouse.mb2.state == KEY_REPEAT
+    if (g_app.im->mouse.right.state == KEY_REPEAT
         && (g_app.im->mouse.x != lastx || g_app.im->mouse.y != lasty)) {
         canvas_offset(g_app.canvas, lastx - g_app.im->mouse.x,
                       lasty - g_app.im->mouse.y);
@@ -72,8 +72,8 @@ static void handle_mouse_button2(void) {
 }
 
 void update(double dt) {
-    handle_mouse_button1();
-    handle_mouse_button2();
+    handle_mouse_button_left();
+    handle_mouse_button_right();
 
     if (g_app.im->keys[KEY_1] == KEY_PRESS) {
         cur_brush = pencil;
@@ -85,9 +85,18 @@ void update(double dt) {
 
     if (g_app.im->keys[KEY_LEFT] == KEY_PRESS) {
         canvas_record_undo(g_app.canvas);
-    }
-    if (g_app.im->keys[KEY_RIGHT] == KEY_PRESS) {
+    } else if (g_app.im->keys[KEY_RIGHT] == KEY_PRESS) {
         canvas_record_redo(g_app.canvas);
+    } else if (g_app.im->keys[KEY_UP] == KEY_PRESS) {
+        int x, y;
+        canvas_screen_to_canvas(g_app.canvas, g_app.im->mouse.x,
+                                g_app.im->mouse.y, &x, &y);
+        canvas_zoom_in(g_app.canvas, x, y);
+    } else if (g_app.im->keys[KEY_DOWN] == KEY_PRESS) {
+        int x, y;
+        canvas_screen_to_canvas(g_app.canvas, g_app.im->mouse.x,
+                                g_app.im->mouse.y, &x, &y);
+        canvas_zoom_out(g_app.canvas, x, y);
     }
 }
 

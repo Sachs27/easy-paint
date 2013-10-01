@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <inttypes.h>
 #include <GL/glew.h>
 #include <sf_utils.h>
@@ -261,8 +262,12 @@ struct canvas *canvas_create(struct texture *background,
     canvas->viewport.y = y;
     canvas->viewport.w = w;
     canvas->viewport.h = h;
-    canvas->offset.x = 0;
-    canvas->offset.y = 0;
+    canvas->dx = 0.0f;
+    canvas->dy = 0.0f;
+    canvas->area.x = 0;
+    canvas->area.y = 0;
+    canvas->area.w = w;
+    canvas->area.h = h;
     canvas->tiles = sf_list_create(sizeof(struct canvas_tile));
     canvas->isrecording = 0;
     canvas->cur_segment = -1;
@@ -273,7 +278,6 @@ struct canvas *canvas_create(struct texture *background,
 }
 
 void canvas_draw(struct canvas *canvas) {
-    struct sf_rect rect_camera;
     GLint oviewport[4];
 
     glGetIntegerv(GL_VIEWPORT, oviewport);
@@ -285,27 +289,26 @@ void canvas_draw(struct canvas *canvas) {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     /* draw pixels */
-    rect_camera.x = canvas->offset.x;
-    rect_camera.y = canvas->offset.y;
-    rect_camera.w = canvas->viewport.w;
-    rect_camera.h = canvas->viewport.h;
-
     glUseProgram(canvas_prog);
     SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
-        if (!sf_rect_isintersect(&rect_camera, &ct->area)) {
+        float nw, nh;
+
+        if (!sf_rect_isintersect(&canvas->area, &ct->area)) {
             continue;
         }
+
         if (ct->isdirty) {
             canvas_update_tile(canvas, ct);
         }
+
+        nw = ((float) ct->texture->w) / canvas->area.w * 2.0f;
+        nh = ((float) ct->texture->h) / canvas->area.h * 2.0f;
         glBindVertexArray(canvas_vao);
         glBindBuffer(GL_ARRAY_BUFFER, canvas_vbo);
-        vposition[0].x = ct->area.x - canvas->offset.x;
-        vposition[0].y = canvas->viewport.h - (ct->area.y - canvas->offset.y);
-        vposition[0].x = vposition[0].x * 2.0f / canvas->viewport.w - 1.0f;
-        vposition[0].y = vposition[0].y * 2.0f / canvas->viewport.h - 1.0f;
-        float nw = ((float) ct->texture->w) / canvas->viewport.w * 2.0f;
-        float nh = ((float) ct->texture->h) / canvas->viewport.h * 2.0f;
+        vposition[0].x = ct->area.x - canvas->area.x;
+        vposition[0].y = canvas->area.h - (ct->area.y - canvas->area.y);
+        vposition[0].x = vposition[0].x * 2.0f / canvas->area.w - 1.0f;
+        vposition[0].y = vposition[0].y * 2.0f / canvas->area.h - 1.0f;
         vposition[1].x = vposition[0].x;
         vposition[1].y = vposition[0].y - nh;
         vposition[2].x = vposition[0].x + nw;
@@ -328,8 +331,13 @@ void canvas_draw(struct canvas *canvas) {
 
 void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
                              int *o_x, int *o_y) {
-    *o_x = x + canvas->offset.x - canvas->viewport.x;
-    *o_y = y + canvas->offset.y - canvas->viewport.y;
+    x -= canvas->viewport.x;
+    y -= canvas->viewport.y;
+
+    x = ((float) x) / canvas->viewport.w * canvas->area.w;
+    y = ((float) y) / canvas->viewport.h * canvas->area.h;
+    *o_x = canvas->area.x + x;
+    *o_y = canvas->area.y + y;
 }
 
 void canvas_plot(struct canvas *canvas, int x, int y,
@@ -376,8 +384,31 @@ void canvas_pick(struct canvas *canvas, int x, int y,
 }
 
 void canvas_offset(struct canvas *canvas, int xoff, int yoff) {
-    canvas->offset.x += xoff;
-    canvas->offset.y += yoff;
+    float scale = canvas->area.w * 1.0 / canvas->viewport.w;
+    int dx, dy;
+
+    canvas->dx += xoff * scale;
+    canvas->dy += yoff * scale;
+
+    if (canvas->dx >= 1.0f) {
+        dx = floor(canvas->dx);
+        canvas->area.x += dx;
+        canvas->dx -= dx;
+    } else if (canvas->dx <= -1.0f) {
+        dx = ceil(canvas->dx);
+        canvas->area.x += dx;
+        canvas->dx -= dx;
+    }
+
+    if (canvas->dy >= 1.0f) {
+        dy = floor(canvas->dy);
+        canvas->area.y += dy;
+        canvas->dy -= dy;
+    } else if (canvas->dy <= -1.0f) {
+        dy = ceil(canvas->dy);
+        canvas->area.y += dy;
+        canvas->dy -= dy;
+    }
 }
 
 void canvas_record_begin(struct canvas *canvas) {
@@ -477,4 +508,30 @@ void canvas_record_redo(struct canvas *canvas) {
                     record->new_color[0], record->new_color[1],
                     record->new_color[2], record->new_color[3]);
     SF_ARRAY_END();
+}
+
+void canvas_zoom_in(struct canvas *canvas, int cx, int cy) {
+    if (canvas->area.w < 32 || canvas->area.h < 32) {
+        return;
+    }
+
+    canvas->area.w = ((canvas->area.x + canvas->area.w) - cx) * 0.9f + cx;
+    canvas->area.h = ((canvas->area.y + canvas->area.h) - cy) * 0.9f + cy;
+    canvas->area.x = (canvas->area.x - cx) * 0.9f + cx;
+    canvas->area.y = (canvas->area.y - cy) * 0.9f + cy;
+    canvas->area.w -= canvas->area.x;
+    canvas->area.h -= canvas->area.y;
+}
+
+void canvas_zoom_out(struct canvas *canvas, int cx, int cy) {
+    if (canvas->area.w > 2048 || canvas->area.h > 2048) {
+        return;
+    }
+
+    canvas->area.w = ((canvas->area.x + canvas->area.w) - cx) / 0.9f + cx;
+    canvas->area.h = ((canvas->area.y + canvas->area.h) - cy) / 0.9f + cy;
+    canvas->area.x = (canvas->area.x - cx) / 0.9f + cx;
+    canvas->area.y = (canvas->area.y - cy) / 0.9f + cy;
+    canvas->area.w -= canvas->area.x;
+    canvas->area.h -= canvas->area.y;
 }

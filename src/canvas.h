@@ -16,9 +16,9 @@
 struct canvas {
     struct texture     *background;
     struct sf_rect      viewport;
-    struct ivec2        offset;
+    float               dx, dy;
+    struct sf_rect      area;
     struct sf_list     *tiles;
-
     int                 isrecording;
     int                 cur_segment;
     struct sf_array    *segments;       /* elt: (struct sf_array *) */
@@ -57,6 +57,10 @@ void canvas_record_undo(struct canvas *canvas);
 int canvas_record_canredo(struct canvas *canvas);
 
 void canvas_record_redo(struct canvas *canvas);
+
+void canvas_zoom_in(struct canvas *canvas, int cx, int cy);
+
+void canvas_zoom_out(struct canvas *canvas, int cx, int cy);
 
 
 #endif /* CANVAS_H */

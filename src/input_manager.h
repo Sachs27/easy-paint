@@ -38,9 +38,9 @@ struct input_manager {
         enum key_state last_mbs[3];
         union {
             struct {
-                 struct mouse_button mb1;
-                 struct mouse_button mb2;
-                 struct mouse_button mb3;
+                 struct mouse_button left;
+                 struct mouse_button right;
+                 struct mouse_button middle;
             };
 
             struct mouse_button mbs[3];
