@@ -34,18 +34,18 @@ static void pen_plot(struct brush *brush, struct canvas *canvas,
     uint8_t g = brush->color[1];
     uint8_t b = brush->color[2];
     uint8_t a0 = brush->color[3];
-    uint8_t a1 = (a0 / 255.0f) * (a0 / 255.0f) * 255;
-    /*uint8_t a2 = (a1 / 255.0f) * (a1 / 255.0f) * 255;*/
+    uint8_t a1 = a0 * 0.6;
+    uint8_t a2 = a0 * 0.3;
 
-    pen_blend(canvas, px - 1, py - 1, r, g, b, a1);
-    pen_blend(canvas, px, py - 1, r, g, b, a0);
-    pen_blend(canvas, px + 1, py - 1, r, g, b, a1);
-    pen_blend(canvas, px - 1, py, r, g, b, a0);
+    pen_blend(canvas, px - 1, py - 1, r, g, b, a2);
+    pen_blend(canvas, px, py - 1, r, g, b, a1);
+    pen_blend(canvas, px + 1, py - 1, r, g, b, a2);
+    pen_blend(canvas, px - 1, py, r, g, b, a1);
     pen_blend(canvas, px, py, r, g, b, a0);
-    pen_blend(canvas, px + 1, py, r, g, b, a0);
-    pen_blend(canvas, px - 1, py + 1, r, g, b, a1);
-    pen_blend(canvas, px, py + 1, r, g, b, a0);
-    pen_blend(canvas, px + 1, py + 1, r, g, b, a1);
+    pen_blend(canvas, px + 1, py, r, g, b, a1);
+    pen_blend(canvas, px - 1, py + 1, r, g, b, a2);
+    pen_blend(canvas, px, py + 1, r, g, b, a1);
+    pen_blend(canvas, px + 1, py + 1, r, g, b, a2);
 
 }
 
@@ -54,7 +54,7 @@ struct brush *brush_pen_create(void) {
 
     pen = malloc(sizeof(*pen));
     pen->plot = pen_plot;
-    brush_set_color(pen, 0, 0, 0, 128);
+    brush_set_color(pen, 0, 0, 0, 255);
 
     return pen;
 }

@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include <GL/glew.h>
-#include <GL/glu.h>
 #include <IL/il.h>
 
 #include "texture.h"
@@ -19,8 +18,32 @@ struct texture_inner {
 };
 
 
+static int il_init(void) {
+    ILenum ilerr;
+
+    ilInit();
+    ilClearColor(0, 0, 0, 0);
+
+    ilerr = ilGetError();
+    if (ilerr != IL_NO_ERROR) {
+        return -1;
+    }
+
+    return 0;
+}
+
+
 static int texture_inner_init(struct texture_inner *tex_inner,
                               const char *pathname) {
+    static int isil_inited = 0;
+
+    if (!isil_inited) {
+        if (il_init() != 0) {
+            return -1;
+        }
+        isil_inited = 1;
+    }
+
     ilGenImages(1, &tex_inner->il_id);
     ilBindImage(tex_inner->il_id);
 
@@ -77,7 +100,6 @@ struct texture *texture_load_2d(const char *pathname) {
 
     texture_inner_uninit(&tex_inner);
     if ((err = glGetError()) != GL_NO_ERROR) {
-        fprintf(stderr, "%s\n", gluErrorString(err));
         goto sf_texture_load_failed;
     }
 
