@@ -5,7 +5,7 @@
 #include <sf_list.h>
 #include <sf_array.h>
 
-#include "sf_rect.h"
+#include "ui.h"
 #include "3dmath.h"
 #include "texture.h"
 #include "brush.h"
@@ -14,19 +14,25 @@
  /* The default origin of canvas' coordinate locate at upper left of the
   * viewport, and from left to right, top to bottom.  */
 struct canvas {
+    struct ui           ui;             /* inherit from ui, so this must be
+                                         * the first element of the struct  */
+
     struct texture     *background;
-    struct sf_rect      viewport;
+
+    struct sf_rect      viewport;       /* the viewport of camera in the
+                                         * canvas's coordinate  */
+    int                 lastx, lasty;
     float               dx, dy;
-    struct sf_rect      area;
+
     struct sf_list     *tiles;
+
     int                 isrecording;
     int                 cur_segment;
     struct sf_array    *segments;       /* elt: (struct sf_array *) */
 };
 
 
-struct canvas *canvas_create(struct texture *background,
-                             int x, int y, int w, int h);
+struct canvas *canvas_create(struct texture *background, int w, int h);
 
 void canvas_draw(struct canvas *canvas);
 

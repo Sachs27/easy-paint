@@ -23,33 +23,19 @@ static void on_mouse_pos(GLFWwindow *handle, double xpos, double ypos) {
 
 static void handle_mouse_button(struct input_manager *im,
                                 int button, int action, int mods) {
+    if (action == GLFW_REPEAT) {
+        return;
+    }
+
     switch (button) {
     case GLFW_MOUSE_BUTTON_LEFT:
-        if (action == GLFW_PRESS) {
-            im->mouse.left.state = KEY_PRESS;
-            im->mouse.left.x = im->mouse.x;
-            im->mouse.left.y = im->mouse.y;
-        } else if (action == GLFW_RELEASE) {
-            im->mouse.left.state = KEY_RELEASE;
-        }
+        im->keys[KEY_MB_LEFT] = action;
         break;
     case GLFW_MOUSE_BUTTON_RIGHT:
-        if (action == GLFW_PRESS) {
-            im->mouse.right.state = KEY_PRESS;
-            im->mouse.right.x = im->mouse.x;
-            im->mouse.right.y = im->mouse.y;
-        } else if (action == GLFW_RELEASE) {
-            im->mouse.right.state = KEY_RELEASE;
-        }
+        im->keys[KEY_MB_RIGHT] = action;
         break;
     case GLFW_MOUSE_BUTTON_MIDDLE:
-        if (action == GLFW_PRESS) {
-            im->mouse.middle.state = KEY_PRESS;
-            im->mouse.middle.x = im->mouse.x;
-            im->mouse.middle.y = im->mouse.y;
-        } else if (action == GLFW_RELEASE) {
-            im->mouse.right.state = KEY_RELEASE;
-        }
+        im->keys[KEY_MB_MIDDLE] = action;
         break;
     }
 }
@@ -139,18 +125,5 @@ void input_manager_update(struct input_manager *im) {
             im->keys[k] = KEY_REPEAT;
         }
         im->last_keys[k] = im->keys[k];
-    }
-
-    for (k = 0; k < 3; ++k) {
-        if (im->mouse.last_mbs[k] == KEY_PRESS) {
-            im->mouse.mbs[k].state = KEY_REPEAT;
-        }
-
-        if (im->mouse.mbs[k].state == KEY_REPEAT) {
-            im->mouse.mbs[k].x = im->mouse.x;
-            im->mouse.mbs[k].y = im->mouse.y;
-        }
-
-        im->mouse.last_mbs[k] = im->mouse.mbs[k].state;
     }
 }

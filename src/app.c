@@ -48,6 +48,8 @@ static int app_init(int argc, char *argv[]) {
 
     g_app.im = input_manager_create(g_app.window);
 
+    g_app.uim = ui_manager_create();
+
     g_app.init_cb();
 
     return 0;

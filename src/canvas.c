@@ -246,45 +246,26 @@ static void canvas_record(struct canvas *canvas, int x, int y,
                   &record);
 }
 
+static void canvas_on_update(struct canvas *canvas, double dt) {
+    int mx, my;
 
-struct canvas *canvas_create(struct texture *background,
-                             int x, int y, int w, int h) {
-    struct canvas *canvas;
+    canvas_screen_to_canvas(canvas, g_app.im->mouse.x,
+                            g_app.im->mouse.y, &mx, &my);
 
-    if (canvas_prog == 0) {
-        init_canvas();
+    if (canvas->isrecording) {
+        if (sf_rect_iscontain(&canvas->viewport, mx, my)
+            && (mx != canvas->lastx || my != canvas->lasty)) {
+            brush_drawline(g_app.cur_brush, canvas,
+                           canvas->lastx, canvas->lasty, mx, my);
+        }
+
+        canvas->lastx = mx;
+        canvas->lasty = my;
     }
 
-    canvas = malloc(sizeof(*canvas));
-    assert(canvas != NULL);
-    canvas->background = background;
-    canvas->viewport.x = x;
-    canvas->viewport.y = y;
-    canvas->viewport.w = w;
-    canvas->viewport.h = h;
-    canvas->dx = 0.0f;
-    canvas->dy = 0.0f;
-    canvas->area.x = 0;
-    canvas->area.y = 0;
-    canvas->area.w = w;
-    canvas->area.h = h;
-    canvas->tiles = sf_list_create(sizeof(struct canvas_tile));
-    canvas->isrecording = 0;
-    canvas->cur_segment = -1;
-    canvas->segments = sf_array_create(sizeof(struct sf_array *),
-                                       SF_ARRAY_NALLOC);
-
-    return canvas;
 }
 
-void canvas_draw(struct canvas *canvas) {
-    GLint oviewport[4];
-
-    glGetIntegerv(GL_VIEWPORT, oviewport);
-    glViewport(canvas->viewport.x,
-               g_app.window->h - (canvas->viewport.y + canvas->viewport.h),
-               canvas->viewport.w, canvas->viewport.h);
-
+static void canvas_on_render(struct canvas *canvas) {
     /* draw background */
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -293,7 +274,7 @@ void canvas_draw(struct canvas *canvas) {
     SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
         float nw, nh;
 
-        if (!sf_rect_isintersect(&canvas->area, &ct->area)) {
+        if (!sf_rect_isintersect(&canvas->viewport, &ct->area)) {
             continue;
         }
 
@@ -301,14 +282,15 @@ void canvas_draw(struct canvas *canvas) {
             canvas_update_tile(canvas, ct);
         }
 
-        nw = ((float) ct->texture->w) / canvas->area.w * 2.0f;
-        nh = ((float) ct->texture->h) / canvas->area.h * 2.0f;
+        nw = ((float) ct->texture->w) / canvas->viewport.w * 2.0f;
+        nh = ((float) ct->texture->h) / canvas->viewport.h * 2.0f;
         glBindVertexArray(canvas_vao);
         glBindBuffer(GL_ARRAY_BUFFER, canvas_vbo);
-        vposition[0].x = ct->area.x - canvas->area.x;
-        vposition[0].y = canvas->area.h - (ct->area.y - canvas->area.y);
-        vposition[0].x = vposition[0].x * 2.0f / canvas->area.w - 1.0f;
-        vposition[0].y = vposition[0].y * 2.0f / canvas->area.h - 1.0f;
+        vposition[0].x = ct->area.x - canvas->viewport.x;
+        vposition[0].y = canvas->viewport.h
+                       - (ct->area.y - canvas->viewport.y);
+        vposition[0].x = vposition[0].x * 2.0f / canvas->viewport.w - 1.0f;
+        vposition[0].y = vposition[0].y * 2.0f / canvas->viewport.h - 1.0f;
         vposition[1].x = vposition[0].x;
         vposition[1].y = vposition[0].y - nh;
         vposition[2].x = vposition[0].x + nw;
@@ -325,19 +307,65 @@ void canvas_draw(struct canvas *canvas) {
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     SF_LIST_END();
     glUseProgram(0);
+}
 
-    glViewport(oviewport[0], oviewport[1], oviewport[2], oviewport[3]);
+static void canvas_on_press(struct canvas *canvas,
+                            int n, int x[n], int y[n]) {
+    if (!canvas->isrecording && n == 1) {
+        canvas_screen_to_canvas(canvas, x[0] + canvas->ui.area.x,
+                                y[0] + canvas->ui.area.y,
+                                &canvas->lastx, &canvas->lasty);
+        canvas_record_begin(canvas);
+    }
+}
+
+static void canvas_on_release(struct canvas *canvas) {
+    if (canvas->isrecording) {
+        canvas_record_end(canvas);
+    }
+}
+
+
+struct canvas *canvas_create(struct texture *background, int w, int h) {
+    struct canvas *canvas;
+
+    if (canvas_prog == 0) {
+        init_canvas();
+    }
+
+    canvas = malloc(sizeof(*canvas));
+    assert(canvas != NULL);
+    ui_init(&canvas->ui, w, h);
+    ui_on_update(&canvas->ui, (ui_on_update_t *) canvas_on_update);
+    ui_on_render(&canvas->ui, (ui_on_render_t *) canvas_on_render);
+    ui_on_press(&canvas->ui, (ui_on_press_t *) canvas_on_press);
+    ui_on_release(&canvas->ui, (ui_on_release_t *) canvas_on_release);
+
+    canvas->background = background;
+    canvas->viewport.x = 0;
+    canvas->viewport.y = 0;
+    canvas->viewport.w = w;
+    canvas->viewport.h = h;
+    canvas->lastx = canvas->lasty = 0;
+    canvas->dx = canvas->dy = 0.0f;
+    canvas->tiles = sf_list_create(sizeof(struct canvas_tile));
+    canvas->isrecording = 0;
+    canvas->cur_segment = -1;
+    canvas->segments = sf_array_create(sizeof(struct sf_array *),
+                                       SF_ARRAY_NALLOC);
+
+    return canvas;
 }
 
 void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
                              int *o_x, int *o_y) {
-    x -= canvas->viewport.x;
-    y -= canvas->viewport.y;
+    x -= canvas->ui.area.x;
+    y -= canvas->ui.area.y;
 
-    x = ((float) x) / canvas->viewport.w * canvas->area.w;
-    y = ((float) y) / canvas->viewport.h * canvas->area.h;
-    *o_x = canvas->area.x + x;
-    *o_y = canvas->area.y + y;
+    x = ((float) x) / canvas->ui.area.w * canvas->viewport.w;
+    y = ((float) y) / canvas->ui.area.h * canvas->viewport.h;
+    *o_x = canvas->viewport.x + x;
+    *o_y = canvas->viewport.y + y;
 }
 
 void canvas_plot(struct canvas *canvas, int x, int y,
@@ -384,7 +412,7 @@ void canvas_pick(struct canvas *canvas, int x, int y,
 }
 
 void canvas_offset(struct canvas *canvas, int xoff, int yoff) {
-    float scale = canvas->area.w * 1.0 / canvas->viewport.w;
+    float scale = canvas->viewport.w * 1.0 / canvas->ui.area.w;
     int dx, dy;
 
     canvas->dx += xoff * scale;
@@ -392,21 +420,21 @@ void canvas_offset(struct canvas *canvas, int xoff, int yoff) {
 
     if (canvas->dx >= 1.0f) {
         dx = floor(canvas->dx);
-        canvas->area.x += dx;
+        canvas->viewport.x += dx;
         canvas->dx -= dx;
     } else if (canvas->dx <= -1.0f) {
         dx = ceil(canvas->dx);
-        canvas->area.x += dx;
+        canvas->viewport.x += dx;
         canvas->dx -= dx;
     }
 
     if (canvas->dy >= 1.0f) {
         dy = floor(canvas->dy);
-        canvas->area.y += dy;
+        canvas->viewport.y += dy;
         canvas->dy -= dy;
     } else if (canvas->dy <= -1.0f) {
         dy = ceil(canvas->dy);
-        canvas->area.y += dy;
+        canvas->viewport.y += dy;
         canvas->dy -= dy;
     }
 }
@@ -511,27 +539,31 @@ void canvas_record_redo(struct canvas *canvas) {
 }
 
 void canvas_zoom_in(struct canvas *canvas, int cx, int cy) {
-    if (canvas->area.w < 32 || canvas->area.h < 32) {
+    if (canvas->viewport.w < 32 || canvas->viewport.h < 32) {
         return;
     }
 
-    canvas->area.w = ((canvas->area.x + canvas->area.w) - cx) * 0.9f + cx;
-    canvas->area.h = ((canvas->area.y + canvas->area.h) - cy) * 0.9f + cy;
-    canvas->area.x = (canvas->area.x - cx) * 0.9f + cx;
-    canvas->area.y = (canvas->area.y - cy) * 0.9f + cy;
-    canvas->area.w -= canvas->area.x;
-    canvas->area.h -= canvas->area.y;
+    canvas->viewport.w = ((canvas->viewport.x + canvas->viewport.w) - cx)
+                       * 0.9f + cx;
+    canvas->viewport.h = ((canvas->viewport.y + canvas->viewport.h) - cy)
+                       * 0.9f + cy;
+    canvas->viewport.x = (canvas->viewport.x - cx) * 0.9f + cx;
+    canvas->viewport.y = (canvas->viewport.y - cy) * 0.9f + cy;
+    canvas->viewport.w -= canvas->viewport.x;
+    canvas->viewport.h -= canvas->viewport.y;
 }
 
 void canvas_zoom_out(struct canvas *canvas, int cx, int cy) {
-    if (canvas->area.w > 2048 || canvas->area.h > 2048) {
+    if (canvas->viewport.w > 2048 || canvas->viewport.h > 2048) {
         return;
     }
 
-    canvas->area.w = ((canvas->area.x + canvas->area.w) - cx) / 0.9f + cx;
-    canvas->area.h = ((canvas->area.y + canvas->area.h) - cy) / 0.9f + cy;
-    canvas->area.x = (canvas->area.x - cx) / 0.9f + cx;
-    canvas->area.y = (canvas->area.y - cy) / 0.9f + cy;
-    canvas->area.w -= canvas->area.x;
-    canvas->area.h -= canvas->area.y;
+    canvas->viewport.w = ((canvas->viewport.x + canvas->viewport.w) - cx)
+                       / 0.9f + cx;
+    canvas->viewport.h = ((canvas->viewport.y + canvas->viewport.h) - cy)
+                       / 0.9f + cy;
+    canvas->viewport.x = (canvas->viewport.x - cx) / 0.9f + cx;
+    canvas->viewport.y = (canvas->viewport.y - cy) / 0.9f + cy;
+    canvas->viewport.w -= canvas->viewport.x;
+    canvas->viewport.h -= canvas->viewport.y;
 }

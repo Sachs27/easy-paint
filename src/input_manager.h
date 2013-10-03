@@ -12,6 +12,9 @@ enum key_state {
 };
 
 enum key {
+    KEY_MB_LEFT,
+    KEY_MB_MIDDLE,
+    KEY_MB_RIGHT,
     KEY_0,
     KEY_1,
     KEY_2,
@@ -34,17 +37,6 @@ struct mouse_button {
 struct input_manager {
     struct {
         int x, y;
-
-        enum key_state last_mbs[3];
-        union {
-            struct {
-                 struct mouse_button left;
-                 struct mouse_button right;
-                 struct mouse_button middle;
-            };
-
-            struct mouse_button mbs[3];
-        };
     } mouse;
 
     enum key_state keys[NKEYS];

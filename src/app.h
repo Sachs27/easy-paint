@@ -8,14 +8,17 @@
 #include "sf.h"
 #include "window.h"
 #include "input_manager.h"
+#include "ui.h"
 #include "canvas.h"
 
 
 struct app {
-    struct window *window;
-    struct input_manager *im;
+    struct window          *window;
+    struct input_manager   *im;
+    struct ui_manager      *uim;
 
-    struct canvas *canvas;
+    struct canvas          *canvas;
+    struct brush           *cur_brush;
 
 
     void (*init_cb)(void);
