@@ -24,7 +24,7 @@ struct canvas {
     int                 lastx, lasty;
     float               dx, dy;
 
-    struct sf_list     *tiles;
+    struct sf_list     *tiles;          /* elt: (struct canvas_tile) */
 
     int                 isrecording;
     int                 cur_segment;

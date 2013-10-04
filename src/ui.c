@@ -74,28 +74,18 @@ void ui_manager_update(struct ui_manager *uim, double dt) {
 
 void ui_manager_render(struct ui_manager *uim) {
     SF_LIST_BEGIN(uim->uis, struct ui *, pui);
-        GLint oviewport[4];
-        GLint oscissor[4];
         struct ui *ui = *pui;
 
         if (ui->on_render == NULL) {
             continue;
         }
 
-        glGetIntegerv(GL_VIEWPORT, oviewport);
-        glGetIntegerv(GL_SCISSOR_BOX, oscissor);
-
-        glViewport(ui->area.x,
-                   g_app.window->h - ui->area.y - ui->area.h,
-                   ui->area.w, ui->area.h);
-        glScissor(ui->area.x,
-                  g_app.window->h - ui->area.y - ui->area.h,
-                  ui->area.w, ui->area.h);
-
+        renderer2d_push_viewport(g_app.renderer2d, ui->area.x, ui->area.y,
+                                 ui->area.w, ui->area.h);
         ui->on_render(ui);
 
-        glViewport(oviewport[0], oviewport[1], oviewport[2], oviewport[3]);
-        glScissor(oscissor[0], oscissor[1], oscissor[2], oscissor[3]);
+        renderer2d_pop_viewport(g_app.renderer2d);
+
     SF_LIST_END();
 }
 

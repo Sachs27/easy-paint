@@ -50,6 +50,8 @@ static int app_init(int argc, char *argv[]) {
 
     g_app.uim = ui_manager_create();
 
+    g_app.renderer2d = renderer2d_create(g_app.window->w, g_app.window->h);
+
     g_app.init_cb();
 
     return 0;
@@ -61,6 +63,12 @@ int main(int argc, char *argv[]) {
     }
 
     while (window_isopen(g_app.window)) {
+        if (g_app.window->w != g_app.renderer2d->w
+            || g_app.window->h != g_app.renderer2d->h) {
+            renderer2d_resize(g_app.renderer2d,
+                              g_app.window->w, g_app.window->h);
+        }
+
         input_manager_update(g_app.im);
         g_app.update_cb(0.0f);
         g_app.render_cb();

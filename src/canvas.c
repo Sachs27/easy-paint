@@ -38,75 +38,12 @@ struct canvas_tile {
 };
 
 
-static GLuint canvas_fbo;
-static GLuint canvas_prog = 0;
-static struct shader_info canvas_shaders[] = {
-    {GL_VERTEX_SHADER, "canvas.vs.glsl"},
-    {GL_FRAGMENT_SHADER, "canvas.fs.glsl"},
-    {GL_NONE, NULL}
-};
-
-static struct vec2 vtexcoord[4] = {
-    {0.0f, 0.0f},   /* left-top */
-    {0.0f, 1.0f},   /* left-bottom */
-    {1.0f, 1.0f},   /* right-bottom */
-    {1.0f, 0.0f},   /* right-top */
-};
-
-static struct vec2 vposition[4];
-
-static GLuint canvas_vao = 0, canvas_vbo = 0;
-
-
-static void init_canvas(void) {
-    canvas_prog = load_shaders(canvas_shaders);
-
-    glGenVertexArrays(1, &canvas_vao);
-    glBindVertexArray(canvas_vao);
-
-    glGenBuffers(1, &canvas_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, canvas_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vposition) + sizeof(vtexcoord),
-                 NULL, GL_DYNAMIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vposition), sizeof(vtexcoord),
-                    vtexcoord);
-    /* vposition */
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
-    /* vtexcoord */
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0,
-                          (void *) sizeof(vposition));
-    glEnableVertexAttribArray(1);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-
-    glGenFramebuffers(1, &canvas_fbo);
-}
-
 static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
-    GLfloat oclear_color[4];
-    GLint oviewport[4];
-
     ct->texture = texture_create_2d(CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
     /* clear the texture's content */
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, canvas_fbo);
-    glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                         ct->texture->tid, 0);
-
-    glGetFloatv(GL_COLOR_CLEAR_VALUE, oclear_color);
-    glGetIntegerv(GL_VIEWPORT, oviewport);
-
-    glViewport(0, 0, ct->texture->w, ct->texture->h);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glClearColor(oclear_color[0], oclear_color[1],
-                 oclear_color[2], oclear_color[3]);
-    glViewport(oviewport[0], oviewport[1], oviewport[2], oviewport[3]);
+    renderer2d_set_render_target(g_app.renderer2d, ct->texture);
+    renderer2d_clear(g_app.renderer2d, 0, 0, 0, 0);
+    renderer2d_set_render_target(g_app.renderer2d, NULL);
 
     ct->area.x = x;
     ct->area.y = y;
@@ -266,13 +203,13 @@ static void canvas_on_update(struct canvas *canvas, double dt) {
 }
 
 static void canvas_on_render(struct canvas *canvas) {
+    float scale = canvas->viewport.w * 1.0 / canvas->ui.area.w;
     /* draw background */
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     /* draw pixels */
-    glUseProgram(canvas_prog);
     SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
-        float nw, nh;
+        int x0, y0, x1, y1, x2, y2, x3, y3;
 
         if (!sf_rect_isintersect(&canvas->viewport, &ct->area)) {
             continue;
@@ -281,32 +218,40 @@ static void canvas_on_render(struct canvas *canvas) {
         if (ct->isdirty) {
             canvas_update_tile(canvas, ct);
         }
+#define CLAMP(a, min, max) do {         \
+    if ((a) < (min)) {                  \
+        (a) = (min);                    \
+    } else if ((a) > (max)) {           \
+        (a) = (max);                    \
+    }                                   \
+}while (0)
+        x0 = ct->area.x - canvas->viewport.x;
+        y0 = ct->area.y - canvas->viewport.y;
+        x1 = x0 + ct->texture->w;
+        y1 = y0 + ct->texture->h;
+        CLAMP(x0, 0, canvas->viewport.w);
+        CLAMP(y0, 0, canvas->viewport.h);
+        CLAMP(x1, 0, canvas->viewport.w);
+        CLAMP(y1, 0, canvas->viewport.h);
+        x0 /= scale;
+        y0 /= scale;
+        x1 /= scale;
+        y1 /= scale;
 
-        nw = ((float) ct->texture->w) / canvas->viewport.w * 2.0f;
-        nh = ((float) ct->texture->h) / canvas->viewport.h * 2.0f;
-        glBindVertexArray(canvas_vao);
-        glBindBuffer(GL_ARRAY_BUFFER, canvas_vbo);
-        vposition[0].x = ct->area.x - canvas->viewport.x;
-        vposition[0].y = canvas->viewport.h
-                       - (ct->area.y - canvas->viewport.y);
-        vposition[0].x = vposition[0].x * 2.0f / canvas->viewport.w - 1.0f;
-        vposition[0].y = vposition[0].y * 2.0f / canvas->viewport.h - 1.0f;
-        vposition[1].x = vposition[0].x;
-        vposition[1].y = vposition[0].y - nh;
-        vposition[2].x = vposition[0].x + nw;
-        vposition[2].y = vposition[1].y;
-        vposition[3].x = vposition[2].x;
-        vposition[3].y = vposition[0].y;
-
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vposition), vposition);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, ct->texture->tid);
-        glUniform1i(glGetUniformLocation(canvas_prog, "tex0"), 0);
-
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        x2 = canvas->viewport.x - ct->area.x;
+        y2 = canvas->viewport.y - ct->area.y;
+        x3 = x2 + canvas->viewport.w;
+        y3 = y2 + canvas->viewport.h;
+        CLAMP(x2, 0, ct->texture->w);
+        CLAMP(y2, 0, ct->texture->h);
+        CLAMP(x3, 0, ct->texture->w);
+        CLAMP(y3, 0, ct->texture->h);
+#undef CLAMP
+        renderer2d_draw_texture(g_app.renderer2d,
+                                x0, y0, x1 - x0, y1 - y0,
+                                ct->texture,
+                                x2, y2, x3 - x2, y3 - y2);
     SF_LIST_END();
-    glUseProgram(0);
 }
 
 static void canvas_on_press(struct canvas *canvas,
@@ -328,10 +273,6 @@ static void canvas_on_release(struct canvas *canvas) {
 
 struct canvas *canvas_create(struct texture *background, int w, int h) {
     struct canvas *canvas;
-
-    if (canvas_prog == 0) {
-        init_canvas();
-    }
 
     canvas = malloc(sizeof(*canvas));
     assert(canvas != NULL);
@@ -481,8 +422,6 @@ int canvas_record_canundo(struct canvas *canvas) {
 }
 
 void canvas_record_undo(struct canvas *canvas) {
-    int i;
-    struct record *record;
     struct sf_array *segment;
 
     if (canvas->isrecording || !canvas_record_canundo(canvas)) {
@@ -492,14 +431,12 @@ void canvas_record_undo(struct canvas *canvas) {
     segment = *(struct sf_array **)
                SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
 
-    for (i = segment->nelts - 1; i >= 0; --i) {
-        record = SF_ARRAY_NTH(segment, i);
-
+    SF_ARRAY_BEGIN_R(segment, struct record, record);
         /* canvas->isrecoding is 0, so canvas_plot will not record. */
         canvas_plot(canvas, record->position.x, record->position.y,
                     record->old_color[0], record->old_color[1],
                     record->old_color[2], record->old_color[3]);
-    }
+    SF_ARRAY_END();
 
     --canvas->cur_segment;
 }

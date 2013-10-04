@@ -99,7 +99,7 @@ struct brush *brush_pencil_create(void) {
 
     pencil = malloc(sizeof(*pencil));
     pencil->plot = pencil_plot;
-    brush_set_color(pencil, 0, 0, 0, 50);
+    brush_set_color(pencil, 0, 0, 0, 64);
 
     return pencil;
 }

@@ -11,13 +11,9 @@ static struct brush *eraser;
 
 static struct canvas *canvas2;
 
-void init(void) {
-    glEnable(GL_SCISSOR_TEST);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_DEPTH_TEST);
+static struct texture *tex;
 
+void init(void) {
     g_app.canvas = canvas_create(NULL, 512, 480);
     canvas2 = canvas_create(NULL, 128, 128);
 
@@ -29,6 +25,8 @@ void init(void) {
     eraser = brush_eraser_create();
 
     g_app.cur_brush = pencil;
+
+    tex = texture_load_2d("res/icons/undo.png");
 }
 
 #if 0
@@ -118,11 +116,13 @@ void render(void) {
 
     ui_manager_render(g_app.uim);
 
+    /*renderer2d_draw_texture(g_app.renderer2d, 100, 0, tex->w, tex->h, tex, 0, 0, 0, 0);*/
+
     totalticks += sf_get_ticks() - ticks;
     ++cnt;
 
     if (cnt > 10000) {
-        dprintf("ui_manager_render costs %"PRIu64" ns/frame.\n",
+        dprintf("render costs %"PRIu64" ns/frame.\n",
                 (uint64_t) (totalticks * 1.0f / cnt));
         cnt = 0;
         totalticks = 0;

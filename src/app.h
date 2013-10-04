@@ -10,13 +10,14 @@
 #include "input_manager.h"
 #include "ui.h"
 #include "canvas.h"
+#include "renderer2d.h"
 
 
 struct app {
     struct window          *window;
+    struct renderer2d      *renderer2d;
     struct input_manager   *im;
     struct ui_manager      *uim;
-
     struct canvas          *canvas;
     struct brush           *cur_brush;
 
