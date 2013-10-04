@@ -203,10 +203,12 @@ static int app_init(int argc, char *argv[]) {
     window_on_resize(g_app.window, resize);
 
     fprintf(stdout, "OpenGL Version: %s\n", glGetString(GL_VERSION));
-    /* GLEW has a problem with core contexts.
+    /*
+     * GLEW has a problem with core contexts.
      * It calls glGetString(GL_EXTENSIONS), which causes GL_INVALID_ENUM
      * on GL 3.2+ core context as soon as glewInit() is called.
-     * It also doesn't fetch the function pointers.  */
+     * It also doesn't fetch the function pointers.
+     */
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
         return -1;

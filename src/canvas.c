@@ -126,8 +126,7 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
 }
 
 /**
- * @param x
- * @param y point which tile must contain.
+ * (x, y) is the point which the new tile must contain.
  */
 static struct canvas_tile *canvas_add_tile(struct canvas *canvas,
                                            int x, int y) {
@@ -325,7 +324,9 @@ void canvas_plot(struct canvas *canvas, int x, int y,
         }
     SF_LIST_END();
 
-    /* it is reasonable to add a new tile only if a != 0 */
+    /*
+     * It is reasonable to add a new tile only if a != 0
+     */
     if (a != 0) {
         canvas_record(canvas, x, y, r, g, b, a);
         canvas_tile_plot(canvas_add_tile(canvas, x, y), x, y, r, g, b, a);
@@ -410,8 +411,10 @@ void canvas_record_begin(struct canvas *canvas) {
         sf_array_push(canvas->segments, &segment);
     } else {
         int i;
-        /* Make sure cur_segment is the last segment,
-         * and cur_segment is empty.  */
+        /*
+         * Make sure cur_segment is the last segment,
+         * and cur_segment is empty.
+         */
         for (i = canvas->cur_segment; i < canvas->segments->nelts; ++i) {
             sf_array_clear(*(struct sf_array **)
                             SF_ARRAY_NTH(canvas->segments, i), NULL);
@@ -438,7 +441,9 @@ void canvas_record_undo(struct canvas *canvas) {
                SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
 
     SF_ARRAY_BEGIN_R(segment, struct record, record);
-        /* canvas->isrecoding is 0, so canvas_plot will not record. */
+        /*
+         * canvas->isrecoding is 0, so canvas_plot will not record.
+         */
         canvas_plot(canvas, record->position.x, record->position.y,
                     record->old_color[0], record->old_color[1],
                     record->old_color[2], record->old_color[3]);

@@ -11,8 +11,10 @@
 #include "brush.h"
 
 
- /* The default origin of canvas' coordinate locate at upper left of the
-  * viewport, and from left to right, top to bottom.  */
+ /**
+  * The default origin of canvas' coordinate locate at upper left of the
+  * viewport, and from left to right, top to bottom.
+  */
 struct canvas {
     struct ui           ui;             /* inherit from ui, so this must be
                                          * the first element of the struct  */
@@ -38,17 +40,23 @@ struct canvas *canvas_create(int w, int h);
 
 void canvas_resize(struct canvas *canvas, int w, int h);
 
-/* Convert point (x, y) from screen's coordinate to canvas' coordinate.  */
+/**
+ * Convert point (x, y) from screen's coordinate to canvas' coordinate.
+ */
 void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
                              int *o_x, int *o_y);
 
-/* Set the color at (x, y) where the point is in canvas' coordinate,
- * caller can use 'canvas_screen_to_canvas' to convert cooridinate.  */
+/**
+ * Set the color at (x, y) where the point is in canvas' coordinate,
+ * caller can use 'canvas_screen_to_canvas' to convert cooridinate.
+ */
 void canvas_plot(struct canvas *canvas, int x, int y,
                  uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-/* Get the color at (x, y) where the point is in canvas' coordinate,
- * caller can use 'canvas_screen_to_canvas' to convert cooridinate.  */
+/**
+ * Get the color at (x, y) where the point is in canvas' coordinate,
+ * caller can use 'canvas_screen_to_canvas' to convert cooridinate.
+ */
 void canvas_pick(struct canvas *canvas, int x, int y,
                  uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a);
 

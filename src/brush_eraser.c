@@ -22,7 +22,9 @@ static void eraser_blend(struct canvas *canvas, int x, int y, uint8_t a) {
                 alpha);
 }
 
-/* Bresenham's circle algorithm */
+/**
+ * Bresenham's circle algorithm.
+ */
 static void eraser_plot(struct brush *brush, struct canvas *canvas,
                         int xc, int yc) {
     const int r = 8;
@@ -46,7 +48,6 @@ static void eraser_plot(struct brush *brush, struct canvas *canvas,
         eraser_blend(canvas, xc + y, yc - x, alpha);
         eraser_blend(canvas, xc - y, yc - x, alpha);
 #endif
-        /* fill the cycle */
         if (lasty != y) {
             lasty = y;
             for (i = -x + 1; i < x; ++i) {

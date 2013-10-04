@@ -27,9 +27,11 @@ static void pen_blend(struct canvas *canvas, int x, int y,
 
 static void pen_plot(struct brush *brush, struct canvas *canvas,
                            int px, int py) {
-    /* z x z
+    /*
+     * z x z
      * x o x
-     * z x z */
+     * z x z
+     */
     uint8_t r = brush->color[0];
     uint8_t g = brush->color[1];
     uint8_t b = brush->color[2];

@@ -3,7 +3,9 @@
 
 #include "brush.h"
 
-/* Bresenham's line algorithm */
+/**
+ * Bresenham's line algorithm.
+ */
 void brush_drawline(struct brush *brush, struct canvas *canvas,
                     int x0, int y0, int x1, int y1) {
 #define int_swap(x, y) do {     \

@@ -13,14 +13,18 @@ struct ui;
 
 typedef void (ui_on_update_t)(struct ui *, struct input_manager *, double);
 
-/* Callback function called when ui is drawing.
+/**
+ * Callback function called when ui is drawing.
  *
- * NOTE: the OpenGL's viewport has set to the ui's area.  */
+ * NOTE: the OpenGL's viewport has set to the ui's area.
+ */
 typedef void (ui_on_render_t)(struct ui *, struct renderer2d *);
 
-/* Callback function called when user press in the ui's area.
+/**
+ * Callback function called when user press in the ui's area.
  *
- * (x, y) is the pressed point which is in the ui's coordinate.  */
+ * (x, y) is the pressed point which is in the ui's coordinate.
+ */
 typedef void (ui_on_press_t)(struct ui *ui, int n, int x[n], int y[n]);
 
 typedef void (ui_on_release_t)(struct ui *ui);
@@ -76,8 +80,10 @@ void ui_manager_update(struct ui_manager *uim, double dt);
 
 void ui_manager_render(struct ui_manager *uim);
 
-/* (x, y) is the position of the ui's upper-left corner which is in the
- * screen coordinate. */
+/**
+ * (x, y) is the position of the ui's upper-left corner which is in the
+ * screen coordinate.
+ */
 void ui_manager_push(struct ui_manager *uim, int x, int y, struct ui *ui);
 
 

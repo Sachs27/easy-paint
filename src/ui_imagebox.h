@@ -13,8 +13,10 @@ struct ui_imagebox {
 };
 
 
-/* w and h specify the width and height of the image box. If w (or h) is equal
- * to zero, then w (or h) is assign to the image's width (or height).  */
+/**
+ * w and h specify the width and height of the image box. If w (or h) is equal
+ * to zero, then w (or h) is assign to the image's width (or height).
+ */
 struct ui_imagebox *ui_imagebox_create(int w, int h, struct texture *img);
 
 inline static void ui_imagebox_set_image(struct ui_imagebox *ib,

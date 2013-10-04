@@ -21,15 +21,19 @@ static void ui_toolbox_on_render(struct ui_toolbox *tb,
 
 static void ui_toolbox_on_press(struct ui_toolbox *tb,
                                 int n, int x[n], int y[n]) {
-    /* Just ignore the press event. */
+    /*
+     * Just ignore the press event.
+     */
 }
 
 static void ui_toolbox_update_buttons(struct ui_toolbox *tb) {
     float xstep;
     float x;
 
-    /* 假设每个 buttons 的宽度相同，高度和 toolbox 一样。
-     * 后期改进可以使用权重来计算每个 button 的位置。  */
+    /*
+     * 假设每个 buttons 的宽度相同，高度和 toolbox 一样。
+     * 后期改进可以使用权重来计算每个 button 的位置。
+     */
     xstep = tb->ui.area.w * 1.0f / (tb->buttons->nelts + 1);
 
     x = xstep;

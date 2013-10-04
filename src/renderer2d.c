@@ -43,7 +43,9 @@ static void renderer2d_init(void) {
     isinited = 1;
 }
 
-/* Set the top one of the 'viewports' to the current viewport */
+/**
+ * Set the top one of the 'viewports' to the current viewport.
+ */
 static void renderer2d_set_viewport(struct renderer2d *r) {
     struct sf_rect *window = SF_ARRAY_HEAD(r->viewports);
     struct sf_rect *viewport = SF_ARRAY_TAIL(r->viewports);
