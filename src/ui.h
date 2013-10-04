@@ -5,15 +5,18 @@
 #include <sf_list.h>
 #include "sf_rect.h"
 
+#include "input_manager.h"
+#include "renderer2d.h"
+
 
 struct ui;
 
-typedef void (ui_on_update_t)(struct ui *, double);
+typedef void (ui_on_update_t)(struct ui *, struct input_manager *, double);
 
 /* Callback function called when ui is drawing.
  *
  * NOTE: the OpenGL's viewport has set to the ui's area.  */
-typedef void (ui_on_render_t)(struct ui *);
+typedef void (ui_on_render_t)(struct ui *, struct renderer2d *);
 
 /* Callback function called when user press in the ui's area.
  *
@@ -56,13 +59,18 @@ inline static void ui_on_release(struct ui *ui, ui_on_release_t *release_cb) {
 
 
 struct ui_manager {
-    struct sf_list *uis;        /* elt: (struct ui *) */
-    int             ispressed;  /* only one ui can be pressed at one time  */
-    struct ui      *ui_pressed;
+    struct input_manager   *im;
+    struct renderer2d      *renderer2d;
+
+    struct sf_list     *uis;        /* elt: (struct ui *) */
+    int                 ispressed;  /* only one ui can be pressed
+                                     * at one time.  */
+    struct ui          *ui_pressed;
 };
 
 
-struct ui_manager *ui_manager_create(void);
+struct ui_manager *ui_manager_create(struct input_manager *im,
+                                     struct renderer2d *r);
 
 void ui_manager_update(struct ui_manager *uim, double dt);
 

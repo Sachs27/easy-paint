@@ -100,6 +100,7 @@ struct brush *brush_pencil_create(void) {
     pencil = malloc(sizeof(*pencil));
     pencil->plot = pencil_plot;
     brush_set_color(pencil, 0, 0, 0, 64);
+    brush_set_icon(pencil, texture_load_2d("res/icons/pencil.png"));
 
     return pencil;
 }

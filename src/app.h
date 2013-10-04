@@ -19,12 +19,6 @@ struct app {
     struct input_manager   *im;
     struct ui_manager      *uim;
     struct canvas          *canvas;
-    struct brush           *cur_brush;
-
-
-    void (*init_cb)(void);
-    void (*update_cb)(double dt);
-    void (*render_cb)(void);
 };
 
 extern struct app g_app;

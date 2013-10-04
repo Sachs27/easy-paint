@@ -11,6 +11,8 @@
 struct canvas;
 
 struct brush {
+    struct texture *icon;
+
     uint8_t color[4];
 
     /* each brush has it's own plot function to generate different shape */
@@ -22,6 +24,8 @@ struct brush {
  * the canvas' coordinate.  */
 void brush_drawline(struct brush *brush, struct canvas *canvas,
                     int x0, int y0, int x1, int y1);
+
+void brush_set_icon(struct brush *brush, struct texture *icon);
 
 void brush_set_color(struct brush *brush,
                      uint8_t r, uint8_t g, uint8_t b, uint8_t a);

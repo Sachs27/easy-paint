@@ -3,14 +3,11 @@
 #include <string.h>
 #include <math.h>
 #include <inttypes.h>
-#include <GL/glew.h>
 #include <sf_utils.h>
 #include <sf_array.h>
 #include <sf_debug.h>
 
-#include "app.h"
 #include "canvas.h"
-#include "load_shaders.h"
 
 
 #define CANVAS_RECORD_NALLOC 2048
@@ -41,9 +38,9 @@ struct canvas_tile {
 static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
     ct->texture = texture_create_2d(CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
     /* clear the texture's content */
-    renderer2d_set_render_target(g_app.renderer2d, ct->texture);
-    renderer2d_clear(g_app.renderer2d, 0, 0, 0, 0);
-    renderer2d_set_render_target(g_app.renderer2d, NULL);
+    /*renderer2d_set_render_target(g_app.renderer2d, ct->texture);*/
+    /*renderer2d_clear(g_app.renderer2d, 0, 0, 0, 0);*/
+    /*renderer2d_set_render_target(g_app.renderer2d, NULL);*/
 
     ct->area.x = x;
     ct->area.y = y;
@@ -183,30 +180,29 @@ static void canvas_record(struct canvas *canvas, int x, int y,
                   &record);
 }
 
-static void canvas_on_update(struct canvas *canvas, double dt) {
+static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
+                             double dt) {
     int mx, my;
 
-    canvas_screen_to_canvas(canvas, g_app.im->mouse.x,
-                            g_app.im->mouse.y, &mx, &my);
+    canvas_screen_to_canvas(canvas, im->mouse.x, im->mouse.y, &mx, &my);
 
-    if (canvas->isrecording) {
+    if (canvas->cur_brush && canvas->isrecording) {
         if (sf_rect_iscontain(&canvas->viewport, mx, my)
             && (mx != canvas->lastx || my != canvas->lasty)) {
-            brush_drawline(g_app.cur_brush, canvas,
+            brush_drawline(canvas->cur_brush, canvas,
                            canvas->lastx, canvas->lasty, mx, my);
         }
 
         canvas->lastx = mx;
         canvas->lasty = my;
     }
-
 }
 
-static void canvas_on_render(struct canvas *canvas) {
+static void canvas_on_render(struct canvas *canvas,
+                             struct renderer2d *renderer2d) {
     float scale = canvas->viewport.w * 1.0 / canvas->ui.area.w;
     /* draw background */
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    renderer2d_clear(renderer2d, 255, 255, 255, 0);
     /* draw pixels */
     SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
         int x0, y0, x1, y1, x2, y2, x3, y3;
@@ -247,7 +243,7 @@ static void canvas_on_render(struct canvas *canvas) {
         CLAMP(x3, 0, ct->texture->w);
         CLAMP(y3, 0, ct->texture->h);
 #undef CLAMP
-        renderer2d_draw_texture(g_app.renderer2d,
+        renderer2d_draw_texture(renderer2d,
                                 x0, y0, x1 - x0, y1 - y0,
                                 ct->texture,
                                 x2, y2, x3 - x2, y3 - y2);
@@ -271,7 +267,7 @@ static void canvas_on_release(struct canvas *canvas) {
 }
 
 
-struct canvas *canvas_create(struct texture *background, int w, int h) {
+struct canvas *canvas_create(int w, int h) {
     struct canvas *canvas;
 
     canvas = malloc(sizeof(*canvas));
@@ -282,7 +278,7 @@ struct canvas *canvas_create(struct texture *background, int w, int h) {
     ui_on_press(&canvas->ui, (ui_on_press_t *) canvas_on_press);
     ui_on_release(&canvas->ui, (ui_on_release_t *) canvas_on_release);
 
-    canvas->background = background;
+    canvas->background = NULL;
     canvas->viewport.x = 0;
     canvas->viewport.y = 0;
     canvas->viewport.w = w;
@@ -296,6 +292,16 @@ struct canvas *canvas_create(struct texture *background, int w, int h) {
                                        SF_ARRAY_NALLOC);
 
     return canvas;
+}
+
+void canvas_resize(struct canvas *canvas, int w, int h) {
+    float scale = ((float) canvas->viewport.w) / canvas->ui.area.w;
+
+    canvas->ui.area.w = w;
+    canvas->ui.area.h = h;
+
+    canvas->viewport.w = scale * canvas->ui.area.w;
+    canvas->viewport.h = scale * canvas->ui.area.h;
 }
 
 void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,

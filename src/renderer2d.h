@@ -10,7 +10,6 @@
 
 
 struct renderer2d {
-    int                 isrendering;
     int                 w;
     int                 h;
 

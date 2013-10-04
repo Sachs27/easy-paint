@@ -29,12 +29,14 @@ struct canvas {
     int                 isrecording;
     int                 cur_segment;
     struct sf_array    *segments;       /* elt: (struct sf_array *) */
+
+    struct brush       *cur_brush;
 };
 
 
-struct canvas *canvas_create(struct texture *background, int w, int h);
+struct canvas *canvas_create(int w, int h);
 
-void canvas_draw(struct canvas *canvas);
+void canvas_resize(struct canvas *canvas, int w, int h);
 
 /* Convert point (x, y) from screen's coordinate to canvas' coordinate.  */
 void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,

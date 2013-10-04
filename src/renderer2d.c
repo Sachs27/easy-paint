@@ -66,7 +66,6 @@ struct renderer2d *renderer2d_create(int w, int h) {
         renderer2d_init();
     }
     r = malloc(sizeof(*r));
-    r->isrendering = 0;
     r->w = w;
     r->h = h;
     r->viewports = sf_array_create(sizeof(struct sf_rect), SF_ARRAY_NALLOC);

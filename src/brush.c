@@ -60,6 +60,10 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
 #undef int_swap
 }
 
+void brush_set_icon(struct brush *brush, struct texture *icon) {
+    brush->icon = icon;
+}
+
 void brush_set_color(struct brush *brush,
                      uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     brush->color[0] = r;

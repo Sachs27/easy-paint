@@ -85,6 +85,7 @@ struct brush *brush_eraser_create(void) {
     eraser = malloc(sizeof(*eraser));
     eraser->plot = eraser_plot;
     brush_set_color(eraser, 0, 0, 0, 255);
+    brush_set_icon(eraser, texture_load_2d("res/icons/eraser.png"));
 
     return eraser;
 }

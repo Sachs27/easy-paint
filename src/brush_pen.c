@@ -55,6 +55,7 @@ struct brush *brush_pen_create(void) {
     pen = malloc(sizeof(*pen));
     pen->plot = pen_plot;
     brush_set_color(pen, 0, 0, 0, 255);
+    brush_set_icon(pen, texture_load_2d("res/icons/pen.png"));
 
     return pen;
 }

@@ -8,11 +8,18 @@
 static struct sf_list *windows = NULL;
 
 static void on_window_size(GLFWwindow *handle, int w, int h) {
+    if (w == 0 || h == 0) {
+        return;
+    }
+
     SF_LIST_BEGIN(windows, struct window *, pwin);
         struct window *win = *pwin;
         if (win->handle == handle) {
             win->w = w;
             win->h = h;
+            if (win->on_resize) {
+                win->on_resize(win, w, h);
+            }
             break;
         }
     SF_LIST_END();
