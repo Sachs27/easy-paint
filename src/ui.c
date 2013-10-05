@@ -4,6 +4,7 @@
 
 
 void ui_init(struct ui *ui, int w, int h) {
+    ui->state = UI_STATE_SHOW;
     ui->area.x = 0;
     ui->area.y = 0;
     ui->area.w = w;
@@ -38,7 +39,7 @@ void ui_manager_update(struct ui_manager *uim, double dt) {
             /* retrieve the list in reverser order */
             struct ui *ui = *pui;
 
-            if (ui->on_press
+            if (ui->on_press && ui->state == UI_STATE_SHOW
                 && sf_rect_iscontain(&ui->area, uim->im->mouse.x,
                                                 uim->im->mouse.y)) {
                 int x = uim->im->mouse.x - ui->area.x;
@@ -74,7 +75,7 @@ void ui_manager_render(struct ui_manager *uim) {
     SF_LIST_BEGIN(uim->uis, struct ui *, pui);
         struct ui *ui = *pui;
 
-        if (ui->on_render == NULL) {
+        if (ui->on_render == NULL || ui->state == UI_STATE_HIDE) {
             continue;
         }
 

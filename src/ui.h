@@ -30,7 +30,13 @@ typedef void (ui_on_press_t)(struct ui *ui, int n, int x[n], int y[n]);
 typedef void (ui_on_release_t)(struct ui *ui);
 
 
+enum ui_state {
+    UI_STATE_HIDE,
+    UI_STATE_SHOW,
+};
+
 struct ui {
+    enum ui_state       state;
     struct sf_rect      area;
 
     ui_on_update_t     *on_update;
@@ -41,6 +47,14 @@ struct ui {
 
 
 void ui_init(struct ui *ui, int w, int h);
+
+inline static void ui_show(struct ui *ui) {
+    ui->state = UI_STATE_SHOW;
+}
+
+inline static void ui_hide(struct ui *ui) {
+    ui->state = UI_STATE_HIDE;
+}
 
 inline static void ui_on_update(struct ui *ui, ui_on_update_t *update_cb) {
     ui->on_update = update_cb;

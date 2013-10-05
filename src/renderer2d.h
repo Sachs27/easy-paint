@@ -52,6 +52,13 @@ void renderer2d_draw_texture(struct renderer2d *r,
                              struct texture *texture,
                              int sx, int sy, int sw, int sh);
 
+void renderer2d_draw_texture_with_color(struct renderer2d *renderer,
+                                        int dx, int dy, int dw, int dh,
+                                        struct texture *texture,
+                                        int sx, int sy, int sw, int sh,
+                                        uint8_t r, uint8_t g, uint8_t b);
+
+
 /**
  * Specify the viewport which is in the screen coordinate,
  * the y axis is from top to bottom.

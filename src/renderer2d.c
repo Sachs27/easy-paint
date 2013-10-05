@@ -146,10 +146,10 @@ void renderer2d_draw_line(struct renderer2d *renderer, float width,
     glUseProgram(0);
 }
 
-void renderer2d_draw_texture(struct renderer2d *r,
-                             int dx, int dy, int dw, int dh,
-                             struct texture *texture,
-                             int sx, int sy, int sw, int sh) {
+static void renderer2d_draw_texture_inner(struct renderer2d *r,
+                                          int dx, int dy, int dw, int dh,
+                                          struct texture *texture,
+                                          int sx, int sy, int sw, int sh) {
     struct sf_rect *viewport;
     struct vec2 vposition[4];
     struct vec2 vtexcoord[4];
@@ -190,8 +190,6 @@ void renderer2d_draw_texture(struct renderer2d *r,
     vtexcoord[3].x = vtexcoord[2].x;
     vtexcoord[3].y = vtexcoord[0].y;
 
-    glUseProgram(renderer2d_texture_prog);
-
     glBindBuffer(GL_ARRAY_BUFFER, renderer2d_vbo);
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vposition), vposition);
@@ -218,8 +216,41 @@ void renderer2d_draw_texture(struct renderer2d *r,
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void renderer2d_draw_texture(struct renderer2d *r,
+                             int dx, int dy, int dw, int dh,
+                             struct texture *texture,
+                             int sx, int sy, int sw, int sh) {
+    glUseProgram(renderer2d_texture_prog);
+
+    glUniform1i(glGetUniformLocation(renderer2d_texture_prog, "iscoloring"),
+                                     0);
+
+    renderer2d_draw_texture_inner(r, dx, dy, dw, dh, texture, sx, sy, sw, sh);
+
     glUseProgram(0);
 }
+
+void renderer2d_draw_texture_with_color(struct renderer2d *renderer,
+                                        int dx, int dy, int dw, int dh,
+                                        struct texture *texture,
+                                        int sx, int sy, int sw, int sh,
+                                        uint8_t r, uint8_t g, uint8_t b) {
+    glUseProgram(renderer2d_texture_prog);
+
+    glUniform1i(glGetUniformLocation(renderer2d_texture_prog, "iscoloring"),
+                                     1);
+
+    glUniform3f(glGetUniformLocation(renderer2d_texture_prog, "color"),
+                r / 255.0f, g / 255.0f, b / 255.0f);
+
+    renderer2d_draw_texture_inner(renderer, dx, dy, dw, dh,
+                                  texture, sx, sy, sw, sh);
+
+    glUseProgram(0);
+}
+
 
 void renderer2d_push_viewport(struct renderer2d *r,
                               int x, int y, int w, int h) {

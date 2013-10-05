@@ -24,9 +24,30 @@ static struct ui_imagebox *undo;
 static struct ui_imagebox *brushbox;
 static struct ui_imagebox *redo;
 
+
+static void undo_on_render(struct ui_imagebox *undo, struct renderer2d *r) {
+    if (canvas_record_canundo(g_app.canvas)) {
+        renderer2d_draw_texture(r, 0, 0, 0, 0, undo->image, 0, 0, 0, 0);
+    } else {
+        renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
+                                           undo->image, 0, 0, 0, 0,
+                                           128, 128, 128);
+    }
+}
+
 static void undo_on_press(struct ui_imagebox *undo,
                           int n, int x[n], int y[n]) {
     canvas_record_undo(g_app.canvas);
+}
+
+static void redo_on_render(struct ui_imagebox *redo, struct renderer2d *r) {
+    if (canvas_record_canredo(g_app.canvas)) {
+        renderer2d_draw_texture(r, 0, 0, 0, 0, redo->image, 0, 0, 0, 0);
+    } else {
+        renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
+                                           redo->image, 0, 0, 0, 0,
+                                           128, 128, 128);
+    }
 }
 
 static void redo_on_press(struct ui_imagebox *redo,
@@ -52,9 +73,11 @@ static void init(void) {
 
     undo = ui_imagebox_create(0, 0, texture_load_2d("res/icons/undo.png"));
     ui_on_press((struct ui *) undo, (ui_on_press_t *) undo_on_press);
+    ui_on_render((struct ui *) undo, (ui_on_render_t *) undo_on_render);
     brushbox = ui_imagebox_create(0, 0, g_app.canvas->cur_brush->icon);
     redo = ui_imagebox_create(0, 0, texture_load_2d("res/icons/redo.png"));
     ui_on_press((struct ui *) redo, (ui_on_press_t *) redo_on_press);
+    ui_on_render((struct ui *) redo, (ui_on_render_t *) redo_on_render);
 
     ui_toolbox_add_button(toolbox, (struct ui *) undo);
     ui_toolbox_add_button(toolbox, (struct ui *) brushbox);
