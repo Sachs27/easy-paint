@@ -71,9 +71,8 @@ struct renderer2d *renderer2d_create(int w, int h) {
     r->w = w;
     r->h = h;
     r->viewports = sf_array_create(sizeof(struct sf_rect), SF_ARRAY_NALLOC);
-    renderer2d_set_render_target(r, NULL);
-
     renderer2d_push_viewport(r, 0, 0, w, h);
+    renderer2d_set_render_target(r, NULL);
 
     return r;
 }
