@@ -5,9 +5,6 @@
 #include <sf_debug.h>
 
 #include "app.h"
-#include "brush.h"
-#include "ui_toolbox.h"
-#include "ui_imagebox.h"
 
 struct app g_app;
 
@@ -15,89 +12,16 @@ static char *WINDOW_TITLE = "Easy Paint";
 static int WINDOW_WIDTH = 360;
 static int WINDOW_HEIGHT = 600;
 
-static struct brush *pencil;
-static struct brush *pen;
-static struct brush *eraser;
-
-static struct ui_toolbox  *toolbox;
-static struct ui_imagebox *undo;
-static struct ui_imagebox *brushbox;
-static struct ui_imagebox *redo;
-
-
-static void undo_on_render(struct ui_imagebox *undo, struct renderer2d *r) {
-    if (canvas_record_canundo(g_app.canvas)) {
-        renderer2d_draw_texture(r, 0, 0, 0, 0, undo->image, 0, 0, 0, 0);
-    } else {
-        renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
-                                           undo->image, 0, 0, 0, 0,
-                                           128, 128, 128);
-    }
-}
-
-static void undo_on_press(struct ui_imagebox *undo,
-                          int n, int x[n], int y[n]) {
-    canvas_record_undo(g_app.canvas);
-}
-
-static void redo_on_render(struct ui_imagebox *redo, struct renderer2d *r) {
-    if (canvas_record_canredo(g_app.canvas)) {
-        renderer2d_draw_texture(r, 0, 0, 0, 0, redo->image, 0, 0, 0, 0);
-    } else {
-        renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
-                                           redo->image, 0, 0, 0, 0,
-                                           128, 128, 128);
-    }
-}
-
-static void redo_on_press(struct ui_imagebox *redo,
-                          int n, int x[n], int y[n]) {
-    canvas_record_redo(g_app.canvas);
-}
 
 static void init(void) {
-    g_app.canvas = canvas_create(g_app.window->w, g_app.window->h - 48);
-    ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.canvas);
-
-    pencil = brush_pencil_create();
-    pen = brush_pen_create();
-    eraser = brush_eraser_create();
-
-    g_app.canvas->cur_brush = pencil;
-
-    toolbox = ui_toolbox_create(g_app.canvas->ui.area.w, 48,
-                                200, 200, 200, 200);
-    ui_manager_push(g_app.uim, g_app.canvas->ui.area.x,
-                    g_app.canvas->ui.area.y + g_app.canvas->ui.area.h,
-                    (struct ui *) toolbox);
-
-    undo = ui_imagebox_create(0, 0, texture_load_2d("res/icons/undo.png"));
-    ui_on_press((struct ui *) undo, (ui_on_press_t *) undo_on_press);
-    ui_on_render((struct ui *) undo, (ui_on_render_t *) undo_on_render);
-    brushbox = ui_imagebox_create(0, 0, g_app.canvas->cur_brush->icon);
-    redo = ui_imagebox_create(0, 0, texture_load_2d("res/icons/redo.png"));
-    ui_on_press((struct ui *) redo, (ui_on_press_t *) redo_on_press);
-    ui_on_render((struct ui *) redo, (ui_on_render_t *) redo_on_render);
-
-    ui_toolbox_add_button(toolbox, (struct ui *) undo);
-    ui_toolbox_add_button(toolbox, (struct ui *) brushbox);
-    ui_toolbox_add_button(toolbox, (struct ui *) redo);
+    g_app.upp = user_paint_panel_create(g_app.window->w, g_app.window->h);
+    ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.upp);
 }
 
 static void resize(struct window *win, int w, int h) {
-    renderer2d_resize(g_app.renderer2d,
-                      g_app.window->w, g_app.window->h);
+    renderer2d_resize(g_app.renderer2d, w, h);
 
-    canvas_resize(g_app.canvas, w, h - 48);
-
-#define TOOLBOX_MIN_WIDTH 288
-    if (w < TOOLBOX_MIN_WIDTH) {
-        ui_toolbox_resize(toolbox, TOOLBOX_MIN_WIDTH, toolbox->ui.area.h);
-    } else {
-        ui_toolbox_resize(toolbox, w, toolbox->ui.area.h);
-    }
-    ui_toolbox_move(toolbox, g_app.canvas->ui.area.x,
-                   g_app.canvas->ui.area.y + g_app.canvas->ui.area.h);
+    user_paint_panel_resize(g_app.upp, w, h);
 }
 
 #if 0
@@ -139,7 +63,7 @@ static void handle_mouse_button_right(void) {
 
     if (g_app.im->keys[KEY_MB_RIGHT] == KEY_REPEAT
         && (g_app.im->mouse.x != lastx || g_app.im->mouse.y != lasty)) {
-        canvas_offset(g_app.canvas, lastx - g_app.im->mouse.x,
+        canvas_offset(g_app.upp->canvas, lastx - g_app.im->mouse.x,
                       lasty - g_app.im->mouse.y);
         lastx = g_app.im->mouse.x;
         lasty = g_app.im->mouse.y;
@@ -148,12 +72,9 @@ static void handle_mouse_button_right(void) {
 }
 
 static void update(double dt) {
-    if (g_app.canvas->ui.area.w != g_app.window->w
-        || g_app.canvas->ui.area.h != g_app.window->h) {
-    }
     /*handle_mouse_button_left();*/
     handle_mouse_button_right();
-
+#if 0
     if (g_app.im->keys[KEY_1] == KEY_PRESS) {
         g_app.canvas->cur_brush = pencil;
     } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
@@ -161,7 +82,6 @@ static void update(double dt) {
     } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
         g_app.canvas->cur_brush = eraser;
     }
-
     if (g_app.im->keys[KEY_UP] == KEY_PRESS) {
         int x, y;
         canvas_screen_to_canvas(g_app.canvas, g_app.im->mouse.x,
@@ -173,9 +93,10 @@ static void update(double dt) {
                                 g_app.im->mouse.y, &x, &y);
         canvas_zoom_out(g_app.canvas, x, y);
     }
+#endif
 
-    ui_imagebox_set_image(brushbox, g_app.canvas->cur_brush->icon);
-    ui_manager_update(g_app.uim, dt);
+    /*ui_imagebox_set_image(brushbox, g_app.canvas->cur_brush->icon);*/
+    ui_manager_update(g_app.uim, g_app.im, dt);
 }
 
 static void render(void) {
@@ -191,7 +112,7 @@ static void render(void) {
         ticks = sf_get_ticks();
     }
 
-    ui_manager_render(g_app.uim);
+    ui_manager_render(g_app.uim, g_app.renderer2d);
 
     /*renderer2d_draw_texture(g_app.renderer2d, 100, 0, tex->w, tex->h, tex, 0, 0, 0, 0);*/
 
@@ -240,7 +161,7 @@ static int app_init(int argc, char *argv[]) {
 
     g_app.im = input_manager_create(g_app.window);
     g_app.renderer2d = renderer2d_create(g_app.window->w, g_app.window->h);
-    g_app.uim = ui_manager_create(g_app.im, g_app.renderer2d);
+    g_app.uim = ui_manager_create();
 
     init();
 

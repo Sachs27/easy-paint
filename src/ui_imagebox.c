@@ -5,7 +5,9 @@
 
 static void ui_imagebox_on_render(struct ui_imagebox *ib,
                                   struct renderer2d *r) {
-    renderer2d_draw_texture(r, 0, 0, 0, 0, ib->image, 0, 0, 0, 0);
+    if (ib->image) {
+        renderer2d_draw_texture(r, 0, 0, 0, 0, ib->image, 0, 0, 0, 0);
+    }
 }
 
 
@@ -20,8 +22,9 @@ struct ui_imagebox *ui_imagebox_create(int w, int h, struct texture *img) {
         h = img->h;
     }
     ui_init(&ib->ui, w, h);
-    ui_on_render(&ib->ui, (ui_on_render_t *) ui_imagebox_on_render);
     ib->image = img;
+
+    UI_CALLBACK(ib, render, ui_imagebox_on_render);
 
     return ib;
 }

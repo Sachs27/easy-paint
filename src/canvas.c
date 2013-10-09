@@ -271,12 +271,7 @@ struct canvas *canvas_create(int w, int h) {
 
     canvas = malloc(sizeof(*canvas));
     assert(canvas != NULL);
-    ui_init(&canvas->ui, w, h);
-    ui_on_update(&canvas->ui, (ui_on_update_t *) canvas_on_update);
-    ui_on_render(&canvas->ui, (ui_on_render_t *) canvas_on_render);
-    ui_on_press(&canvas->ui, (ui_on_press_t *) canvas_on_press);
-    ui_on_release(&canvas->ui, (ui_on_release_t *) canvas_on_release);
-
+    ui_init((struct ui *) canvas, w, h);
     canvas->background = NULL;
     canvas->viewport.x = 0;
     canvas->viewport.y = 0;
@@ -289,6 +284,11 @@ struct canvas *canvas_create(int w, int h) {
     canvas->cur_segment = -1;
     canvas->segments = sf_array_create(sizeof(struct sf_array *),
                                        SF_ARRAY_NALLOC);
+
+    UI_CALLBACK(canvas, update, canvas_on_update);
+    UI_CALLBACK(canvas, render, canvas_on_render);
+    UI_CALLBACK(canvas, press, canvas_on_press);
+    UI_CALLBACK(canvas, release, canvas_on_release);
 
     return canvas;
 }

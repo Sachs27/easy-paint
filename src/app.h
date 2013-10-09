@@ -7,18 +7,19 @@
 
 #include "sf.h"
 #include "window.h"
+#include "renderer2d.h"
 #include "input_manager.h"
 #include "ui.h"
-#include "canvas.h"
-#include "renderer2d.h"
+#include "user_paint_panel.h"
 
 
 struct app {
-    struct window          *window;
-    struct renderer2d      *renderer2d;
-    struct input_manager   *im;
-    struct ui_manager      *uim;
-    struct canvas          *canvas;
+    struct window              *window;
+    struct renderer2d          *renderer2d;
+    struct input_manager       *im;
+    struct ui_manager          *uim;
+
+    struct user_paint_panel    *upp;
 };
 
 extern struct app g_app;

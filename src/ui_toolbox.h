@@ -12,12 +12,17 @@ struct ui_toolbox {
                                      * the first element of the struct  */
     uint8_t             background_color[4];
     struct sf_list     *buttons;    /* elt: (struct ui *) */
+    int                 ispushed;
 };
 
 
 struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
                                      uint8_t b, uint8_t a);
 
+/**
+ *  Add a button to the toolbox, this is valid only __before__ pushing the
+ *  toolbox to ui manager.
+ */
 void ui_toolbox_add_button(struct ui_toolbox *tb, struct ui *ui);
 
 void ui_toolbox_resize(struct ui_toolbox *tb, int w, int h);

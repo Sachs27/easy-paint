@@ -1,31 +1,27 @@
+#include <string.h>
 #include <stdlib.h>
 
 #include "ui.h"
 
 
 void ui_init(struct ui *ui, int w, int h) {
+    memset(ui, 0, sizeof(*ui));
+
     ui->state = UI_STATE_SHOW;
     ui->area.x = 0;
     ui->area.y = 0;
     ui->area.w = w;
     ui->area.h = h;
-
-    ui->on_update = NULL;
-    ui->on_render = NULL;
-    ui->on_press = NULL;
-    ui->on_release = NULL;
 }
 
 
 /* ======================================================================= */
 
-struct ui_manager *ui_manager_create(struct input_manager *im,
-                                     struct renderer2d *r) {
+
+struct ui_manager *ui_manager_create(void) {
     struct ui_manager *uim;
 
     uim = malloc(sizeof(*uim));
-    uim->im = im;
-    uim->renderer2d = r;
     uim->uis = sf_list_create(sizeof(struct ui *));
     uim->ispressed = 0;
     uim->ui_pressed = NULL;
@@ -33,17 +29,17 @@ struct ui_manager *ui_manager_create(struct input_manager *im,
     return uim;
 }
 
-void ui_manager_update(struct ui_manager *uim, double dt) {
-    if (!uim->ispressed && uim->im->keys[KEY_MB_LEFT] == KEY_PRESS) {
+void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
+                       double dt) {
+    if (!uim->ispressed && im->keys[KEY_MB_LEFT] == KEY_PRESS) {
         SF_LIST_BEGIN_R(uim->uis, struct ui *, pui);
             /* retrieve the list in reverser order */
             struct ui *ui = *pui;
 
             if (ui->on_press && ui->state == UI_STATE_SHOW
-                && sf_rect_iscontain(&ui->area, uim->im->mouse.x,
-                                                uim->im->mouse.y)) {
-                int x = uim->im->mouse.x - ui->area.x;
-                int y = uim->im->mouse.y - ui->area.y;
+                && sf_rect_iscontain(&ui->area, im->mouse.x, im->mouse.y)) {
+                int x = im->mouse.x - ui->area.x;
+                int y = im->mouse.y - ui->area.y;
 
                 uim->ispressed = 1;
                 uim->ui_pressed = ui;
@@ -52,7 +48,7 @@ void ui_manager_update(struct ui_manager *uim, double dt) {
                 break;
             }
         SF_LIST_END();
-    } else if (uim->im->keys[KEY_MB_LEFT] == KEY_RELEASE) {
+    } else if (im->keys[KEY_MB_LEFT] == KEY_RELEASE) {
         if (uim->ispressed) {
             if (uim->ui_pressed->on_release) {
                 uim->ui_pressed->on_release(uim->ui_pressed);
@@ -66,12 +62,12 @@ void ui_manager_update(struct ui_manager *uim, double dt) {
         struct ui *ui = *pui;
 
         if (ui->on_update) {
-            ui->on_update(ui, uim->im, dt);
+            ui->on_update(ui, im, dt);
         }
     SF_LIST_END();
 }
 
-void ui_manager_render(struct ui_manager *uim) {
+void ui_manager_render(struct ui_manager *uim, struct renderer2d *r) {
     SF_LIST_BEGIN(uim->uis, struct ui *, pui);
         struct ui *ui = *pui;
 
@@ -79,11 +75,11 @@ void ui_manager_render(struct ui_manager *uim) {
             continue;
         }
 
-        renderer2d_push_viewport(uim->renderer2d, ui->area.x, ui->area.y,
-                                 ui->area.w, ui->area.h);
-        ui->on_render(ui, uim->renderer2d);
+        renderer2d_push_viewport(r, ui->area.x, ui->area.y,
+                                    ui->area.w, ui->area.h);
+        ui->on_render(ui, r);
 
-        renderer2d_pop_viewport(uim->renderer2d);
+        renderer2d_pop_viewport(r);
 
     SF_LIST_END();
 }
@@ -92,4 +88,7 @@ void ui_manager_push(struct ui_manager *uim, int x, int y, struct ui *ui) {
     ui->area.x = x;
     ui->area.y = y;
     sf_list_push(uim->uis, &ui);
+    if (ui->on_push) {
+        ui->on_push(ui, uim, x, y);
+    }
 }

@@ -1,6 +1,5 @@
 #include <stdlib.h>
 
-#include "app.h"
 #include "ui_toolbox.h"
 
 
@@ -24,6 +23,15 @@ static void ui_toolbox_on_press(struct ui_toolbox *tb,
     /*
      * Just ignore the press event.
      */
+}
+
+static void ui_toolbox_on_push(struct ui_toolbox *tb, struct ui_manager *uim,
+                               int x, int y) {
+    SF_LIST_BEGIN(tb->buttons, struct ui *, pui);
+        struct ui *button = *pui;
+        ui_manager_push(uim, x + button->area.x, y, button);
+    SF_LIST_END();
+    tb->ispushed = 1;
 }
 
 static void ui_toolbox_update_buttons(struct ui_toolbox *tb) {
@@ -54,22 +62,27 @@ struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
     struct ui_toolbox *tb;
 
     tb = malloc(sizeof(*tb));
-    ui_init(&tb->ui, w, h);
-    ui_on_render(&tb->ui, (ui_on_render_t *) ui_toolbox_on_render);
-    ui_on_press(&tb->ui, (ui_on_press_t *) ui_toolbox_on_press);
+    ui_init((struct ui *)tb, w, h);
     tb->background_color[0] = r;
     tb->background_color[1] = g;
     tb->background_color[2] = b;
     tb->background_color[3] = a;
     tb->buttons = sf_list_create(sizeof(struct ui *));
+    tb->ispushed = 0;
+
+    UI_CALLBACK(tb, render, ui_toolbox_on_render);
+    UI_CALLBACK(tb, press, ui_toolbox_on_press);
+    UI_CALLBACK(tb, push, ui_toolbox_on_push);
 
     return tb;
 }
 
 void ui_toolbox_add_button(struct ui_toolbox *tb, struct ui *ui) {
-    sf_list_push(tb->buttons, &ui);
-    ui_manager_push(g_app.uim, 0, tb->ui.area.y, ui);
+    if (tb->ispushed) {
+        return;
+    }
 
+    sf_list_push(tb->buttons, &ui);
     ui_toolbox_update_buttons(tb);
 }
 
@@ -86,4 +99,3 @@ void ui_toolbox_move(struct ui_toolbox *tb, int x, int y) {
 
     ui_toolbox_update_buttons(tb);
 }
-

@@ -10,6 +10,7 @@
 
 
 struct ui;
+struct ui_manager;
 
 typedef void (ui_on_update_t)(struct ui *, struct input_manager *, double);
 
@@ -29,6 +30,11 @@ typedef void (ui_on_press_t)(struct ui *ui, int n, int x[n], int y[n]);
 
 typedef void (ui_on_release_t)(struct ui *ui);
 
+/**
+ * Callback function called when the ui is pushing to the manager.
+ */
+typedef void (ui_on_push_t)(struct ui *ui, struct ui_manager *uim, int x, int y);
+
 
 enum ui_state {
     UI_STATE_HIDE,
@@ -39,10 +45,13 @@ struct ui {
     enum ui_state       state;
     struct sf_rect      area;
 
-    ui_on_update_t     *on_update;
-    ui_on_render_t     *on_render;
-    ui_on_press_t      *on_press;
-    ui_on_release_t    *on_release;
+#define UI_CB_DEC(e) ui_on_ ## e ## _t *on_ ## e
+    UI_CB_DEC(update);
+    UI_CB_DEC(render);
+    UI_CB_DEC(press);
+    UI_CB_DEC(release);
+    UI_CB_DEC(push);
+#undef UI_CB_DEC
 };
 
 
@@ -56,30 +65,29 @@ inline static void ui_hide(struct ui *ui) {
     ui->state = UI_STATE_HIDE;
 }
 
-inline static void ui_on_update(struct ui *ui, ui_on_update_t *update_cb) {
-    ui->on_update = update_cb;
-}
-
-inline static void ui_on_render(struct ui *ui, ui_on_render_t *render_cb) {
-    ui->on_render = render_cb;
-}
-
-inline static void ui_on_press(struct ui *ui, ui_on_press_t *press_cb) {
-    ui->on_press = press_cb;
-}
-
-inline static void ui_on_release(struct ui *ui, ui_on_release_t *release_cb) {
-    ui->on_release = release_cb;
-}
+/**
+ * Register callback function for the ui's event.
+ *
+ * Available event value are:
+ *    update
+ *    render
+ *    press
+ *    release
+ *    push
+ *
+ * @p pointer of the struct ui or it's child
+ * @e event the callback function will register for
+ * @func callback function
+ */
+#define UI_CALLBACK(p, e, func) do {                            \
+    ((struct ui *) (p))->on_ ## e = (ui_on_ ## e ## _t *) func; \
+} while (0)
 
 
 /* ======================================================================= */
 
 
 struct ui_manager {
-    struct input_manager   *im;
-    struct renderer2d      *renderer2d;
-
     struct sf_list     *uis;        /* elt: (struct ui *) */
     int                 ispressed;  /* only one ui can be pressed
                                      * at one time.  */
@@ -87,12 +95,12 @@ struct ui_manager {
 };
 
 
-struct ui_manager *ui_manager_create(struct input_manager *im,
-                                     struct renderer2d *r);
+struct ui_manager *ui_manager_create(void);
 
-void ui_manager_update(struct ui_manager *uim, double dt);
+void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
+                       double dt);
 
-void ui_manager_render(struct ui_manager *uim);
+void ui_manager_render(struct ui_manager *uim, struct renderer2d *r);
 
 /**
  * (x, y) is the position of the ui's upper-left corner which is in the
