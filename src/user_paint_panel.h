@@ -14,14 +14,16 @@ struct user_paint_panel {
     struct ui           ui;             /* inherit from ui, so this must be
                                          * the first element of the struct  */
     struct canvas      *canvas;
-
+    struct ui_toolbox  *brushbox;
     struct ui_toolbox  *toolbox;
     struct ui_imagebox *undo;
     struct ui_imagebox *redo;
     struct ui_imagebox *brush;
 
+    struct sf_array    *brushicons;     /* elt: (struct ui_imagebox *) */
     struct sf_array    *brushes;        /* elt: (struct brush) */
-    uint32_t            cur_brush_idx;
+
+    struct ui          *blank;          /* blank ui for place holding */
 };
 
 

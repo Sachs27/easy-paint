@@ -35,6 +35,9 @@ typedef void (ui_on_release_t)(struct ui *ui);
  */
 typedef void (ui_on_push_t)(struct ui *ui, struct ui_manager *uim, int x, int y);
 
+typedef void (ui_on_show_t)(struct ui *ui);
+
+typedef void (ui_on_hide_t)(struct ui *ui);
 
 enum ui_state {
     UI_STATE_HIDE,
@@ -51,6 +54,8 @@ struct ui {
     UI_CB_DEC(press);
     UI_CB_DEC(release);
     UI_CB_DEC(push);
+    UI_CB_DEC(show);
+    UI_CB_DEC(hide);
 #undef UI_CB_DEC
 };
 
@@ -59,10 +64,16 @@ void ui_init(struct ui *ui, int w, int h);
 
 inline static void ui_show(struct ui *ui) {
     ui->state = UI_STATE_SHOW;
+    if (ui->on_show) {
+        ui->on_show(ui);
+    }
 }
 
 inline static void ui_hide(struct ui *ui) {
     ui->state = UI_STATE_HIDE;
+    if (ui->on_hide) {
+        ui->on_hide(ui);
+    }
 }
 
 /**

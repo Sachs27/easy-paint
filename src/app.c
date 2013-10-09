@@ -24,35 +24,6 @@ static void resize(struct window *win, int w, int h) {
     user_paint_panel_resize(g_app.upp, w, h);
 }
 
-#if 0
-static void handle_mouse_button_left(void) {
-    static int lastx, lasty;
-
-    if (g_app.im->keys[KEY_MB_LEFT] == KEY_PRESS) {
-        lastx = g_app.im->mouse.x;
-        lasty = g_app.im->mouse.y;
-        canvas_record_begin(g_app.canvas);
-    } else if (g_app.im->keys[KEY_MB_LEFT] == KEY_RELEASE) {
-        canvas_record_end(g_app.canvas);
-    }
-
-    if (g_app.im->keys[KEY_MB_LEFT] == KEY_REPEAT
-        && (g_app.im->mouse.x != lastx || g_app.im->mouse.y != lasty)) {
-        if (sf_rect_iscontain(&g_app.canvas->ui.area,
-                              g_app.im->mouse.x, g_app.im->mouse.y)) {
-            int x0, y0, x1, y1;
-            canvas_screen_to_canvas(g_app.canvas, lastx, lasty, &x0, &y0);
-            canvas_screen_to_canvas(g_app.canvas, g_app.im->mouse.x,
-                                                  g_app.im->mouse.y,
-                                                  &x1, &y1);
-            brush_drawline(g_app.cur_brush, g_app.canvas, x0, y0, x1, y1);
-        }
-        lastx = g_app.im->mouse.x;
-        lasty = g_app.im->mouse.y;
-    }
-}
-#endif
-
 static void handle_mouse_button_right(void) {
     static int lastx, lasty;
 
@@ -72,16 +43,8 @@ static void handle_mouse_button_right(void) {
 }
 
 static void update(double dt) {
-    /*handle_mouse_button_left();*/
     handle_mouse_button_right();
 #if 0
-    if (g_app.im->keys[KEY_1] == KEY_PRESS) {
-        g_app.canvas->cur_brush = pencil;
-    } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
-        g_app.canvas->cur_brush = pen;
-    } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
-        g_app.canvas->cur_brush = eraser;
-    }
     if (g_app.im->keys[KEY_UP] == KEY_PRESS) {
         int x, y;
         canvas_screen_to_canvas(g_app.canvas, g_app.im->mouse.x,
@@ -94,8 +57,6 @@ static void update(double dt) {
         canvas_zoom_out(g_app.canvas, x, y);
     }
 #endif
-
-    /*ui_imagebox_set_image(brushbox, g_app.canvas->cur_brush->icon);*/
     ui_manager_update(g_app.uim, g_app.im, dt);
 }
 
@@ -114,17 +75,15 @@ static void render(void) {
 
     ui_manager_render(g_app.uim, g_app.renderer2d);
 
-    /*renderer2d_draw_texture(g_app.renderer2d, 100, 0, tex->w, tex->h, tex, 0, 0, 0, 0);*/
-
     totalticks += sf_get_ticks() - ticks;
     ++cnt;
 
-    if (elapse > 3E9) {
+    if (elapse > 4E9) {
         dprintf("render costs %"PRIu64" ns/frame.\n",
                 (uint64_t) (totalticks * 1.0f / cnt));
         cnt = 0;
         totalticks = 0;
-        elapse -= 3E9;
+        elapse -= 4E9;
     }
 }
 
