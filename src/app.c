@@ -44,6 +44,11 @@ static void handle_mouse_button_right(void) {
 
 static void update(double dt) {
     handle_mouse_button_right();
+    if (g_app.im->keys[KEY_1] == KEY_PRESS) {
+        canvas_record_save(g_app.upp->canvas, "record/tmp.record");
+    } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
+        canvas_record_load(g_app.upp->canvas, "record/tmp.record");
+    }
 #if 0
     if (g_app.im->keys[KEY_UP] == KEY_PRESS) {
         int x, y;

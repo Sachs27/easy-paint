@@ -30,7 +30,8 @@ struct canvas {
 
     int                 isrecording;
     int                 cur_segment;
-    struct sf_array    *segments;       /* elt: (struct sf_array *) */
+    struct sf_array    *segments;       /* elt: (struct sf_array *)
+                                         *       elt: (struct record) */
 
     struct brush       *cur_brush;
 };
@@ -73,6 +74,10 @@ void canvas_record_undo(struct canvas *canvas);
 int canvas_record_canredo(struct canvas *canvas);
 
 void canvas_record_redo(struct canvas *canvas);
+
+void canvas_record_save(struct canvas *canvas, const char *pathname);
+
+void canvas_record_load(struct canvas *canvas, const char *pathname);
 
 void canvas_zoom_in(struct canvas *canvas, int cx, int cy);
 

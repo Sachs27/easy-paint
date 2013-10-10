@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <math.h>
 #include <inttypes.h>
 #include <sf_utils.h>
@@ -48,6 +49,17 @@ static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
     ct->area.h = ct->texture->h;
     ct->isdirty = 0;
     ct->colors = calloc(ct->texture->w * ct->texture->h, 4 * sizeof(uint8_t));
+}
+
+static void canvas_tile_clear(struct canvas_tile *ct) {
+    memset(ct->colors, 0,
+           ct->texture->w * ct->texture->h * 4 * sizeof(uint8_t));
+
+    ct->isdirty = 1;
+    ct->dirty_rect.x = 0;
+    ct->dirty_rect.y = 0;
+    ct->dirty_rect.w = ct->texture->w;
+    ct->dirty_rect.h = ct->texture->h;
 }
 
 static void canvas_tile_plot(struct canvas_tile *ct, int x, int y,
@@ -181,11 +193,10 @@ static void canvas_record(struct canvas *canvas, int x, int y,
 
 static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
                              double dt) {
-    int mx, my;
-
-    canvas_screen_to_canvas(canvas, im->mouse.x, im->mouse.y, &mx, &my);
-
     if (canvas->cur_brush && canvas->isrecording) {
+        int mx, my;
+
+        canvas_screen_to_canvas(canvas, im->mouse.x, im->mouse.y, &mx, &my);
         if (sf_rect_iscontain(&canvas->viewport, mx, my)
             && (mx != canvas->lastx || my != canvas->lasty)) {
             brush_drawline(canvas->cur_brush, canvas,
@@ -406,8 +417,8 @@ void canvas_record_begin(struct canvas *canvas) {
     ++canvas->cur_segment;
 
     if (canvas->cur_segment >= canvas->segments->nelts) {
-         segment = sf_array_create(sizeof(struct record),
-                                   CANVAS_RECORD_NALLOC);
+        segment = sf_array_create(sizeof(struct record),
+                                  CANVAS_RECORD_NALLOC);
         sf_array_push(canvas->segments, &segment);
     } else {
         int i;
@@ -484,6 +495,67 @@ void canvas_record_redo(struct canvas *canvas) {
                     record->new_color[0], record->new_color[1],
                     record->new_color[2], record->new_color[3]);
     SF_ARRAY_END();
+}
+
+void canvas_record_save(struct canvas *canvas, const char *pathname) {
+    FILE *f;
+
+    f = fopen(pathname, "wb+");
+
+    fwrite(&canvas->segments->nelts, sizeof(canvas->segments->nelts), 1, f);
+    SF_ARRAY_BEGIN(canvas->segments, struct sf_array *, p);
+        struct sf_array *segment = *p;
+
+        if (segment->nelts == 0) {
+            continue;
+        }
+
+        fwrite(&segment->nelts, sizeof(segment->nelts), 1, f);
+
+        SF_ARRAY_BEGIN(*p, struct record, record);
+            fwrite(&record->position, sizeof(record->position), 1, f);
+            fwrite(record->new_color, sizeof(record->new_color), 1, f);
+        SF_ARRAY_END();
+    SF_ARRAY_END();
+    fclose(f);
+}
+
+void canvas_record_load(struct canvas *canvas, const char *pathname) {
+    FILE       *f;
+    uint32_t    nsegments, nrecords, i, j;
+
+    canvas->cur_segment = -1;
+    SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
+        canvas_tile_clear(ct);
+    SF_LIST_END();
+
+    f = fopen(pathname, "rb");
+
+    fread(&nsegments, sizeof(nsegments), 1, f);
+
+    for (i = 0; i < nsegments; ++i) {
+        canvas_record_begin(canvas);
+
+        fread(&nrecords, sizeof(nrecords), 1, f);
+
+        for (j = 0; j < nrecords; ++j) {
+            struct record record;
+
+            fread(&record.position, sizeof(record.position), 1, f);
+            fread(record.new_color, sizeof(record.new_color), 1, f);
+            canvas_plot(canvas, record.position.x, record.position.y,
+                        record.new_color[0], record.new_color[1],
+                        record.new_color[2], record.new_color[3]);
+        }
+        canvas_record_end(canvas);
+    }
+
+    fclose(f);
+
+    canvas->cur_segment = -1;
+    SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
+        canvas_tile_clear(ct);
+    SF_LIST_END();
 }
 
 void canvas_zoom_in(struct canvas *canvas, int cx, int cy) {
