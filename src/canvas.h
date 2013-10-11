@@ -23,13 +23,24 @@ struct canvas {
 
     struct sf_rect      viewport;       /* the viewport of camera in the
                                          * canvas's coordinate  */
-    int                 lastx, lasty;
-    float               dx, dy;
+
+    int                 lastx, lasty;   /* the pressed position of last time */
+
+    float               dx, dy;         /* the delta of offset */
 
     struct sf_list     *tiles;          /* elt: (struct canvas_tile) */
 
     int                 isrecording;
     int                 cur_segment;
+
+    /*
+     * cur_record >= 0 only when * cur_segment >= 0 meaning that current
+     * segment has records.
+     *
+     * cur_record == -1 means that current segment has no records.
+     */
+    int                 cur_record;
+
     struct sf_array    *segments;       /* elt: (struct sf_array *)
                                          *       elt: (struct record) */
 
@@ -71,9 +82,13 @@ int canvas_record_canundo(struct canvas *canvas);
 
 void canvas_record_undo(struct canvas *canvas);
 
+void canvas_record_undo_n(struct canvas *canvas, uint32_t n);
+
 int canvas_record_canredo(struct canvas *canvas);
 
 void canvas_record_redo(struct canvas *canvas);
+
+void canvas_record_redo_n(struct canvas *canvas, uint32_t n);
 
 void canvas_record_save(struct canvas *canvas, const char *pathname);
 

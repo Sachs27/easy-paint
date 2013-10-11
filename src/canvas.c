@@ -165,6 +165,7 @@ static struct canvas_tile *canvas_add_tile(struct canvas *canvas,
 
 static void canvas_record(struct canvas *canvas, int x, int y,
                           uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    struct sf_array *segment;
     struct record record;
     uint8_t old_color[4];
 
@@ -186,9 +187,10 @@ static void canvas_record(struct canvas *canvas, int x, int y,
     record.new_color[2] = b;
     record.new_color[3] = a;
 
-    sf_array_push(*(struct sf_array **)
-                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment),
-                  &record);
+    segment = *(struct sf_array **)
+               SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+    canvas->cur_record = segment->nelts;
+    sf_array_push(segment, &record);
 }
 
 static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
@@ -293,6 +295,7 @@ struct canvas *canvas_create(int w, int h) {
     canvas->tiles = sf_list_create(sizeof(struct canvas_tile));
     canvas->isrecording = 0;
     canvas->cur_segment = -1;
+    canvas->cur_record = -1;
     canvas->segments = sf_array_create(sizeof(struct sf_array *),
                                        SF_ARRAY_NALLOC);
 
@@ -405,7 +408,7 @@ void canvas_record_begin(struct canvas *canvas) {
     }
 
     canvas->isrecording = 1;
-
+#if 0
     if (canvas->cur_segment >= 0) {
         segment = *(struct sf_array **)
                    SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
@@ -413,9 +416,13 @@ void canvas_record_begin(struct canvas *canvas) {
             return;
         }
     }
+#endif
+    if (canvas->cur_segment >= 0 && canvas->cur_record < 0) {
+        return;
+    }
 
     ++canvas->cur_segment;
-
+    canvas->cur_record = -1;
     if (canvas->cur_segment >= canvas->segments->nelts) {
         segment = sf_array_create(sizeof(struct record),
                                   CANVAS_RECORD_NALLOC);
@@ -438,85 +445,214 @@ void canvas_record_end(struct canvas *canvas) {
 }
 
 int canvas_record_canundo(struct canvas *canvas) {
-    return canvas->cur_segment >= 0;
+    if (canvas->cur_record >= 0) {
+        return 1;
+    }
+
+    if (canvas->cur_segment >= 0) {
+        return 1;
+    }
+
+    return 0;
 }
 
-void canvas_record_undo(struct canvas *canvas) {
-    struct sf_array *segment;
+static void canvas_record_undo_1(struct canvas *canvas) {
+    struct sf_array    *segment;
+    struct record      *record;
 
     if (canvas->isrecording || !canvas_record_canundo(canvas)) {
         return;
     }
 
-    segment = *(struct sf_array **)
-               SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+    if (canvas->cur_record < 0) {
+        --canvas->cur_segment;
+        segment = *(struct sf_array **)
+                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+        canvas->cur_record = segment->nelts - 1;
+    } else {
+        segment = *(struct sf_array **)
+                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+    }
 
-    SF_ARRAY_BEGIN_R(segment, struct record, record);
-        /*
-         * canvas->isrecoding is 0, so canvas_plot will not record.
-         */
-        canvas_plot(canvas, record->position.x, record->position.y,
-                    record->old_color[0], record->old_color[1],
-                    record->old_color[2], record->old_color[3]);
-    SF_ARRAY_END();
+    record = SF_ARRAY_NTH(segment, canvas->cur_record);
+    /*
+     * canvas->isrecoding is 0, so canvas_plot will not record.
+     */
+    canvas_plot(canvas, record->position.x, record->position.y,
+                record->old_color[0], record->old_color[1],
+                record->old_color[2], record->old_color[3]);
+    --canvas->cur_record;
 
-    --canvas->cur_segment;
+    if (canvas->cur_record < 0) {
+        --canvas->cur_segment;
+        if (canvas->cur_segment >= 0) {
+            segment = *(struct sf_array **)
+                       SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+            canvas->cur_record = segment->nelts - 1;
+        }
+    }
+}
+
+void canvas_record_undo(struct canvas *canvas) {
+    struct sf_array    *segment;
+    int                 n;
+
+    if (canvas->isrecording || !canvas_record_canundo(canvas)) {
+        return;
+    }
+
+    if (canvas->cur_record < 0) {
+        segment = *(struct sf_array **)
+                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment - 1);
+        n = segment->nelts;
+    } else {
+        n = canvas->cur_record + 1;
+    }
+
+    canvas_record_undo_n(canvas, n);
+}
+
+void canvas_record_undo_n(struct canvas *canvas, uint32_t n) {
+    while (n--) {
+        canvas_record_undo_1(canvas);
+    }
 }
 
 int canvas_record_canredo(struct canvas *canvas) {
     struct sf_array *segment;
+    int i;
 
-    /* no next segment */
-    if (canvas->cur_segment + 1 >= canvas->segments->nelts) {
-        return 0;
+    if (canvas->cur_segment >= 0) {
+        segment = *(struct sf_array **)
+                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+
+        if (canvas->cur_record < segment->nelts - 1) {
+            return 1;
+        }
     }
 
-    /* only when next segment has record can we redo */
-    segment = *(struct sf_array **)
-               SF_ARRAY_NTH(canvas->segments, canvas->cur_segment + 1);
+    for (i = canvas->cur_segment + 1; i < canvas->segments->nelts; ++i) {
+         segment = *(struct sf_array **) SF_ARRAY_NTH(canvas->segments, i);
+        if (segment->nelts > 0) {
+            return 1;
+        }
+    }
 
-    return segment->nelts > 0;
+    return 0;
 }
 
-void canvas_record_redo(struct canvas *canvas) {
-    struct sf_array *segment;
+static void canvas_record_redo_1(struct canvas *canvas) {
+    struct sf_array    *segment;
+    struct record      *record;
+    int                 last;
 
     if (canvas->isrecording || !canvas_record_canredo(canvas)) {
         return;
     }
 
-    ++canvas->cur_segment;
+    if (canvas->cur_segment < 0) {
+        ++canvas->cur_segment;
+    }
 
     segment = *(struct sf_array **)
                SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
 
-    SF_ARRAY_BEGIN(segment, struct record, record);
-        canvas_plot(canvas, record->position.x, record->position.y,
-                    record->new_color[0], record->new_color[1],
-                    record->new_color[2], record->new_color[3]);
-    SF_ARRAY_END();
+    last = segment->nelts - 1;
+    if (canvas->cur_record >= last) {
+        ++canvas->cur_segment;
+        canvas->cur_record = 0;
+        segment = *(struct sf_array **)
+                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+    } else {
+        ++canvas->cur_record;
+    }
+
+    record = SF_ARRAY_NTH(segment, canvas->cur_record);
+
+    canvas_plot(canvas, record->position.x, record->position.y,
+                record->new_color[0], record->new_color[1],
+                record->new_color[2], record->new_color[3]);
+}
+
+void canvas_record_redo(struct canvas *canvas) {
+    struct sf_array    *segment;
+    int                 n;
+
+    if (canvas->isrecording || !canvas_record_canredo(canvas)) {
+        return;
+    }
+
+    if (canvas->cur_segment >= 0) {
+        int last;
+
+        segment = *(struct sf_array **)
+                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+
+        last = segment->nelts - 1;
+        if (canvas->cur_record >= last) {
+            segment = *(struct sf_array **)
+                       SF_ARRAY_NTH(canvas->segments, canvas->cur_segment + 1);
+            n = segment->nelts;
+        } else {
+            n = last - canvas->cur_record;
+        }
+    } else {
+        segment = *(struct sf_array **)
+                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment + 1);
+        n = segment->nelts;
+    }
+
+    canvas_record_redo_n(canvas, n);
+}
+
+void canvas_record_redo_n(struct canvas *canvas, uint32_t n) {
+    while (n--) {
+        canvas_record_redo_1(canvas);
+    }
 }
 
 void canvas_record_save(struct canvas *canvas, const char *pathname) {
+    struct sf_array *segment;
+    uint32_t i, nsegments;
     FILE *f;
 
     f = fopen(pathname, "wb+");
 
-    fwrite(&canvas->segments->nelts, sizeof(canvas->segments->nelts), 1, f);
-    SF_ARRAY_BEGIN(canvas->segments, struct sf_array *, p);
-        struct sf_array *segment = *p;
+    if (canvas->cur_record >= 0) {
+        nsegments = canvas->cur_segment + 1;
+    } else {
+        nsegments = canvas->cur_segment;
+    }
 
-        if (segment->nelts == 0) {
-            continue;
-        }
+    fwrite(&nsegments, sizeof(nsegments), 1, f);
 
+    for (i = 0; i < canvas->cur_segment; ++i) {
+        segment = *(struct sf_array **) SF_ARRAY_NTH(canvas->segments, i);
+        assert(segment->nelts > 0);
         fwrite(&segment->nelts, sizeof(segment->nelts), 1, f);
 
-        SF_ARRAY_BEGIN(*p, struct record, record);
+        SF_ARRAY_BEGIN(segment, struct record, record);
             fwrite(&record->position, sizeof(record->position), 1, f);
             fwrite(record->new_color, sizeof(record->new_color), 1, f);
         SF_ARRAY_END();
-    SF_ARRAY_END();
+    }
+
+    if (canvas->cur_record >= 0) {
+        struct record *record;
+        int n;
+
+        segment = *(struct sf_array **)
+                   SF_ARRAY_NTH(canvas->segments, canvas->cur_segment);
+        assert(segment->nelts > 0);
+        n = canvas->cur_record + 1;
+        fwrite(&n, sizeof(n), 1, f);
+        for (i = 0; i < n; ++i) {
+            record = SF_ARRAY_NTH(segment, i);
+            fwrite(&record->position, sizeof(record->position), 1, f);
+            fwrite(record->new_color, sizeof(record->new_color), 1, f);
+        }
+    }
+
     fclose(f);
 }
 
@@ -524,12 +660,17 @@ void canvas_record_load(struct canvas *canvas, const char *pathname) {
     FILE       *f;
     uint32_t    nsegments, nrecords, i, j;
 
+    f = fopen(pathname, "rb");
+
+    if (f == NULL) {
+        return;
+    }
+
     canvas->cur_segment = -1;
+    canvas->cur_record = -1;
     SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
         canvas_tile_clear(ct);
     SF_LIST_END();
-
-    f = fopen(pathname, "rb");
 
     fread(&nsegments, sizeof(nsegments), 1, f);
 
@@ -553,6 +694,7 @@ void canvas_record_load(struct canvas *canvas, const char *pathname) {
     fclose(f);
 
     canvas->cur_segment = -1;
+    canvas->cur_record = -1;
     SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
         canvas_tile_clear(ct);
     SF_LIST_END();

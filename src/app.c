@@ -43,11 +43,15 @@ static void handle_mouse_button_right(void) {
 }
 
 static void update(double dt) {
+    static int isreplay = 0;
+
     handle_mouse_button_right();
     if (g_app.im->keys[KEY_1] == KEY_PRESS) {
         canvas_record_save(g_app.upp->canvas, "record/tmp.record");
     } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
         canvas_record_load(g_app.upp->canvas, "record/tmp.record");
+    } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
+        isreplay = !isreplay;
     }
 #if 0
     if (g_app.im->keys[KEY_UP] == KEY_PRESS) {
@@ -62,34 +66,26 @@ static void update(double dt) {
         canvas_zoom_out(g_app.canvas, x, y);
     }
 #endif
+    if (isreplay && canvas_record_canredo(g_app.upp->canvas)) {
+        canvas_record_redo_n(g_app.upp->canvas, 512 * dt);
+    }
+
     ui_manager_update(g_app.uim, g_app.im, dt);
+
+    static int cnt = 0;
+    static double elapse = 0;
+
+    ++cnt;
+    elapse += dt;
+    if (elapse > 1.0) {
+        dprintf("FPS: %d\n", cnt);
+        cnt = 0;
+        elapse -= 1.0;
+    }
 }
 
 static void render(void) {
-    static uint64_t ticks = 0;
-    static uint64_t elapse = 0;
-    static uint64_t cnt = 0;
-    static uint64_t totalticks = 0;
-
-    if (ticks == 0) {
-        ticks = sf_get_ticks();
-    } else {
-        elapse += sf_get_ticks() - ticks;
-        ticks = sf_get_ticks();
-    }
-
     ui_manager_render(g_app.uim, g_app.renderer2d);
-
-    totalticks += sf_get_ticks() - ticks;
-    ++cnt;
-
-    if (elapse > 4E9) {
-        dprintf("render costs %"PRIu64" ns/frame.\n",
-                (uint64_t) (totalticks * 1.0f / cnt));
-        cnt = 0;
-        totalticks = 0;
-        elapse -= 4E9;
-    }
 }
 
 static int app_init(int argc, char *argv[]) {
@@ -109,6 +105,8 @@ static int app_init(int argc, char *argv[]) {
         return -1;
     }
     window_on_resize(g_app.window, resize);
+
+    glfwSwapInterval(0);
 
     fprintf(stdout, "OpenGL Version: %s\n", glGetString(GL_VERSION));
     /*
@@ -133,14 +131,20 @@ static int app_init(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
+    uint64_t cur_tick, last_tick;
+
     if (app_init(argc, argv) != 0) {
         return -1;
     }
 
+    cur_tick = sf_get_ticks();
     while (window_isopen(g_app.window)) {
+        last_tick = cur_tick;
+        cur_tick = sf_get_ticks();
+
         input_manager_update(g_app.im);
 
-        update(0.0f);
+        update((cur_tick - last_tick) * 1.0 / 1E9);
 
         render();
 
