@@ -5,6 +5,7 @@
 #include <sf_debug.h>
 
 #include "app.h"
+#include "system.h"
 
 struct app g_app;
 
@@ -48,9 +49,11 @@ static void update(double dt) {
 
     handle_mouse_button_right();
     if (g_app.im->keys[KEY_1] == KEY_PRESS) {
-        canvas_record_save(g_app.upp->canvas, "record/tmp.record");
+        canvas_record_save(g_app.upp->canvas,
+                           get_save_file_name("Record File\0*.record\0"));
     } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
-        canvas_record_load(g_app.upp->canvas, "record/tmp.record");
+        canvas_record_load(g_app.upp->canvas,
+                           get_open_file_name("Record File\0*.record\0"));
     } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
         isreplay = !isreplay;
     }

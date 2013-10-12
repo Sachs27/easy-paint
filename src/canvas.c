@@ -449,7 +449,7 @@ int canvas_record_canundo(struct canvas *canvas) {
         return 1;
     }
 
-    if (canvas->cur_segment >= 0) {
+    if (canvas->cur_segment > 0) {
         return 1;
     }
 
@@ -616,7 +616,16 @@ void canvas_record_save(struct canvas *canvas, const char *pathname) {
     uint32_t i, nsegments;
     FILE *f;
 
+    if (canvas->cur_segment < 0) {
+        return;
+    }
+
     f = fopen(pathname, "wb+");
+
+    if (f == NULL) {
+        return;
+    }
+
 
     if (canvas->cur_record >= 0) {
         nsegments = canvas->cur_segment + 1;
