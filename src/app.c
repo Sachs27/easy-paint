@@ -44,6 +44,7 @@ static void handle_mouse_button_right(void) {
 
 static void update(double dt) {
     static int isreplay = 0;
+    static double ntoreplay = 0;
 
     handle_mouse_button_right();
     if (g_app.im->keys[KEY_1] == KEY_PRESS) {
@@ -67,7 +68,13 @@ static void update(double dt) {
     }
 #endif
     if (isreplay && canvas_record_canredo(g_app.upp->canvas)) {
-        canvas_record_redo_n(g_app.upp->canvas, 512 * dt);
+        int n;
+        ntoreplay += 512 * dt;
+        n = ntoreplay;
+        if (n > 0) {
+            canvas_record_redo_n(g_app.upp->canvas, n);
+            ntoreplay -= n;
+        }
     }
 
     ui_manager_update(g_app.uim, g_app.im, dt);
