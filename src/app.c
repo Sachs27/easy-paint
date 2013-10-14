@@ -1,3 +1,7 @@
+#if defined(__WIN32__)
+#include <windows.h>
+#endif /* defined(__WIN32__) */
+
 #include <stdio.h>
 #include <unistd.h>
 
@@ -116,7 +120,14 @@ static int app_init(int argc, char *argv[]) {
     }
     window_on_resize(g_app.window, resize);
 
+#if defined(__WIN32__)
+    typedef BOOL (WINAPI *PFNWGLSWAPINTERVALEXTPROC)(int interval);
+    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
+    wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+    wglSwapIntervalEXT(0);
+#else
     glfwSwapInterval(0);
+#endif /* defined(__WIN32__) */
 
     fprintf(stdout, "OpenGL Version: %s\n", glGetString(GL_VERSION));
     /*

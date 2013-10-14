@@ -1,65 +1,71 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <sf_utils.h>
+
 #include "brush.h"
 
+
 /**
- * Bresenham's line algorithm.
+ * Bresenham's line algorithm. Keep the origin line orientation.
  */
 void brush_drawline(struct brush *brush, struct canvas *canvas,
                     int x0, int y0, int x1, int y1) {
-#define int_swap(x, y) do {     \
-    int __int_swap_tmp__ = x;   \
-    x = y;                      \
-    y = __int_swap_tmp__;       \
-} while(0)
-
+    int x, y;
+    int dx, dy;
+    int dx2, dy2;
+    int xstep, ystep;
     int err;
-    int x, y, ystep;
-    int dx = abs(x1 - x0);
-    int dy = abs(y1 - y0);
-    int steep = (dy - dx) > 0 ? 1 : 0;
-
-    if (brush->plot == NULL) {
-        return;
-    }
-
-    if (steep) {
-        int_swap(x0, y0);
-        int_swap(x1, y1);
-    }
-
-    if (x0 > x1) {
-        int_swap(x0, x1);
-        int_swap(y0, y1);
-    }
 
     dx = x1 - x0;
-    dy = abs(y1 - y0);
-    err = dx / 2;
-    y = y0;
-    if (y0 < y1) {
+    dy = y1 - y0;
+
+    if (dx > 0) {
+        xstep = 1;
+    } else {
+        xstep = -1;
+        dx = -dx;
+    }
+
+    if (dy > 0) {
         ystep = 1;
     } else {
         ystep = -1;
+        dy = -dy;
     }
 
-    for (x = x0; x <= x1; ++x) {
-        int px = x, py = y;
-        if (steep) {
-            px = y;
-            py = x;
-        }
-        /* plot(px, py) */
-        brush->plot(brush, canvas, px, py);
+    dx2 = dx << 1;
+    dy2 = dy << 1;
 
-        err -= dy;
-        if (err < 0) {
-            y += ystep;
-            err += dx;
+    x = x0;
+    y = y0;
+
+    if (dx > dy) {
+        err = dy2 - dx;              /* e = dy / dx - 0.5 */
+        for (x = x0; x != x1; x += xstep) {
+            /* plot(px, py) */
+            brush->plot(brush, canvas, x, y);
+
+            if (err > 0) {
+                err -= dx2;          /* e = e - 1 */
+                y += ystep;
+            }
+
+            err += dy2;
+        }
+    } else {
+        err = dx2 - dy;
+        for (y = y0; y != y1; y += ystep) {
+            brush->plot(brush, canvas, x, y);
+
+            if (err >= 0) {
+                err -= dy2;
+                x += xstep;
+            }
+
+            err += dx2;
         }
     }
-#undef int_swap
 }
 
 void brush_set_icon(struct brush *brush, struct texture *icon) {
