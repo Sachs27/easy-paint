@@ -5,13 +5,11 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "sf.h"
-#include "window.h"
-#include "renderer2d.h"
-#include "input_manager.h"
-#include "ui.h"
-#include "user_paint_panel.h"
-
+struct window;
+struct renderer2d;
+struct input_manager;
+struct ui_manager;
+struct user_paint_panel;
 
 struct app {
     struct window              *window;

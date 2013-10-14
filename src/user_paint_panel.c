@@ -3,6 +3,11 @@
 
 #include "app.h"
 #include "user_paint_panel.h"
+#include "record.h"
+#include "canvas.h"
+#include "brush.h"
+#include "ui_toolbox.h"
+#include "ui_imagebox.h"
 
 
 #define TOOLBOX_HEIGHT 48
@@ -18,8 +23,7 @@ static void undo_on_render(struct ui_imagebox *undo, struct renderer2d *r) {
     if (undo->image == NULL) {
         return;
     }
-
-    if (canvas_record_canundo(upp->canvas)) {
+    if (record_canundo(upp->record)) {
         renderer2d_draw_texture(r, 0, 0, 0, 0, undo->image, 0, 0, 0, 0);
     } else {
         renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
@@ -36,7 +40,7 @@ static void undo_on_press(struct ui_imagebox *undo,
         ui_hide((struct ui *) upp->brushbox);
     }
 
-    canvas_record_undo(upp->canvas);
+    record_undo(upp->record, upp->canvas);
 }
 
 static void redo_on_render(struct ui_imagebox *redo, struct renderer2d *r) {
@@ -46,7 +50,7 @@ static void redo_on_render(struct ui_imagebox *redo, struct renderer2d *r) {
         return;
     }
 
-    if (canvas_record_canredo(upp->canvas)) {
+    if (record_canredo(upp->record)) {
         renderer2d_draw_texture(r, 0, 0, 0, 0, redo->image, 0, 0, 0, 0);
     } else {
         renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
@@ -63,7 +67,7 @@ static void redo_on_press(struct ui_imagebox *redo,
         ui_hide((struct ui *) upp->brushbox);
     }
 
-    canvas_record_redo(upp->canvas);
+    record_redo(upp->record, upp->canvas);
 }
 
 static void brush_on_press(struct ui_imagebox *brush,
@@ -91,8 +95,8 @@ static void brushicon_on_press(struct ui_imagebox *button,
 
     assert(i < upp->brushicons->nelts);
 
-    upp->canvas->cur_brush = SF_ARRAY_NTH(upp->brushes, i);
-    ui_imagebox_set_image(upp->brush, upp->canvas->cur_brush->icon);
+    upp->cur_brush = SF_ARRAY_NTH(upp->brushes, i);
+    ui_imagebox_set_image(upp->brush, upp->cur_brush->icon);
 
     ui_hide((struct ui *) upp->brushbox);
 }
@@ -150,6 +154,46 @@ static void user_paint_panel_on_push(struct user_paint_panel *upp,
                     (struct ui *) upp->toolbox);
 }
 
+static int canvas_lastx;
+static int canvas_lasty;
+
+static void canvas_on_press(struct canvas *canvas,
+                            int n, int x[n], int y[n]) {
+    struct user_paint_panel *upp = g_app.upp;
+
+    if (n == 1) {
+        canvas_screen_to_canvas(canvas, x[0] + canvas->ui.area.x,
+                                y[0] + canvas->ui.area.y,
+                                &canvas_lastx, &canvas_lasty);
+        record_begin(upp->record, canvas);
+    }
+}
+
+static void canvas_on_release(struct canvas *canvas) {
+    record_end(canvas->record);
+}
+
+static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
+                             double dt) {
+    struct user_paint_panel *upp = g_app.upp;
+
+    if (canvas->record) {
+        int mx, my;
+
+        canvas_screen_to_canvas(canvas, im->mouse.x, im->mouse.y, &mx, &my);
+
+        if (sf_rect_iscontain(&canvas->viewport, mx, my)
+            && (mx != canvas_lastx || my != canvas_lasty)) {
+            brush_drawline(upp->cur_brush, canvas,
+                           canvas_lastx, canvas_lasty, mx, my);
+        }
+
+        canvas_lastx = mx;
+        canvas_lasty = my;
+    }
+}
+
+
 struct user_paint_panel *user_paint_panel_create(int w, int h) {
     struct user_paint_panel *upp;
 
@@ -171,7 +215,12 @@ struct user_paint_panel *user_paint_panel_create(int w, int h) {
     SF_ARRAY_END();
 
     upp->canvas = canvas_create(w, h - TOOLBOX_HEIGHT);
-    upp->canvas->cur_brush = SF_ARRAY_NTH(upp->brushes, 0);
+    UI_CALLBACK(upp->canvas, update, canvas_on_update);
+    UI_CALLBACK(upp->canvas, press, canvas_on_press);
+    UI_CALLBACK(upp->canvas, release, canvas_on_release);
+    upp->cur_brush = SF_ARRAY_NTH(upp->brushes, 0);
+
+    upp->record = record_create();
 
     upp->toolbox = ui_toolbox_create(w, TOOLBOX_HEIGHT,
                                      200, 200, 200, 255);
@@ -189,7 +238,7 @@ struct user_paint_panel *user_paint_panel_create(int w, int h) {
     UI_CALLBACK(upp->redo, press, redo_on_press);
     UI_CALLBACK(upp->redo, render, redo_on_render);
 
-    upp->brush = ui_imagebox_create(0, 0, upp->canvas->cur_brush->icon);
+    upp->brush = ui_imagebox_create(0, 0, upp->cur_brush->icon);
     UI_CALLBACK(upp->brush, press, brush_on_press);
 
     upp->blank = malloc(sizeof(struct ui));

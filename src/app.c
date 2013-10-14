@@ -8,8 +8,12 @@
 #include <sf_utils.h>
 #include <sf_debug.h>
 
+#include "sf.h"
 #include "app.h"
 #include "system.h"
+#include "record.h"
+#include "canvas.h"
+#include "user_paint_panel.h"
 
 struct app g_app;
 
@@ -53,11 +57,13 @@ static void update(double dt) {
 
     handle_mouse_button_right();
     if (g_app.im->keys[KEY_1] == KEY_PRESS) {
-        canvas_record_save(g_app.upp->canvas,
-                           get_save_file_name("Record File\0*.record\0"));
+        record_save(g_app.upp->record,
+                    get_save_file_name("Record File\0*.record\0"));
     } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
-        canvas_record_load(g_app.upp->canvas,
-                           get_open_file_name("Record File\0*.record\0"));
+        if (record_load(g_app.upp->record,
+                    get_open_file_name("Record File\0*.record\0")) == 0) {
+            canvas_clear(g_app.upp->canvas);
+        }
     } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
         isreplay = !isreplay;
     }
@@ -74,12 +80,12 @@ static void update(double dt) {
         canvas_zoom_out(g_app.canvas, x, y);
     }
 #endif
-    if (isreplay && canvas_record_canredo(g_app.upp->canvas)) {
+    if (isreplay && record_canredo(g_app.upp->record)) {
         int n;
         ntoreplay += 512 * dt;
         n = ntoreplay;
         if (n > 0) {
-            canvas_record_redo_n(g_app.upp->canvas, n);
+            record_redo_n(g_app.upp->record, g_app.upp->canvas, n);
             ntoreplay -= n;
         }
     }

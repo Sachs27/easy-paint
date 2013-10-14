@@ -1,4 +1,7 @@
+#include <stdlib.h>
+
 #include "brush.h"
+#include "canvas.h"
 
 
 static void pen_blend(struct canvas *canvas, int x, int y,

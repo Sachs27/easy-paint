@@ -4,6 +4,7 @@
 #include <sf_utils.h>
 
 #include "brush.h"
+#include "canvas.h"
 
 
 /**
