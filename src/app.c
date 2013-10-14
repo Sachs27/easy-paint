@@ -58,10 +58,10 @@ static void update(double dt) {
     handle_mouse_button_right();
     if (g_app.im->keys[KEY_1] == KEY_PRESS) {
         record_save(g_app.upp->record,
-                    get_save_file_name("Record File\0*.record\0"));
+                    get_save_file_name("Record File(*.rec)\0*.rec\0"));
     } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
         if (record_load(g_app.upp->record,
-                    get_open_file_name("Record File\0*.record\0")) == 0) {
+                    get_open_file_name("Record File(*.rec)\0*.rec\0")) == 0) {
             canvas_clear(g_app.upp->canvas);
         }
     } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
