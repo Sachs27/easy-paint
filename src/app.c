@@ -15,6 +15,7 @@
 #include "canvas.h"
 #include "user_paint_panel.h"
 #include "ui_imagebox.h"
+#include "ui_menu.h"
 #include "texture.h"
 
 struct app g_app;
@@ -24,23 +25,54 @@ static int WINDOW_WIDTH = 360;
 static int WINDOW_HEIGHT = 600;
 
 
+static void menuicon_on_press(struct ui *ui, int n, int x[n], int y[n]) {
+    ui_show((struct ui *) g_app.menu);
+}
+
 static void menu_on_press(struct ui *ui, int n, int x[n], int y[n]) {
+    ui_hide((struct ui *) g_app.menu);
 }
 
 static void init(void) {
     g_app.upp = user_paint_panel_create(g_app.window->w, g_app.window->h);
     ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.upp);
 
-    g_app.menu = ui_imagebox_create(0, 0, texture_load_2d("res/icons/parent.png"));
+    g_app.menuicon = ui_imagebox_create(
+                        0, 0, texture_load_2d("res/icons/parent.png"));
+    UI_CALLBACK(g_app.menuicon, press, menuicon_on_press);
+    ui_manager_push(g_app.uim, 0, g_app.window->h - g_app.menuicon->ui.area.h,
+                    (struct ui *) g_app.menuicon);
+
+    g_app.logo = ui_imagebox_create(0, 0,
+                                    texture_load_2d("res/icons/logo.png"));
+
+    g_app.label1 = ui_imagebox_create(0, 0,
+                                      texture_load_2d("res/icons/label1.png"));
+
+    g_app.label2 = ui_imagebox_create(0, 0,
+                                      texture_load_2d("res/icons/label2.png"));
+
+    g_app.label3 = ui_imagebox_create(0, 0,
+                                      texture_load_2d("res/icons/label3.png"));
+
+    g_app.menu = ui_menu_create(256, g_app.window->h);
     UI_CALLBACK(g_app.menu, press, menu_on_press);
-    ui_manager_push(g_app.uim, 0, g_app.window->h - g_app.menu->ui.area.h,
-                    (struct ui *) g_app.menu);
+    ui_menu_set_background_color(g_app.menu, 64, 64, 64, 250);
+    ui_menu_add_item(g_app.menu, (struct ui *) g_app.logo);
+    ui_menu_add_item(g_app.menu, (struct ui *) g_app.label1);
+    ui_menu_add_item(g_app.menu, (struct ui *) g_app.label2);
+    ui_menu_add_item(g_app.menu, (struct ui *) g_app.label3);
+    ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.menu);
+    ui_hide((struct ui *) g_app.menu);
 }
 
 static void resize(struct window *win, int w, int h) {
     renderer2d_resize(g_app.renderer2d, w, h);
 
     user_paint_panel_resize(g_app.upp, w, h);
+
+    g_app.menuicon->ui.area.y = h - g_app.menuicon->ui.area.h;
+    g_app.menu->ui.area.h = h;
 }
 
 static void handle_mouse_button_right(void) {

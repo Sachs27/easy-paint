@@ -3,6 +3,28 @@
 #include "ui_toolbox.h"
 
 
+static void ui_toolbox_update_buttons(struct ui_toolbox *tb) {
+    float xstep;
+    float x;
+
+    /*
+     * 假设每个 buttons 的宽度相同，高度和 toolbox 一样。
+     * 后期改进可以使用权重来计算每个 button 的位置。
+     */
+    xstep = tb->ui.area.w * 1.0f / (tb->buttons->nelts + 1);
+
+    x = xstep;
+
+    SF_LIST_BEGIN(tb->buttons, struct ui *, pui);
+        struct ui *button = *pui;
+
+        button->area.x = tb->ui.area.x + x - button->area.w / 2;
+        button->area.y = tb->ui.area.y;
+
+        x += xstep;
+    SF_LIST_END();
+}
+
 static void ui_toolbox_on_render(struct ui_toolbox *tb,
                                  struct renderer2d *r) {
     /* draw background */
@@ -28,6 +50,7 @@ static void ui_toolbox_on_press(struct ui_toolbox *tb,
 
 static void ui_toolbox_on_push(struct ui_toolbox *tb, struct ui_manager *uim,
                                int x, int y) {
+    ui_toolbox_update_buttons(tb);
     SF_LIST_BEGIN(tb->buttons, struct ui *, pui);
         struct ui *button = *pui;
         ui_manager_push(uim, x + button->area.x, y, button);
@@ -35,26 +58,17 @@ static void ui_toolbox_on_push(struct ui_toolbox *tb, struct ui_manager *uim,
     tb->ispushed = 1;
 }
 
-static void ui_toolbox_update_buttons(struct ui_toolbox *tb) {
-    float xstep;
-    float x;
-
-    /*
-     * 假设每个 buttons 的宽度相同，高度和 toolbox 一样。
-     * 后期改进可以使用权重来计算每个 button 的位置。
-     */
-    xstep = tb->ui.area.w * 1.0f / (tb->buttons->nelts + 1);
-
-    x = xstep;
-
+static void ui_toolbox_on_show(struct ui_toolbox *tb) {
     SF_LIST_BEGIN(tb->buttons, struct ui *, pui);
-        struct ui *button = *pui;
-
-        button->area.x = tb->ui.area.x + x - button->area.w / 2;
-        button->area.y = tb->ui.area.y;
-
-        x += xstep;
+        ui_show(*pui);
     SF_LIST_END();
+}
+
+static void ui_toolbox_on_hide(struct ui_toolbox *tb) {
+    SF_LIST_BEGIN(tb->buttons, struct ui *, pui);
+        ui_hide(*pui);
+    SF_LIST_END();
+
 }
 
 
@@ -63,7 +77,7 @@ struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
     struct ui_toolbox *tb;
 
     tb = malloc(sizeof(*tb));
-    ui_init((struct ui *)tb, w, h);
+    ui_init((struct ui *) tb, w, h);
     tb->background_color[0] = r;
     tb->background_color[1] = g;
     tb->background_color[2] = b;
@@ -74,6 +88,8 @@ struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
     UI_CALLBACK(tb, render, ui_toolbox_on_render);
     UI_CALLBACK(tb, press, ui_toolbox_on_press);
     UI_CALLBACK(tb, push, ui_toolbox_on_push);
+    UI_CALLBACK(tb, show, ui_toolbox_on_show);
+    UI_CALLBACK(tb, hide, ui_toolbox_on_hide);
 
     return tb;
 }
@@ -84,7 +100,6 @@ void ui_toolbox_add_button(struct ui_toolbox *tb, struct ui *ui) {
     }
 
     sf_list_push(tb->buttons, &ui);
-    ui_toolbox_update_buttons(tb);
 }
 
 void ui_toolbox_resize(struct ui_toolbox *tb, int w, int h) {

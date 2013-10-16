@@ -38,6 +38,7 @@ static void undo_on_press(struct ui_imagebox *undo,
 
     if (upp->brushbox->ui.state == UI_STATE_SHOW) {
         ui_hide((struct ui *) upp->brushbox);
+        ui_hide(upp->blank);
     }
 
     record_undo(upp->record, upp->canvas);
@@ -65,6 +66,7 @@ static void redo_on_press(struct ui_imagebox *redo,
 
     if (upp->brushbox->ui.state == UI_STATE_SHOW) {
         ui_hide((struct ui *) upp->brushbox);
+        ui_hide(upp->blank);
     }
 
     record_redo(upp->record, upp->canvas);
@@ -76,8 +78,10 @@ static void brush_on_press(struct ui_imagebox *brush,
 
     if (upp->brushbox->ui.state == UI_STATE_SHOW) {
         ui_hide((struct ui *) g_app.upp->brushbox);
+        ui_hide(upp->blank);
     } else {
         ui_show((struct ui *) g_app.upp->brushbox);
+        ui_show(upp->blank);
     }
 }
 
@@ -99,34 +103,15 @@ static void brushicon_on_press(struct ui_imagebox *button,
     ui_imagebox_set_image(upp->brush, upp->cur_brush->icon);
 
     ui_hide((struct ui *) upp->brushbox);
-}
-
-static void brushbox_on_show(struct ui_toolbox *tb) {
-    struct user_paint_panel *upp = g_app.upp;
-
-    SF_ARRAY_BEGIN(upp->brushicons, struct ui_imagebox *, p);
-        struct ui_imagebox *button = *p;
-        ui_show((struct ui *) button);
-    SF_ARRAY_END();
-
-    ui_show(upp->blank);
-}
-
-static void brushbox_on_hide(struct ui_toolbox *tb) {
-    struct user_paint_panel *upp = g_app.upp;
-
-    SF_ARRAY_BEGIN(upp->brushicons, struct ui_imagebox *, p);
-        struct ui_imagebox *button = *p;
-        ui_hide((struct ui *) button);
-    SF_ARRAY_END();
-
     ui_hide(upp->blank);
 }
+
 
 static void blank_on_press(struct ui *ui, int n, int x[n], int y[n]) {
     struct user_paint_panel *upp = g_app.upp;
 
     ui_hide((struct ui *) upp->brushbox);
+    ui_hide(upp->blank);
 }
 
 static void user_paint_panel_on_push(struct user_paint_panel *upp,
@@ -145,6 +130,7 @@ static void user_paint_panel_on_push(struct user_paint_panel *upp,
                     (struct ui *) upp->brushbox);
 
     ui_hide((struct ui *) upp->brushbox);
+    ui_hide(upp->blank);
 
     ui_toolbox_add_button(upp->toolbox, (struct ui *) upp->undo);
     ui_toolbox_add_button(upp->toolbox, (struct ui *) upp->brush);
@@ -223,12 +209,10 @@ struct user_paint_panel *user_paint_panel_create(int w, int h) {
     upp->record = record_create();
 
     upp->toolbox = ui_toolbox_create(w, TOOLBOX_HEIGHT,
-                                     128, 128, 128, 128);
+                                     128, 128, 128, 240);
 
     upp->brushbox = ui_toolbox_create(w, TOOLBOX_HEIGHT,
-                                      222, 222, 222, 128);
-    UI_CALLBACK(upp->brushbox, show, brushbox_on_show);
-    UI_CALLBACK(upp->brushbox, hide, brushbox_on_hide);
+                                      222, 222, 222, 240);
 
     upp->undo  = ui_imagebox_create(0, 0, texture_load_2d("res/icons/undo.png"));
     UI_CALLBACK(upp->undo, press, undo_on_press);
