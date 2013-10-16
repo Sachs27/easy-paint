@@ -37,6 +37,10 @@ void renderer2d_clear(struct renderer2d *renderer,
  */
 void renderer2d_set_render_target(struct renderer2d *r, struct texture *rt);
 
+void renderer2d_fill_rect(struct renderer2d *renderer, int x, int y,
+                          int w, int h,
+                          uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
 void renderer2d_draw_line(struct renderer2d *renderer, float width,
                           int x0, int y0, int x1, int y1,
                           uint8_t r, uint8_t g, uint8_t b, uint8_t a);

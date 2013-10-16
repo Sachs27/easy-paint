@@ -14,6 +14,8 @@
 #include "record.h"
 #include "canvas.h"
 #include "user_paint_panel.h"
+#include "ui_imagebox.h"
+#include "texture.h"
 
 struct app g_app;
 
@@ -22,9 +24,17 @@ static int WINDOW_WIDTH = 360;
 static int WINDOW_HEIGHT = 600;
 
 
+static void menu_on_press(struct ui *ui, int n, int x[n], int y[n]) {
+}
+
 static void init(void) {
     g_app.upp = user_paint_panel_create(g_app.window->w, g_app.window->h);
     ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.upp);
+
+    g_app.menu = ui_imagebox_create(0, 0, texture_load_2d("res/icons/parent.png"));
+    UI_CALLBACK(g_app.menu, press, menu_on_press);
+    ui_manager_push(g_app.uim, 0, g_app.window->h - g_app.menu->ui.area.h,
+                    (struct ui *) g_app.menu);
 }
 
 static void resize(struct window *win, int w, int h) {

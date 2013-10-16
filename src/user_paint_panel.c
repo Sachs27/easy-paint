@@ -141,7 +141,7 @@ static void user_paint_panel_on_push(struct user_paint_panel *upp,
         ui_toolbox_add_button(upp->brushbox, (struct ui *) button);
     SF_ARRAY_END();
 
-    ui_manager_push(uim, x, y + upp->canvas->ui.area.h - TOOLBOX_HEIGHT,
+    ui_manager_push(uim, x, y + upp->canvas->ui.area.h - 2 * TOOLBOX_HEIGHT,
                     (struct ui *) upp->brushbox);
 
     ui_hide((struct ui *) upp->brushbox);
@@ -150,7 +150,7 @@ static void user_paint_panel_on_push(struct user_paint_panel *upp,
     ui_toolbox_add_button(upp->toolbox, (struct ui *) upp->brush);
     ui_toolbox_add_button(upp->toolbox, (struct ui *) upp->redo);
 
-    ui_manager_push(uim, x, y + upp->canvas->ui.area.h,
+    ui_manager_push(uim, x, y + upp->canvas->ui.area.h - TOOLBOX_HEIGHT,
                     (struct ui *) upp->toolbox);
 }
 
@@ -214,7 +214,7 @@ struct user_paint_panel *user_paint_panel_create(int w, int h) {
         sf_array_push(upp->brushicons, &ib);
     SF_ARRAY_END();
 
-    upp->canvas = canvas_create(w, h - TOOLBOX_HEIGHT);
+    upp->canvas = canvas_create(w, h);
     UI_CALLBACK(upp->canvas, update, canvas_on_update);
     UI_CALLBACK(upp->canvas, press, canvas_on_press);
     UI_CALLBACK(upp->canvas, release, canvas_on_release);
@@ -223,10 +223,10 @@ struct user_paint_panel *user_paint_panel_create(int w, int h) {
     upp->record = record_create();
 
     upp->toolbox = ui_toolbox_create(w, TOOLBOX_HEIGHT,
-                                     200, 200, 200, 255);
+                                     128, 128, 128, 128);
 
     upp->brushbox = ui_toolbox_create(w, TOOLBOX_HEIGHT,
-                                      222, 222, 222, 100);
+                                      222, 222, 222, 128);
     UI_CALLBACK(upp->brushbox, show, brushbox_on_show);
     UI_CALLBACK(upp->brushbox, hide, brushbox_on_hide);
 

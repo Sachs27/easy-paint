@@ -6,10 +6,11 @@
 static void ui_toolbox_on_render(struct ui_toolbox *tb,
                                  struct renderer2d *r) {
     /* draw background */
-    renderer2d_clear(r, tb->background_color[0],
-                        tb->background_color[1],
-                        tb->background_color[2],
-                        tb->background_color[3]);
+    renderer2d_fill_rect(r, 0, 0, tb->ui.area.w, tb->ui.area.h,
+                         tb->background_color[0],
+                         tb->background_color[1],
+                         tb->background_color[2],
+                         tb->background_color[3]);
 
     renderer2d_draw_line(r, 2, 0, 0, tb->ui.area.w, 0,
                          tb->background_color[0] / 2,

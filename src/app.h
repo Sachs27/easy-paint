@@ -17,6 +17,7 @@ struct app {
     struct input_manager       *im;
     struct ui_manager          *uim;
 
+    struct ui_imagebox         *menu;
     struct user_paint_panel    *upp;
 };
 

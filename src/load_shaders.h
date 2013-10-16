@@ -6,7 +6,8 @@
 
 struct shader_info {
     GLenum       type;
-    const char*  pathname;
+    const char  *pathname;
+    const char  *source;
     GLuint       shader;
 };
 

@@ -3,15 +3,10 @@
 #include "debug.h"
 
 
-static int attach_shader(GLuint program, struct shader_info *info) {
-    GLint   compile_status;
+static int load_file_source(struct shader_info *info) {
     long    size;
     FILE   *f;
-    GLuint  shader;
 
-    shader = glCreateShader(info->type);
-    info->shader = shader;
-    /* read shader source */
     f = fopen(info->pathname, "rb");
     if (!f) {
         dprintf("Failed to open file: %s\n", info->pathname);
@@ -22,11 +17,32 @@ static int attach_shader(GLuint program, struct shader_info *info) {
     fseek(f, 0, SEEK_SET); {
         GLchar src[size + 1];
         const GLchar *psrc = src;
+
         fread(src, 1, size, f);
         src[size] = '\0';
-        glShaderSource(shader, 1, &psrc, NULL);
+        glShaderSource(info->shader, 1, &psrc, NULL);
     }
     fclose(f);
+
+    return 0;
+}
+
+static int attach_shader(GLuint program, struct shader_info *info) {
+    GLint   compile_status;
+    GLuint  shader;
+
+    shader = glCreateShader(info->type);
+    info->shader = shader;
+
+    if (info->pathname != NULL) {
+        if (load_file_source(info) != 0) {
+            return -1;
+        }
+    } else {
+        const GLchar *psrc = info->source;
+        glShaderSource(info->shader, 1, &psrc, NULL);
+    }
+
     /* compile shader */
     glCompileShader(shader);
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
