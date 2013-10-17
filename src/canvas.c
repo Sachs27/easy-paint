@@ -1,5 +1,7 @@
 #include <math.h>
-#include <inttypes.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include <sf_utils.h>
 #include <sf_array.h>
 #include <sf_debug.h>
