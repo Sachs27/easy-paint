@@ -30,16 +30,15 @@ struct canvas_tile {
 
 static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
     ct->texture = texture_create_2d(CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
-    /* clear the texture's content */
-    /*renderer2d_set_render_target(g_app.renderer2d, ct->texture);*/
-    /*renderer2d_clear(g_app.renderer2d, 0, 0, 0, 0);*/
-    /*renderer2d_set_render_target(g_app.renderer2d, NULL);*/
-
     ct->area.x = x;
     ct->area.y = y;
     ct->area.w = ct->texture->w;
     ct->area.h = ct->texture->h;
-    ct->isdirty = 0;
+    ct->isdirty = 1;
+    ct->dirty_rect.x = 0;
+    ct->dirty_rect.y = 0;
+    ct->dirty_rect.w = ct->area.w;
+    ct->dirty_rect.h = ct->area.h;
     ct->colors = calloc(ct->texture->w * ct->texture->h, 4 * sizeof(uint8_t));
 }
 
