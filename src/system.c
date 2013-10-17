@@ -25,6 +25,7 @@ const char *get_open_file_name(const char *filter) {
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = NULL;
+    ofn.lpstrDefExt = "rec";
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
     if (GetOpenFileName(&ofn) == TRUE) {
@@ -56,6 +57,7 @@ const char *get_save_file_name(const char *filter) {
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = NULL;
+    ofn.lpstrDefExt = "rec";
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
     if (GetSaveFileName(&ofn) == TRUE) {

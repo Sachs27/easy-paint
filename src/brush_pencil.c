@@ -1,7 +1,7 @@
 #include <stdlib.h>
-#include <GL/glew.h>
 
 #include "brush.h"
+#include "canvas.h"
 
 
 static void pencil_blend(struct canvas *canvas, int x, int y,

@@ -3,8 +3,8 @@
 
 
 #include "ui.h"
-#include "texture.h"
 
+struct texture;
 
 struct ui_imagebox {
     struct ui           ui;         /* inherit from ui, so this must be

@@ -1,11 +1,22 @@
+#if defined(__WIN32__)
+#include <windows.h>
+#endif /* defined(__WIN32__) */
+
 #include <stdio.h>
 #include <unistd.h>
 
 #include <sf_utils.h>
 #include <sf_debug.h>
 
+#include "sf.h"
 #include "app.h"
 #include "system.h"
+#include "record.h"
+#include "canvas.h"
+#include "user_paint_panel.h"
+#include "ui_imagebox.h"
+#include "ui_menu.h"
+#include "texture.h"
 
 struct app g_app;
 
@@ -14,15 +25,54 @@ static int WINDOW_WIDTH = 360;
 static int WINDOW_HEIGHT = 600;
 
 
+static void menuicon_on_press(struct ui *ui, int n, int x[n], int y[n]) {
+    ui_show((struct ui *) g_app.menu);
+}
+
+static void menu_on_press(struct ui *ui, int n, int x[n], int y[n]) {
+    ui_hide((struct ui *) g_app.menu);
+}
+
 static void init(void) {
     g_app.upp = user_paint_panel_create(g_app.window->w, g_app.window->h);
     ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.upp);
+
+    g_app.menuicon = ui_imagebox_create(
+                        0, 0, texture_load_2d("res/icons/parent.png"));
+    UI_CALLBACK(g_app.menuicon, press, menuicon_on_press);
+    ui_manager_push(g_app.uim, 0, g_app.window->h - g_app.menuicon->ui.area.h,
+                    (struct ui *) g_app.menuicon);
+
+    g_app.logo = ui_imagebox_create(0, 0,
+                                    texture_load_2d("res/icons/logo.png"));
+
+    g_app.label1 = ui_imagebox_create(0, 0,
+                                      texture_load_2d("res/icons/label1.png"));
+
+    g_app.label2 = ui_imagebox_create(0, 0,
+                                      texture_load_2d("res/icons/label2.png"));
+
+    g_app.label3 = ui_imagebox_create(0, 0,
+                                      texture_load_2d("res/icons/label3.png"));
+
+    g_app.menu = ui_menu_create(256, g_app.window->h);
+    UI_CALLBACK(g_app.menu, press, menu_on_press);
+    ui_menu_set_background_color(g_app.menu, 64, 64, 64, 250);
+    ui_menu_add_item(g_app.menu, (struct ui *) g_app.logo);
+    ui_menu_add_item(g_app.menu, (struct ui *) g_app.label1);
+    ui_menu_add_item(g_app.menu, (struct ui *) g_app.label2);
+    ui_menu_add_item(g_app.menu, (struct ui *) g_app.label3);
+    ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.menu);
+    ui_hide((struct ui *) g_app.menu);
 }
 
 static void resize(struct window *win, int w, int h) {
     renderer2d_resize(g_app.renderer2d, w, h);
 
     user_paint_panel_resize(g_app.upp, w, h);
+
+    g_app.menuicon->ui.area.y = h - g_app.menuicon->ui.area.h;
+    g_app.menu->ui.area.h = h;
 }
 
 static void handle_mouse_button_right(void) {
@@ -49,11 +99,13 @@ static void update(double dt) {
 
     handle_mouse_button_right();
     if (g_app.im->keys[KEY_1] == KEY_PRESS) {
-        canvas_record_save(g_app.upp->canvas,
-                           get_save_file_name("Record File\0*.record\0"));
+        record_save(g_app.upp->record,
+                    get_save_file_name("Record File(*.rec)\0*.rec\0"));
     } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
-        canvas_record_load(g_app.upp->canvas,
-                           get_open_file_name("Record File\0*.record\0"));
+        if (record_load(g_app.upp->record,
+                    get_open_file_name("Record File(*.rec)\0*.rec\0")) == 0) {
+            canvas_clear(g_app.upp->canvas);
+        }
     } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
         isreplay = !isreplay;
     }
@@ -70,12 +122,12 @@ static void update(double dt) {
         canvas_zoom_out(g_app.canvas, x, y);
     }
 #endif
-    if (isreplay && canvas_record_canredo(g_app.upp->canvas)) {
+    if (isreplay && record_canredo(g_app.upp->record)) {
         int n;
         ntoreplay += 512 * dt;
         n = ntoreplay;
         if (n > 0) {
-            canvas_record_redo_n(g_app.upp->canvas, n);
+            record_redo_n(g_app.upp->record, g_app.upp->canvas, n);
             ntoreplay -= n;
         }
     }
@@ -116,7 +168,14 @@ static int app_init(int argc, char *argv[]) {
     }
     window_on_resize(g_app.window, resize);
 
+#if defined(__WIN32__)
+    typedef BOOL (WINAPI *PFNWGLSWAPINTERVALEXTPROC)(int interval);
+    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
+    wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+    wglSwapIntervalEXT(0);
+#else
     glfwSwapInterval(0);
+#endif /* defined(__WIN32__) */
 
     fprintf(stdout, "OpenGL Version: %s\n", glGetString(GL_VERSION));
     /*

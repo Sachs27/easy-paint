@@ -2,6 +2,7 @@
 #include <math.h>
 
 #include "brush.h"
+#include "canvas.h"
 
 
 static void eraser_blend(struct canvas *canvas, int x, int y, uint8_t a) {

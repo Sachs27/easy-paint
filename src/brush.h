@@ -2,10 +2,8 @@
 #define BRUSH_H
 
 
+#include <inttypes.h>
 #include <GL/gl.h>
-
-#include "canvas.h"
-#include "3dmath.h"
 
 
 struct canvas;

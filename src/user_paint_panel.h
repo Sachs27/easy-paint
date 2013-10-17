@@ -4,22 +4,29 @@
 
 #include <sf_array.h>
 
-#include "canvas.h"
 #include "ui.h"
-#include "ui_toolbox.h"
-#include "ui_imagebox.h"
+
+struct canvas;
+struct brush;
+struct record;
+struct ui_toolbox;
+struct ui_imagebox;
 
 
 struct user_paint_panel {
     struct ui           ui;             /* inherit from ui, so this must be
                                          * the first element of the struct  */
     struct canvas      *canvas;
-    struct ui_toolbox  *brushbox;
+    struct brush       *cur_brush;
+
+    struct record      *record;
+
     struct ui_toolbox  *toolbox;
     struct ui_imagebox *undo;
     struct ui_imagebox *redo;
     struct ui_imagebox *brush;
 
+    struct ui_toolbox  *brushbox;
     struct sf_array    *brushicons;     /* elt: (struct ui_imagebox *) */
     struct sf_array    *brushes;        /* elt: (struct brush) */
 

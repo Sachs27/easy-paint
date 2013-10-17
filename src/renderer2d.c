@@ -11,16 +11,57 @@ static int                  isinited = 0;
 static GLuint               renderer2d_vbo = 0;
 static GLsizeiptr           renderer2d_vbo_size = 1024;
 static GLuint               renderer2d_fbo = 0;
+
 static GLuint               renderer2d_line_prog = 0;
 static struct shader_info   renderer2d_line_shaders[] = {
-    {GL_VERTEX_SHADER, "renderer2d_line.vs.glsl"},
-    {GL_FRAGMENT_SHADER, "renderer2d_line.fs.glsl"},
+    {GL_VERTEX_SHADER, NULL,
+        "#version 330                                           \n"
+        "uniform mat4 mprojection;                              \n"
+        "layout(location = 0) in vec2 vposition;                \n"
+        "void main(void) {                                      \n"
+        "    gl_Position = mprojection * vec4(vposition, 0, 1); \n"
+        "}                                                      \n"
+    },
+    {GL_FRAGMENT_SHADER, NULL,
+        "#version 330                                           \n"
+        "uniform vec4 color;                                    \n"
+        "layout(location = 0) out vec4 fcolor;                  \n"
+        "void main(void) {                                      \n"
+        "   fcolor = color;                                     \n"
+        "}                                                      \n"
+    },
     {GL_NONE, NULL}
 };
 static GLuint   renderer2d_texture_prog = 0;
 static struct shader_info renderer2d_texture_shaders[] = {
-    {GL_VERTEX_SHADER, "renderer2d_texture.vs.glsl"},
-    {GL_FRAGMENT_SHADER, "renderer2d_texture.fs.glsl"},
+    {GL_VERTEX_SHADER, NULL,
+        "#version 330                                           \n"
+        "uniform mat4 mprojection;                              \n"
+        "layout(location = 0) in vec2 vposition;                \n"
+        "layout(location = 1) in vec2 vtexcoord;                \n"
+        "out vec2 texcoord;                                     \n"
+        "void main(void) {                                      \n"
+        "    gl_Position = mprojection * vec4(vposition, 0, 1); \n"
+        "    texcoord = vtexcoord;                              \n"
+        "}                                                      \n"
+    },
+    {GL_FRAGMENT_SHADER, NULL,
+        "#version 330                                       \n"
+        "uniform sampler2D texture0;                        \n"
+        "uniform bool      iscoloring = false;              \n"
+        "uniform vec3      color = vec3(0, 0, 0);           \n"
+        "in vec2 texcoord;                                  \n"
+        "layout(location = 0) out vec4 fcolor;              \n"
+        "void main(void) {                                  \n"
+        "    vec4 texcolor = texture(texture0, texcoord);   \n"
+        "    if (iscoloring) {                              \n"
+        "        fcolor = vec4(color.rgb * texcolor.a,      \n"
+        "                      texcolor.a);                 \n"
+        "    } else {                                       \n"
+        "        fcolor = texcolor;                         \n"
+        "    }                                              \n"
+        "}                                                  \n"
+    },
     {GL_NONE, NULL}
 };
 
@@ -116,12 +157,41 @@ void renderer2d_set_render_target(struct renderer2d *r, struct texture *rt) {
     renderer2d_set_viewport(r);
 }
 
+void renderer2d_fill_rect(struct renderer2d *renderer, int x, int y,
+                          int w, int h,
+                          uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    struct vec2 vposition[4] = {
+        {x, y},
+        {x, y + h},
+        {x + w, y + h},
+        {x + w, y}
+    };
+
+    glUseProgram(renderer2d_line_prog);
+
+    glBindBuffer(GL_ARRAY_BUFFER, renderer2d_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vposition), vposition);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+
+    glUniform4f(glGetUniformLocation(renderer2d_line_prog, "color"),
+                r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
+    glUniformMatrix4fv(glGetUniformLocation(renderer2d_line_prog,
+                                            "mprojection"),
+                       1, MATRIX_GL_TRANSPOSE,
+                       (GLfloat *) &renderer->projection);
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glDisableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glUseProgram(0);
+}
+
 void renderer2d_draw_line(struct renderer2d *renderer, float width,
                           int x0, int y0, int x1, int y1,
                           uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     struct vec2 vposition[2] = { {x0, y0}, {x1, y1} };
-
-    renderer2d_set_viewport(renderer);
 
     glUseProgram(renderer2d_line_prog);
 

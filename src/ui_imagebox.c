@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "ui_imagebox.h"
+#include "texture.h"
 
 
 static void ui_imagebox_on_render(struct ui_imagebox *ib,
