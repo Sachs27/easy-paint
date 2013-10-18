@@ -60,5 +60,7 @@ void record_redo(struct record *record, struct canvas *canvas);
 
 void record_redo_n(struct record *record, struct canvas *canvas, uint32_t n);
 
+void record_adjust(struct record *record, int xmargin, int ymargin);
+
 
 #endif /* RECORD_H */

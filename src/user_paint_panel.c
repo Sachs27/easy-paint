@@ -204,7 +204,7 @@ struct user_paint_panel *user_paint_panel_create(int w, int h) {
     UI_CALLBACK(upp->canvas, update, canvas_on_update);
     UI_CALLBACK(upp->canvas, press, canvas_on_press);
     UI_CALLBACK(upp->canvas, release, canvas_on_release);
-    upp->cur_brush = SF_ARRAY_NTH(upp->brushes, 0);
+    upp->cur_brush = SF_ARRAY_NTH(upp->brushes, 1);
 
     upp->record = record_create();
 

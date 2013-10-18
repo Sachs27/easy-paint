@@ -73,6 +73,7 @@ struct ui_menu *ui_menu_create(int w, int h) {
     menu = malloc(sizeof(*menu));
     ui_init((struct ui *) menu, w, h);
     menu->items = sf_list_create(sizeof(struct ui *));
+    menu->ispushed = 0;
 
     UI_CALLBACK(menu, render, ui_menu_on_render);
     UI_CALLBACK(menu, press, ui_menu_on_press);

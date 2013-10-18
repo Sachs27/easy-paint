@@ -105,6 +105,7 @@ static void update(double dt) {
         if (record_load(g_app.upp->record,
                     get_open_file_name("Record File(*.rec)\0*.rec\0")) == 0) {
             canvas_clear(g_app.upp->canvas);
+            record_adjust(g_app.upp->record, 10, 10);
         }
     } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
         isreplay = !isreplay;

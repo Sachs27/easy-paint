@@ -8,9 +8,13 @@
 
 #define RECORD_PIXEL_NALLOC 1024
 
-static void record_undo_1(struct record *record, struct canvas *canvas) {
+static int record_undo_1(struct record *record, struct canvas *canvas) {
     struct sf_array        *segment;
     struct record_pixel    *pixel;
+
+    if (record->canvas || !record_canundo(record)) {
+        return -1;
+    }
 
     if (record->nrecords) {
         segment = *(struct sf_array **)
@@ -41,11 +45,17 @@ static void record_undo_1(struct record *record, struct canvas *canvas) {
             record->nrecords = segment->nelts;
         }
     }
+
+    return 0;
 }
 
-static void record_redo_1(struct record *record, struct canvas *canvas) {
+static int record_redo_1(struct record *record, struct canvas *canvas) {
     struct sf_array        *segment;
     struct record_pixel    *pixel;
+
+    if (record->canvas || !record_canredo(record)) {
+        return -1;
+    }
 
     if (record->nsegments == 0) {
         ++record->nsegments;
@@ -72,6 +82,8 @@ static void record_redo_1(struct record *record, struct canvas *canvas) {
     canvas_plot(canvas, pixel->x, pixel->y,
                 pixel->ncolor[0], pixel->ncolor[1],
                 pixel->ncolor[2], pixel->ncolor[3]);
+
+    return 0;
 }
 
 
@@ -300,13 +312,7 @@ void record_undo(struct record *record, struct canvas *canvas) {
 }
 
 void record_undo_n(struct record *record, struct canvas *canvas, uint32_t n) {
-    if (record->canvas || !record_canundo(record)) {
-        return;
-    }
-
-    while (n--) {
-        record_undo_1(record, canvas);
-    }
+    while (n-- && record_undo_1(record, canvas) == 0) ;
 }
 
 int record_canredo(struct record *record) {
@@ -361,11 +367,37 @@ void record_redo(struct record *record, struct canvas *canvas) {
 }
 
 void record_redo_n(struct record *record, struct canvas *canvas, uint32_t n) {
-    if (record->canvas || !record_canredo(record)) {
-        return;
-    }
+    while (n-- && record_redo_1(record, canvas) == 0) ;
+}
 
-    while (n--) {
-        record_redo_1(record, canvas);
-    }
+void record_adjust(struct record *record, int xmargin, int ymargin) {
+    int xmin = INT_MAX, ymin = INT_MAX, xmax = 0, ymax = 0;
+    int dx, dy;
+
+    SF_ARRAY_BEGIN(record->segments, struct sf_array *, p);
+        SF_ARRAY_BEGIN(*p, struct record_pixel, pixel);
+            if (pixel->x < xmin) {
+                xmin = pixel->x;
+            }
+            if (pixel->x > xmax) {
+                xmax = pixel->x;
+            }
+            if (pixel->y < ymin) {
+                ymin = pixel->y;
+            }
+            if (pixel->y > ymax) {
+                ymax = pixel->y;
+            }
+        SF_ARRAY_END();
+    SF_ARRAY_END();
+
+    dx = xmargin - xmin;
+    dy = ymargin - ymin;
+
+    SF_ARRAY_BEGIN(record->segments, struct sf_array *, p);
+        SF_ARRAY_BEGIN(*p, struct record_pixel, pixel);
+            pixel->x += dx;
+            pixel->y += dy;
+        SF_ARRAY_END();
+    SF_ARRAY_END();
 }
