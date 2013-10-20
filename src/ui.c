@@ -4,7 +4,7 @@
 #include "ui.h"
 
 
-void ui_init(struct ui *ui, int w, int h) {
+int ui_init(struct ui *ui, int w, int h) {
     memset(ui, 0, sizeof(*ui));
 
     ui->state = UI_STATE_SHOW;
@@ -12,6 +12,8 @@ void ui_init(struct ui *ui, int w, int h) {
     ui->area.y = 0;
     ui->area.w = w;
     ui->area.h = h;
+
+    return 0;
 }
 
 
@@ -61,7 +63,7 @@ void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
     SF_LIST_BEGIN(uim->uis, struct ui *, pui);
         struct ui *ui = *pui;
 
-        if (ui->on_update) {
+        if (ui->state == UI_STATE_SHOW && ui->on_update) {
             ui->on_update(ui, im, dt);
         }
     SF_LIST_END();

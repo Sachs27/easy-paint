@@ -60,7 +60,7 @@ struct ui {
 };
 
 
-void ui_init(struct ui *ui, int w, int h);
+int ui_init(struct ui *ui, int w, int h);
 
 inline static void ui_show(struct ui *ui) {
     ui->state = UI_STATE_SHOW;

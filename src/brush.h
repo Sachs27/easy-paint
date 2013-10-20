@@ -5,12 +5,15 @@
 #include <inttypes.h>
 #include <GL/gl.h>
 
-
 struct canvas;
 
-struct brush {
-    struct texture *icon;
+enum BRUSH_TYPE {
+    BRUSH_PEN = 1,
+    BRUSH_PENCIL,
+    BRUSH_ERASER,
+};
 
+struct brush {
     uint8_t color[4];
 
     /*
@@ -20,14 +23,14 @@ struct brush {
 };
 
 
+int brush_init(struct brush *brush, int type);
+
 /**
  * Draw line from point (x0, y0) to point (x1, y1) where the points are in
  * the canvas' coordinate.
  */
 void brush_drawline(struct brush *brush, struct canvas *canvas,
                     int x0, int y0, int x1, int y1);
-
-void brush_set_icon(struct brush *brush, struct texture *icon);
 
 void brush_set_color(struct brush *brush,
                      uint8_t r, uint8_t g, uint8_t b, uint8_t a);

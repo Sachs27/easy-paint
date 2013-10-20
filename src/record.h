@@ -36,6 +36,8 @@ struct record {
 
 struct record *record_create(void);
 
+int record_init(struct record *record);
+
 int record_load(struct record *record, const char *pathname);
 
 void record_save(struct record *record, const char *pathname);

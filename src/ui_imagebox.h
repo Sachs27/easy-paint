@@ -19,10 +19,10 @@ struct ui_imagebox {
  */
 struct ui_imagebox *ui_imagebox_create(int w, int h, struct texture *img);
 
-inline static void ui_imagebox_set_image(struct ui_imagebox *ib,
-                                         struct texture *img) {
-    ib->image = img;
-}
+int ui_imagebox_init(struct ui_imagebox *ib,
+                     int w, int h, struct texture *img);
+
+void ui_imagebox_set_image(struct ui_imagebox *ib, struct texture *img);
 
 
 #endif /* UI_IMAGEBOX_H */

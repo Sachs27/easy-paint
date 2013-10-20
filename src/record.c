@@ -92,14 +92,25 @@ struct record *record_create(void) {
     struct record *record;
 
     record = malloc(sizeof(*record));
+
+    if (record_init(record) != 0) {
+        free(record);
+        return NULL;
+    }
+
+    return record;
+}
+
+int record_init(struct record *record) {
     record->version = RECORD_VERSION;
     record->nsegments = 0;
     record->nrecords = 0;
-    record->segments = sf_array_create(sizeof(struct sf_array *),
-                                       SF_ARRAY_NALLOC);
+    if ((record->segments = sf_array_create(sizeof(struct sf_array *),
+                                            SF_ARRAY_NALLOC)) == NULL) {
+        return -1;
+    }
     record->canvas = NULL;
-
-    return record;
+    return 0;
 }
 
 int record_load(struct record *record, const char *pathname) {

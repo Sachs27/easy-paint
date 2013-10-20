@@ -33,6 +33,8 @@ struct canvas {
 
 struct canvas *canvas_create(int w, int h);
 
+int canvas_init(struct canvas *canvas, int w, int h);
+
 void canvas_clear(struct canvas *canvas);
 
 void canvas_resize(struct canvas *canvas, int w, int h);

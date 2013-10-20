@@ -77,12 +77,23 @@ struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
     struct ui_toolbox *tb;
 
     tb = malloc(sizeof(*tb));
+    if (ui_toolbox_init(tb, w, h, r, g, b, a) != 0) {
+        free(tb);
+        return NULL;
+    }
+    return tb;
+}
+
+int ui_toolbox_init(struct ui_toolbox *tb, int w, int h,
+                    uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     ui_init((struct ui *) tb, w, h);
     tb->background_color[0] = r;
     tb->background_color[1] = g;
     tb->background_color[2] = b;
     tb->background_color[3] = a;
-    tb->buttons = sf_list_create(sizeof(struct ui *));
+    if ((tb->buttons = sf_list_create(sizeof(struct ui *))) == NULL) {
+        return -1;
+    }
     tb->ispushed = 0;
 
     UI_CALLBACK(tb, render, ui_toolbox_on_render);
@@ -90,8 +101,7 @@ struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
     UI_CALLBACK(tb, push, ui_toolbox_on_push);
     UI_CALLBACK(tb, show, ui_toolbox_on_show);
     UI_CALLBACK(tb, hide, ui_toolbox_on_hide);
-
-    return tb;
+    return 0;
 }
 
 void ui_toolbox_add_button(struct ui_toolbox *tb, struct ui *ui) {

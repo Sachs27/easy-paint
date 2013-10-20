@@ -14,6 +14,7 @@
 #include "record.h"
 #include "canvas.h"
 #include "user_paint_panel.h"
+#include "ui_replay_panel.h"
 #include "ui_imagebox.h"
 #include "ui_menu.h"
 #include "texture.h"
@@ -33,9 +34,38 @@ static void menu_on_press(struct ui *ui, int n, int x[n], int y[n]) {
     ui_hide((struct ui *) g_app.menu);
 }
 
+static void app_change_stage(int stage) {
+    switch (stage) {
+    case APP_STAGE_DOODLE:
+        ui_hide((struct ui *) g_app.urp);
+        ui_show((struct ui *) g_app.upp);
+        break;
+    case APP_STAGE_TEACHING:
+        ui_hide((struct ui *) g_app.upp);
+        ui_show((struct ui *) g_app.urp);
+        break;
+    }
+}
+
+static void menu_item_on_press(struct ui *ui, int n, int x[n], int y[n]) {
+    int i = 0;
+    SF_LIST_BEGIN(g_app.menu->items, struct ui *, p);
+        struct ui *item = *p;
+        if (item == ui) {
+            app_change_stage(i);
+            ui_hide((struct ui *) g_app.menu);
+            return;
+        }
+        ++i;
+    SF_LIST_END();
+}
+
 static void init(void) {
     g_app.upp = user_paint_panel_create(g_app.window->w, g_app.window->h);
     ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.upp);
+
+    g_app.urp = ui_replay_panel_create(g_app.window->w, g_app.window->h);
+    ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.urp);
 
     g_app.menuicon = ui_imagebox_create(
                         0, 0, texture_load_2d("res/icons/parent.png"));
@@ -62,8 +92,20 @@ static void init(void) {
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.label1);
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.label2);
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.label3);
+    {
+        int i = 0;
+        SF_LIST_BEGIN(g_app.menu->items, struct ui *, p);
+            struct ui *item = *p;
+            if (i != 0) {
+                UI_CALLBACK(item, press, menu_item_on_press);
+            }
+            ++i;
+        SF_LIST_END();
+    }
     ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.menu);
     ui_hide((struct ui *) g_app.menu);
+
+    app_change_stage(APP_STAGE_TEACHING);
 }
 
 static void resize(struct window *win, int w, int h) {
@@ -85,7 +127,7 @@ static void handle_mouse_button_right(void) {
 
     if (g_app.im->keys[KEY_MB_RIGHT] == KEY_REPEAT
         && (g_app.im->mouse.x != lastx || g_app.im->mouse.y != lasty)) {
-        canvas_offset(g_app.upp->canvas, lastx - g_app.im->mouse.x,
+        canvas_offset(&g_app.upp->canvas, lastx - g_app.im->mouse.x,
                       lasty - g_app.im->mouse.y);
         lastx = g_app.im->mouse.x;
         lasty = g_app.im->mouse.y;
@@ -94,22 +136,7 @@ static void handle_mouse_button_right(void) {
 }
 
 static void update(double dt) {
-    static int isreplay = 0;
-    static double ntoreplay = 0;
-
     handle_mouse_button_right();
-    if (g_app.im->keys[KEY_1] == KEY_PRESS) {
-        record_save(g_app.upp->record,
-                    get_save_file_name("Record File(*.rec)\0*.rec\0"));
-    } else if (g_app.im->keys[KEY_2] == KEY_PRESS) {
-        if (record_load(g_app.upp->record,
-                    get_open_file_name("Record File(*.rec)\0*.rec\0")) == 0) {
-            canvas_clear(g_app.upp->canvas);
-            record_adjust(g_app.upp->record, 10, 10);
-        }
-    } else if (g_app.im->keys[KEY_3] == KEY_PRESS) {
-        isreplay = !isreplay;
-    }
 #if 0
     if (g_app.im->keys[KEY_UP] == KEY_PRESS) {
         int x, y;
@@ -123,16 +150,6 @@ static void update(double dt) {
         canvas_zoom_out(g_app.canvas, x, y);
     }
 #endif
-    if (isreplay && record_canredo(g_app.upp->record)) {
-        int n;
-        ntoreplay += 512 * dt;
-        n = ntoreplay;
-        if (n > 0) {
-            record_redo_n(g_app.upp->record, g_app.upp->canvas, n);
-            ntoreplay -= n;
-        }
-    }
-
     ui_manager_update(g_app.uim, g_app.im, dt);
 
     static int cnt = 0;
@@ -199,6 +216,7 @@ static int app_init(int argc, char *argv[]) {
 
     return 0;
 }
+
 
 int main(int argc, char *argv[]) {
     uint64_t cur_tick, last_tick;

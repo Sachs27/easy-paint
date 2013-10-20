@@ -201,19 +201,27 @@ struct canvas *canvas_create(int w, int h) {
 
     canvas = malloc(sizeof(*canvas));
     assert(canvas != NULL);
+    canvas_init(canvas, w, h);
+    return canvas;
+}
+
+int canvas_init(struct canvas *canvas, int w, int h) {
     ui_init((struct ui *) canvas, w, h);
+
     canvas->background = NULL;
     canvas->viewport.x = 0;
     canvas->viewport.y = 0;
     canvas->viewport.w = w;
     canvas->viewport.h = h;
     canvas->dx = canvas->dy = 0.0f;
-    canvas->tiles = sf_list_create(sizeof(struct canvas_tile));
+    if ((canvas->tiles = sf_list_create(sizeof(struct canvas_tile))) == NULL) {
+        return -1;
+    }
     canvas->record = NULL;
 
     UI_CALLBACK(canvas, render, canvas_on_render);
 
-    return canvas;
+    return 0;
 }
 
 void canvas_clear(struct canvas *canvas) {
