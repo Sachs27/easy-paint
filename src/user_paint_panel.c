@@ -285,7 +285,7 @@ struct user_paint_panel *user_paint_panel_create(int w, int h) {
 }
 
 void user_paint_panel_resize(struct user_paint_panel *upp, int w, int h) {
-    canvas_resize(&upp->canvas, w, h - TOOLBOX_HEIGHT);
+    canvas_resize(&upp->canvas, w, h);
 
     if (w < TOOLBOX_MIN_WIDTH) {
         ui_toolbox_resize(&upp->toolbox,
@@ -298,9 +298,10 @@ void user_paint_panel_resize(struct user_paint_panel *upp, int w, int h) {
     }
 
     ui_toolbox_move(&upp->toolbox, upp->canvas.ui.area.x,
-                    upp->canvas.ui.area.y + upp->canvas.ui.area.h);
+                    upp->canvas.ui.area.y + upp->canvas.ui.area.h
+                    - TOOLBOX_HEIGHT);
 
     ui_toolbox_move(&upp->brushbox, upp->canvas.ui.area.x,
                     upp->canvas.ui.area.y + upp->canvas.ui.area.h
-                    - TOOLBOX_HEIGHT);
+                    - 2 * TOOLBOX_HEIGHT);
 }

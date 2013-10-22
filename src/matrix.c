@@ -82,6 +82,31 @@ struct mat4 *mat4_scale(struct mat4 *out, scalar_t sx, scalar_t sy,
     return out;
 }
 
+struct mat4 *mat4_rotate(struct mat4 *out, scalar_t angle,
+                         scalar_t x, scalar_t y, scalar_t z) {
+    scalar_t r = ANGLE_TO_RAD(angle);
+    scalar_t s = sin(r);
+    scalar_t c = cos(r);
+    scalar_t length = sqrt(x * x + y * y + z * z);
+    x /= length;
+    y /= length;
+    z /= length;
+
+    mat4_identity(out);
+
+    out->m00 = c + x * x * (1 - c);
+    out->m10 = y * x * (1 - c) + z * s;
+    out->m20 = z * x * (1 - c) - y * s;
+    out->m01 = x * y * (1 - c) - z * s;
+    out->m11 = c + y * y * (1 - c);
+    out->m21 = z * y * (1 - c) + x * s;
+    out->m02 = x * z * (1 - c) + y * s;
+    out->m12 = y * z * (1 - c) - x * s;
+    out->m22 = c + z * z * (1 - c);
+
+    return out;
+}
+
 struct mat4 *mat4_rotate_x(struct mat4 *out, scalar_t angle) {
     scalar_t r = ANGLE_TO_RAD(angle);
     scalar_t s = sin(r);

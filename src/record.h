@@ -42,6 +42,8 @@ int record_load(struct record *record, const char *pathname);
 
 void record_save(struct record *record, const char *pathname);
 
+void record_reset(struct record *record);
+
 void record_begin(struct record *record, struct canvas *canvas);
 
 void record_end(struct record *record);
@@ -62,7 +64,7 @@ void record_redo(struct record *record, struct canvas *canvas);
 
 void record_redo_n(struct record *record, struct canvas *canvas, uint32_t n);
 
-void record_adjust(struct record *record, int xmargin, int ymargin);
+void record_adjust(struct record *record, int x, int y, int w, int h);
 
 
 #endif /* RECORD_H */

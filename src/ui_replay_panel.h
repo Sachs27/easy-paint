@@ -40,5 +40,7 @@ struct ui_replay_panel *ui_replay_panel_create(int w, int h);
 
 int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h);
 
+void ui_replay_panel_resize(struct ui_replay_panel *urp, int w, int h);
+
 
 #endif /* UI_REPLAY_PANEL_H */

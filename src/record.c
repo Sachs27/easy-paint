@@ -229,6 +229,11 @@ void record_save(struct record *record, const char *pathname) {
     fclose(f);
 }
 
+void record_reset(struct record *record) {
+    record->nsegments = 0;
+    record->nrecords = 0;
+}
+
 void record_begin(struct record *record, struct canvas *canvas) {
     struct sf_array *segment;
     if (record->canvas) {
@@ -382,7 +387,7 @@ void record_redo_n(struct record *record, struct canvas *canvas, uint32_t n) {
     while (n-- && record_redo_1(record, canvas) == 0) ;
 }
 
-void record_adjust(struct record *record, int xmargin, int ymargin) {
+void record_adjust(struct record *record, int x, int y, int w, int h) {
     int xmin = INT_MAX, ymin = INT_MAX, xmax = 0, ymax = 0;
     int dx, dy;
 
@@ -403,8 +408,8 @@ void record_adjust(struct record *record, int xmargin, int ymargin) {
         SF_ARRAY_END();
     SF_ARRAY_END();
 
-    dx = xmargin - xmin;
-    dy = ymargin - ymin;
+    dx = ((xmin - x) + (x + w - xmax)) / 2 - xmin;
+    dy = ((ymin - y) + (y + h - ymax)) / 2 - ymin;
 
     SF_ARRAY_BEGIN(record->segments, struct sf_array *, p);
         SF_ARRAY_BEGIN(*p, struct record_pixel, pixel);

@@ -113,6 +113,8 @@ static void resize(struct window *win, int w, int h) {
 
     user_paint_panel_resize(g_app.upp, w, h);
 
+    ui_replay_panel_resize(g_app.urp, w, h);
+
     g_app.menuicon->ui.area.y = h - g_app.menuicon->ui.area.h;
     g_app.menu->ui.area.h = h;
 }

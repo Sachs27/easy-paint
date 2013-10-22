@@ -96,7 +96,7 @@ static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
         if (record_load(&urp->record,
                     get_open_file_name("Record File(*.rec)\0*.rec\0")) == 0) {
             canvas_clear(&urp->canvas);
-            record_adjust(&urp->record, 10, 10);
+            record_adjust(&urp->record, 0, 0, urp->canvas.ui.area.w, urp->canvas.ui.area.h);
             ui_replay_panel_reset(urp);
         }
     }
@@ -183,4 +183,18 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h) {
     UI_CALLBACK(urp, hide, ui_replay_panel_on_hide);
 
     return 0;
+}
+
+void ui_replay_panel_resize(struct ui_replay_panel *urp, int w, int h) {
+    canvas_resize(&urp->canvas, w, h);
+    canvas_clear(&urp->canvas);
+    record_adjust(&urp->record, 0, 0, w, h);
+    record_reset(&urp->record);
+    ui_replay_panel_reset(urp);
+
+    ui_toolbox_resize(&urp->toolbox, w, urp->toolbox.ui.area.h);
+
+    ui_toolbox_move(&urp->toolbox, urp->canvas.ui.area.x,
+                    urp->canvas.ui.area.y + urp->canvas.ui.area.h
+                    - TOOLBOX_HEIGHT);
 }

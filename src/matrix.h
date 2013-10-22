@@ -39,6 +39,8 @@ struct mat4 *mat4_identity(struct mat4 *out);
 struct mat4 *mat4_mul(struct mat4 *out, struct mat4 *lhs, struct mat4 *rhs);
 struct mat4 *mat4_scale(struct mat4 *out, scalar_t sx, scalar_t sy,
                         scalar_t sz);
+struct mat4 *mat4_rotate(struct mat4 *out, scalar_t angle,
+                         scalar_t x, scalar_t y, scalar_t z);
 struct mat4 *mat4_rotate_x(struct mat4 *out, scalar_t angle);
 struct mat4 *mat4_rotate_y(struct mat4 *out, scalar_t angle);
 struct mat4 *mat4_rotate_z(struct mat4 *out, scalar_t angle);
