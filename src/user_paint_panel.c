@@ -5,6 +5,7 @@
 
 #include "app.h"
 #include "user_paint_panel.h"
+#include "system.h"
 
 
 #define TOOLBOX_HEIGHT 48
@@ -188,6 +189,11 @@ static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
 
         canvas_lastx = mx;
         canvas_lasty = my;
+    }
+
+    if (im->keys[KEY_1] == KEY_PRESS) {
+        record_save(&upp->record,
+                    get_save_file_name("Record File(*.rec)\0*.rec\0"));
     }
 }
 

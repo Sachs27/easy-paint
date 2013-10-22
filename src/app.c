@@ -22,8 +22,8 @@
 struct app g_app;
 
 static char *WINDOW_TITLE = "Easy Paint";
-static int WINDOW_WIDTH = 360;
-static int WINDOW_HEIGHT = 600;
+static int WINDOW_WIDTH = 480;
+static int WINDOW_HEIGHT = 800;
 
 
 static void menuicon_on_press(struct ui *ui, int n, int x[n], int y[n]) {
