@@ -4,6 +4,7 @@
 
 #include "ui_replay_panel.h"
 #include "system.h"
+#include "resource_manager.h"
 
 
 #define TOOLBOX_HEIGHT 48
@@ -133,16 +134,17 @@ static void ui_replay_panel_on_hide(struct ui_replay_panel *urp) {
     ui_hide((struct ui *) &urp->toolbox);
 }
 
-
-struct ui_replay_panel *ui_replay_panel_create(int w, int h) {
+struct ui_replay_panel *ui_replay_panel_create(int w, int h,
+                                               struct resource_manager *rm) {
     struct ui_replay_panel *urp;
 
     urp = malloc(sizeof(*urp));
-    ui_replay_panel_init(urp, w, h);
+    ui_replay_panel_init(urp, w, h, rm);
     return urp;
 }
 
-int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h) {
+int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
+                         struct resource_manager *rm) {
     ui_init((struct ui *) urp, w, h);
 
     urp->isreplay = 0;
@@ -155,20 +157,25 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h) {
 
     record_init(&urp->record);
 
-    urp->stop_image = texture_load_2d("res/icons/stop.png");
+    urp->stop_image = resource_manager_get(rm, RESOURCE_TEXTURE,
+                                           RESOURCE_TEXTURE_ICON_STOP);
     ui_imagebox_init(&urp->stop, 0, 0, urp->stop_image);
     UI_CALLBACK(&urp->stop, press, stop_on_press);
 
-    urp->pause_image = texture_load_2d("res/icons/pause.png");
-    urp->play_image = texture_load_2d("res/icons/play.png");
+    urp->pause_image = resource_manager_get(rm, RESOURCE_TEXTURE,
+                                            RESOURCE_TEXTURE_ICON_PAUSE);
+    urp->play_image = resource_manager_get(rm, RESOURCE_TEXTURE,
+                                           RESOURCE_TEXTURE_ICON_PLAY);
     ui_imagebox_init(&urp->replay, 0, 0, urp->play_image);
     UI_CALLBACK(&urp->replay, press, replay_on_press);
 
-    urp->fastforward_image = texture_load_2d("res/icons/fastforward.png");
+    urp->fastforward_image = resource_manager_get(
+        rm, RESOURCE_TEXTURE, RESOURCE_TEXTURE_ICON_FASTFORWARD);
     ui_imagebox_init(&urp->fastforward, 0, 0, urp->fastforward_image);
     UI_CALLBACK(&urp->fastforward, press, fastforward_on_press);
 
-    urp->rewind_image = texture_load_2d("res/icons/rewind.png");
+    urp->rewind_image = resource_manager_get(rm, RESOURCE_TEXTURE,
+                                             RESOURCE_TEXTURE_ICON_REWIND);
     ui_imagebox_init(&urp->rewind, 0, 0, urp->rewind_image);
     UI_CALLBACK(&urp->rewind, press, rewind_on_press);
 

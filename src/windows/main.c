@@ -5,10 +5,6 @@
 #include <GLFW/glfw3.h>
 #include <sf_utils.h>
 
-#ifndef PATH_MAX
-#define PATH_MAX 1024
-#endif
-
 #include "../app.h"
 #include "../window.h"
 #include "../input_manager.h"
@@ -29,34 +25,8 @@ static int glfw_init(void) {
     return 0;
 }
 
-static int change_working_directory(const char *pathname) {
-#if defined(__WIN32__)
-    static char path_seperator = '\\';
-#else
-    static char path_seperator = '/';
-#endif
-    char path[PATH_MAX];
-    char *ptr;
-
-    strncpy(path, pathname, PATH_MAX);
-    ptr = strrchr(path, path_seperator);
-    if (ptr != NULL) {
-        *ptr = '\0';
-        if (chdir(path) < 0) {
-            return -1;
-        }
-    }
-    fprintf(stdout, "Current working directory: %s\n", path);
-    return 0;
-}
-
-static int init(int argc, char *argv[]) {
+static int init(void) {
     GLenum err;
-
-    if (change_working_directory(argv[0]) != 0) {
-        fprintf(stderr, "Failed to change working directoyr.\n");
-        return -1;
-    }
 
     if (glfw_init() != 0) {
         return -1;
@@ -85,15 +55,18 @@ static int init(int argc, char *argv[]) {
     while ((err = glGetError()) != GL_NO_ERROR);
 
     g_app.im = input_manager_create(g_app.window);
+
     return 0;
 }
 
 int main(int argc, char *argv[]) {
     uint64_t cur_tick, last_tick;
 
-    if (init(argc, argv) != 0) {
+    if (init() != 0) {
         return -1;
     }
+
+    app_load_resource(argv[0]);
 
     app_init();
 

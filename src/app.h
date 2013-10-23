@@ -8,6 +8,7 @@
 struct window;
 struct renderer2d;
 struct input_manager;
+struct resource_manager;
 struct ui_manager;
 struct user_paint_panel;
 struct ui_menu;
@@ -25,6 +26,7 @@ struct app {
     struct window              *window;
     struct renderer2d          *renderer2d;
     struct input_manager       *im;
+    struct resource_manager    *rm;
     struct ui_manager          *uim;
 
     struct ui_imagebox         *logo;
@@ -40,6 +42,8 @@ struct app {
 
 
 int app_init(void);
+
+void app_load_resource(const char *rootpath);
 
 void app_on_update(double dt);
 

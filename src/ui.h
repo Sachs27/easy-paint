@@ -8,9 +8,9 @@
 #include "input_manager.h"
 #include "renderer2d.h"
 
-
 struct ui;
 struct ui_manager;
+
 
 typedef void (ui_on_update_t)(struct ui *, struct input_manager *, double);
 

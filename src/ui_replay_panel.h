@@ -8,6 +8,8 @@
 #include "ui_toolbox.h"
 #include "ui_imagebox.h"
 
+struct resource_manager;
+
 
 struct ui_replay_panel {
     struct ui           ui;             /* inherit from ui, so this must be
@@ -36,9 +38,11 @@ struct ui_replay_panel {
 };
 
 
-struct ui_replay_panel *ui_replay_panel_create(int w, int h);
+struct ui_replay_panel *ui_replay_panel_create(int w, int h,
+                                               struct resource_manager *rm);
 
-int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h);
+int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
+                         struct resource_manager *rm);
 
 void ui_replay_panel_resize(struct ui_replay_panel *urp, int w, int h);
 

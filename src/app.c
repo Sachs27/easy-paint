@@ -8,6 +8,8 @@
 #include "ui_imagebox.h"
 #include "ui_menu.h"
 #include "texture.h"
+#include "resource_manager.h"
+
 
 struct app g_app;
 static void menuicon_on_press(struct ui *ui, int n, int x[n], int y[n]) {
@@ -44,33 +46,51 @@ static void menu_item_on_press(struct ui *ui, int n, int x[n], int y[n]) {
     SF_LIST_END();
 }
 
+void app_load_resource(const char *rootpath) {
+    int i;
+
+    if (g_app.rm == NULL) {
+        g_app.rm = resource_manager_create(rootpath);
+    }
+
+    for (i = 0; i < RESOURCE_NTEXTURES; ++i) {
+        resource_manager_load(g_app.rm, RESOURCE_TEXTURE, i);
+    }
+}
+
 int app_init(void) {
     g_app.renderer2d = renderer2d_create(g_app.window->w, g_app.window->h);
     g_app.uim = ui_manager_create();
 
-    g_app.upp = user_paint_panel_create(g_app.window->w, g_app.window->h);
+    g_app.upp = user_paint_panel_create(g_app.window->w, g_app.window->h,
+                                        g_app.rm);
     ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.upp);
 
-    g_app.urp = ui_replay_panel_create(g_app.window->w, g_app.window->h);
+    g_app.urp = ui_replay_panel_create(g_app.window->w, g_app.window->h,
+                                       g_app.rm);
     ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.urp);
 
     g_app.menuicon = ui_imagebox_create(
-                        0, 0, texture_load_2d("res/icons/parent.png"));
+        0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
+                                   RESOURCE_TEXTURE_ICON_PARENT));
     UI_CALLBACK(g_app.menuicon, press, menuicon_on_press);
     ui_manager_push(g_app.uim, 0, g_app.window->h - g_app.menuicon->ui.area.h,
                     (struct ui *) g_app.menuicon);
 
-    g_app.logo = ui_imagebox_create(0, 0,
-                                    texture_load_2d("res/icons/logo.png"));
+    g_app.logo = ui_imagebox_create(
+        0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
+                                   RESOURCE_TEXTURE_ICON_LOGO));
+    g_app.label1 = ui_imagebox_create(
+        0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
+                                   RESOURCE_TEXTURE_ICON_LABEL1));
 
-    g_app.label1 = ui_imagebox_create(0, 0,
-                                      texture_load_2d("res/icons/label1.png"));
+    g_app.label2 = ui_imagebox_create(
+        0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
+                                   RESOURCE_TEXTURE_ICON_LABEL2));
 
-    g_app.label2 = ui_imagebox_create(0, 0,
-                                      texture_load_2d("res/icons/label2.png"));
-
-    g_app.label3 = ui_imagebox_create(0, 0,
-                                      texture_load_2d("res/icons/label3.png"));
+    g_app.label3 = ui_imagebox_create(
+        0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
+                                   RESOURCE_TEXTURE_ICON_LABEL3));
 
     g_app.menu = ui_menu_create(256, g_app.window->h);
     UI_CALLBACK(g_app.menu, press, menu_on_press);
@@ -92,7 +112,7 @@ int app_init(void) {
     ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.menu);
     ui_hide((struct ui *) g_app.menu);
 
-    app_change_stage(APP_STAGE_TEACHING);
+    app_change_stage(APP_STAGE_DOODLE);
 
     return 0;
 }

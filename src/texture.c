@@ -4,20 +4,143 @@
 
 #include <GL/glew.h>
 #include <IL/il.h>
+#include <png.h>
+#include <zip.h>
 
 #include "texture.h"
 
 
 struct texture_inner {
     ILuint il_id;
-    GLsizei width;
-    GLsizei height;
+    uint32_t width;
+    uint32_t height;
     GLenum format;
     GLenum type;
-    const GLvoid *pixels;
+    GLvoid *pixels;
 };
 
+static struct zip_file *png_zip_read_file = NULL;
 
+static void png_zip_read(png_structp png_ptr, png_bytep data,
+                         png_size_t length) {
+    zip_fread(png_zip_read_file, data, length);
+}
+
+static int readpng(struct texture_inner *tex_inner, struct zip *archive,
+                   const char *filename) {
+    FILE               *raw_file;
+    struct zip_file    *zip_file;
+    unsigned char       sig[8];
+    png_structp         png;
+    png_infop           info;
+    int                 bit_depth;
+    int                 color_type;
+    int                 rowbytes;
+    png_bytep          *row_pointers;
+    int                 i;
+
+    if (archive) {
+        zip_file = zip_fopen(archive, filename, 0);
+        if (!zip_file) {
+            return -1;
+        }
+        png_zip_read_file = zip_file;
+    } else {
+        raw_file = fopen(filename, "rb");
+        if (!raw_file) {
+            return -1;
+        }
+    }
+
+#define READ_BYTE(buf, n) do {          \
+    if (archive) {                      \
+        zip_fread(zip_file, buf, n);    \
+    } else {                            \
+        fread(buf, 1, n, raw_file);     \
+    }                                   \
+} while (0)
+
+#define CLOSE() do {                \
+    if (archive) {                  \
+        zip_fclose(zip_file);       \
+        png_zip_read_file = NULL;   \
+    } else {                        \
+        fclose(raw_file);           \
+    }                               \
+} while (0)
+
+    READ_BYTE(sig, 8);
+
+    if (png_sig_cmp(sig, 0, 8)) {
+        CLOSE();
+        return -1;
+    }
+
+    png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png) {
+        CLOSE();
+        return -1;
+    }
+
+    info = png_create_info_struct(png);
+    if (!info) {
+        png_destroy_read_struct(&png, NULL, NULL);
+        CLOSE();
+        return -1;
+    }
+
+    if (setjmp(png_jmpbuf(png))) {
+        png_destroy_read_struct(&png, &info, NULL);
+        CLOSE();
+        return -1;
+    }
+
+    if (archive) {
+        png_set_read_fn(png, NULL, png_zip_read);
+    } else {
+        png_init_io(png, raw_file);
+    }
+
+    png_set_sig_bytes(png, 8);
+    png_read_info(png, info);
+    png_get_IHDR(png, info, &tex_inner->width, &tex_inner->height,
+                 &bit_depth, &color_type, NULL, NULL, NULL);
+
+    if (color_type != PNG_COLOR_TYPE_RGBA) {
+        png_destroy_read_struct(&png, &info, NULL);
+        CLOSE();
+        return -1;
+    }
+
+    png_read_update_info(png, info);
+
+    rowbytes = png_get_rowbytes(png, info);
+    tex_inner->pixels = malloc(rowbytes * tex_inner->height);
+    if (!tex_inner->pixels) {
+        png_destroy_read_struct(&png, &info, NULL);
+        CLOSE();
+        return -1;
+    }
+    row_pointers = calloc(tex_inner->height, sizeof(png_bytep));
+    if (!row_pointers) {
+        png_destroy_read_struct(&png, &info, NULL);
+        CLOSE();
+        free(tex_inner->pixels);
+        return -1;
+    }
+    for (i = 0; i < tex_inner->height; ++i) {
+        row_pointers[i] = tex_inner->pixels + i * rowbytes;
+    }
+    png_read_image(png, row_pointers);
+
+    tex_inner->format = GL_RGBA;
+    tex_inner->type = GL_UNSIGNED_BYTE;
+
+    free(row_pointers);
+    CLOSE();
+    return 0;
+}
+#if 0
 static int il_init(void) {
     ILenum ilerr;
 
@@ -73,18 +196,18 @@ TEX_INIT_FAILED:
 static void texture_inner_uninit(struct texture_inner *tex_inner) {
     ilDeleteImages(1, &tex_inner->il_id);
 }
+#endif
 
-struct texture *texture_load_2d(const char *pathname) {
+int texture_load_2d_zip(struct texture *tex, struct zip *archive,
+                        const char *pathname) {
     GLenum err;
-    struct texture *tex;
     struct texture_inner tex_inner;
 
-    tex = calloc(1, sizeof(*tex));
     tex->type = GL_TEXTURE_2D;
     glGenTextures(1, &tex->tid);
 
-    if (texture_inner_init(&tex_inner, pathname) != 0) {
-        goto sf_texture_load_failed;
+    if (readpng(&tex_inner, archive, pathname) != 0) {
+        goto texture_load_failed;
     }
 
     tex->w = tex_inner.width;
@@ -98,17 +221,22 @@ struct texture *texture_load_2d(const char *pathname) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    texture_inner_uninit(&tex_inner);
+    free(tex_inner.pixels);
+
     if ((err = glGetError()) != GL_NO_ERROR) {
-        goto sf_texture_load_failed;
+        goto texture_load_failed;
     }
 
-    return tex;
+    return 0;
 
-sf_texture_load_failed:
+texture_load_failed:
     fprintf(stderr, "Failed to load texture: %s.\n", pathname);
     texture_destroy(tex);
-    return NULL;
+    return -1;
+}
+
+int texture_load_2d(struct texture *tex, const char *pathname) {
+    return texture_load_2d_zip(tex, NULL, pathname);
 }
 
 struct texture *texture_create_2d(int w, int h) {
