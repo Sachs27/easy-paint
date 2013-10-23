@@ -2,7 +2,12 @@
 #define RENDERER_H
 
 
+#if defined(GLES)
+#include <GLES/gl.h>
+#include <GLES/glext.h>
+#else
 #include <GL/gl.h>
+#endif
 #include <sf_array.h>
 
 #include "3dmath.h"

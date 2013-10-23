@@ -1,9 +1,9 @@
 #ifndef APP_H
 #define APP_H
 
-
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#define WINDOW_TITLE "Easy Paint"
+#define WINDOW_WIDTH 480
+#define WINDOW_HEIGHT 800
 
 struct window;
 struct renderer2d;
@@ -37,6 +37,16 @@ struct app {
     struct user_paint_panel    *upp;
     struct ui_replay_panel     *urp;
 };
+
+
+int app_init(void);
+
+void app_on_update(double dt);
+
+void app_on_render(void);
+
+void app_on_resize(struct window *win, int w, int h);
+
 
 extern struct app g_app;
 

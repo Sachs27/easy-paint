@@ -1,18 +1,8 @@
-#if defined(__WIN32__)
-#include <windows.h>
-#endif /* defined(__WIN32__) */
-
-#include <stdio.h>
-#include <unistd.h>
-
+#include <GL/glew.h>
 #include <sf_utils.h>
 #include <sf_debug.h>
 
-#include "sf.h"
 #include "app.h"
-#include "system.h"
-#include "record.h"
-#include "canvas.h"
 #include "user_paint_panel.h"
 #include "ui_replay_panel.h"
 #include "ui_imagebox.h"
@@ -20,12 +10,6 @@
 #include "texture.h"
 
 struct app g_app;
-
-static char *WINDOW_TITLE = "Easy Paint";
-static int WINDOW_WIDTH = 480;
-static int WINDOW_HEIGHT = 800;
-
-
 static void menuicon_on_press(struct ui *ui, int n, int x[n], int y[n]) {
     ui_show((struct ui *) g_app.menu);
 }
@@ -60,7 +44,10 @@ static void menu_item_on_press(struct ui *ui, int n, int x[n], int y[n]) {
     SF_LIST_END();
 }
 
-static void init(void) {
+int app_init(void) {
+    g_app.renderer2d = renderer2d_create(g_app.window->w, g_app.window->h);
+    g_app.uim = ui_manager_create();
+
     g_app.upp = user_paint_panel_create(g_app.window->w, g_app.window->h);
     ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.upp);
 
@@ -106,9 +93,11 @@ static void init(void) {
     ui_hide((struct ui *) g_app.menu);
 
     app_change_stage(APP_STAGE_TEACHING);
+
+    return 0;
 }
 
-static void resize(struct window *win, int w, int h) {
+void app_on_resize(struct window *win, int w, int h) {
     renderer2d_resize(g_app.renderer2d, w, h);
 
     user_paint_panel_resize(g_app.upp, w, h);
@@ -119,6 +108,7 @@ static void resize(struct window *win, int w, int h) {
     g_app.menu->ui.area.h = h;
 }
 
+#if 0
 static void handle_mouse_button_right(void) {
     static int lastx, lasty;
 
@@ -136,10 +126,11 @@ static void handle_mouse_button_right(void) {
     }
 
 }
+#endif
 
-static void update(double dt) {
-    handle_mouse_button_right();
+void app_on_update(double dt) {
 #if 0
+    handle_mouse_button_right();
     if (g_app.im->keys[KEY_UP] == KEY_PRESS) {
         int x, y;
         canvas_screen_to_canvas(g_app.canvas, g_app.im->mouse.x,
@@ -152,8 +143,6 @@ static void update(double dt) {
         canvas_zoom_out(g_app.canvas, x, y);
     }
 #endif
-    ui_manager_update(g_app.uim, g_app.im, dt);
-
     static int cnt = 0;
     static double elapse = 0;
 
@@ -164,85 +153,161 @@ static void update(double dt) {
         cnt = 0;
         elapse -= 1.0;
     }
+
+    ui_manager_update(g_app.uim, g_app.im, dt);
 }
 
-static void render(void) {
+void app_on_render(void) {
     ui_manager_render(g_app.uim, g_app.renderer2d);
 }
 
-static int app_init(int argc, char *argv[]) {
-    GLenum err;
-
-    if (sf_init(argc, argv)) {
-        return -1;
-    }
 #if 0
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#define  LOGI(...)  printf(__VA_ARGS__)
+#define  LOGE(...)  printf(__VA_ARGS__)
+
+static void printGLString(const char *name, GLenum s) {
+    const char *v = (const char *) glGetString(s);
+    LOGI("GL %s = %s\n", name, v);
+}
+
+static void checkGlError(const char* op) {
+    GLint error;
+    for (error = glGetError(); error; error
+            = glGetError()) {
+        LOGI("after %s() glError (0x%x)\n", op, error);
+    }
+}
+
+static const char gVertexShader[] =
+    "attribute vec4 vPosition;\n"
+    "void main() {\n"
+    "  gl_Position = vPosition;\n"
+    "}\n";
+
+static const char gFragmentShader[] =
+    "void main() {\n"
+    "  gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
+    "}\n";
+
+GLuint loadShader(GLenum shaderType, const char* pSource) {
+    GLuint shader = glCreateShader(shaderType);
+    if (shader) {
+        glShaderSource(shader, 1, &pSource, NULL);
+        glCompileShader(shader);
+        GLint compiled = 0;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+        if (!compiled) {
+            GLint infoLen = 0;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
+            if (infoLen) {
+                char* buf = (char*) malloc(infoLen);
+                if (buf) {
+                    glGetShaderInfoLog(shader, infoLen, NULL, buf);
+                    LOGE("Could not compile shader %d:\n%s\n",
+                            shaderType, buf);
+                    free(buf);
+                }
+                glDeleteShader(shader);
+                shader = 0;
+            }
+        }
+    }
+    return shader;
+}
+
+GLuint createProgram(const char* pVertexSource, const char* pFragmentSource) {
+    GLuint vertexShader = loadShader(GL_VERTEX_SHADER, pVertexSource);
+    if (!vertexShader) {
+        return 0;
+    }
+
+    GLuint pixelShader = loadShader(GL_FRAGMENT_SHADER, pFragmentSource);
+    if (!pixelShader) {
+        return 0;
+    }
+
+    GLuint program = glCreateProgram();
+    if (program) {
+        glAttachShader(program, vertexShader);
+        checkGlError("glAttachShader");
+        glAttachShader(program, pixelShader);
+        checkGlError("glAttachShader");
+        glLinkProgram(program);
+        GLint linkStatus = GL_FALSE;
+        glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+        if (linkStatus != GL_TRUE) {
+            GLint bufLength = 0;
+            glGetProgramiv(program, GL_INFO_LOG_LENGTH, &bufLength);
+            if (bufLength) {
+                char* buf = (char*) malloc(bufLength);
+                if (buf) {
+                    glGetProgramInfoLog(program, bufLength, NULL, buf);
+                    LOGE("Could not link program:\n%s\n", buf);
+                    free(buf);
+                }
+            }
+            glDeleteProgram(program);
+            program = 0;
+        }
+    }
+    return program;
+}
+
+GLuint gProgram;
+GLuint gvPositionHandle;
+
+int app_init(void) {
+    printGLString("Version", GL_VERSION);
+    printGLString("Vendor", GL_VENDOR);
+    printGLString("Renderer", GL_RENDERER);
+    printGLString("Extensions", GL_EXTENSIONS);
+
+    gProgram = createProgram(gVertexShader, gFragmentShader);
+    if (!gProgram) {
+        LOGE("Could not create program.");
+        return 0;
+    }
+    gvPositionHandle = glGetAttribLocation(gProgram, "vPosition");
+    checkGlError("glGetAttribLocation");
+    LOGI("glGetAttribLocation(\"vPosition\") = %d\n",
+            gvPositionHandle);
+    return 0;
+}
+
+void app_on_resize(struct window *win, int w, int h) {
+    glViewport(0, 0, w, h);
+    checkGlError("glViewport");
+}
+
+const GLfloat gTriangleVertices[] = { 0.0f, 0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f };
+
+void app_on_update(double dt) {
+}
+
+void app_on_render(void) {
+    static float grey;
+    grey += 0.01f;
+    if (grey > 1.0f) {
+        grey = 0.0f;
+    }
+    glClearColor(grey, grey, grey, 1.0f);
+    checkGlError("glClearColor");
+    glClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    checkGlError("glClear");
+
+    glUseProgram(gProgram);
+    checkGlError("glUseProgram");
+
+    glVertexAttribPointer(gvPositionHandle, 2, GL_FLOAT, GL_FALSE, 0, gTriangleVertices);
+    checkGlError("glVertexAttribPointer");
+    glEnableVertexAttribArray(gvPositionHandle);
+    checkGlError("glEnableVertexAttribArray");
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    checkGlError("glDrawArrays");
+}
 #endif
-    g_app.window = window_create(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
-    if (!g_app.window) {
-        glfwTerminate();
-        return -1;
-    }
-    window_on_resize(g_app.window, resize);
-
-#if defined(__WIN32__)
-    typedef BOOL (WINAPI *PFNWGLSWAPINTERVALEXTPROC)(int interval);
-    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
-    wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
-    wglSwapIntervalEXT(0);
-#else
-    glfwSwapInterval(0);
-#endif /* defined(__WIN32__) */
-
-    fprintf(stdout, "OpenGL Version: %s\n", glGetString(GL_VERSION));
-    /*
-     * GLEW has a problem with core contexts.
-     * It calls glGetString(GL_EXTENSIONS), which causes GL_INVALID_ENUM
-     * on GL 3.2+ core context as soon as glewInit() is called.
-     * It also doesn't fetch the function pointers.
-     */
-    glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK) {
-        return -1;
-    }
-    while ((err = glGetError()) != GL_NO_ERROR);
-
-    g_app.im = input_manager_create(g_app.window);
-    g_app.renderer2d = renderer2d_create(g_app.window->w, g_app.window->h);
-    g_app.uim = ui_manager_create();
-
-    init();
-
-    return 0;
-}
-
-
-int main(int argc, char *argv[]) {
-    uint64_t cur_tick, last_tick;
-
-    if (app_init(argc, argv) != 0) {
-        return -1;
-    }
-
-    cur_tick = sf_get_ticks();
-    while (window_isopen(g_app.window)) {
-        last_tick = cur_tick;
-        cur_tick = sf_get_ticks();
-
-        input_manager_update(g_app.im);
-
-        update((cur_tick - last_tick) * 1.0 / 1E9);
-
-        render();
-
-        glfwSwapBuffers(g_app.window->handle);
-        glfwPollEvents();
-    }
-
-    glfwTerminate();
-
-    return 0;
-}

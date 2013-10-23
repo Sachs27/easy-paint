@@ -13,6 +13,7 @@ enum key_state {
 
 enum key {
     KEY_MB_LEFT,
+#if defined(__WIN32__) || defined(__linux__)
     KEY_MB_MIDDLE,
     KEY_MB_RIGHT,
     KEY_0,
@@ -25,6 +26,7 @@ enum key {
     KEY_DOWN,
     KEY_UP,
     KEY_ESC,
+#endif /* defined(__WIN32__) || defined(__linux__) */
     NKEYS,
 };
 
@@ -47,7 +49,7 @@ struct input_manager {
 
 
 struct input_manager *input_manager_create(struct window *win);
-void input_manager_update(struct input_manager *im);
+void input_manager_update();
 
 
 #endif /* INPUT_MANAGER_H */

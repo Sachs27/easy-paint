@@ -15,7 +15,7 @@ static GLuint               renderer2d_fbo = 0;
 static GLuint               renderer2d_line_prog = 0;
 static struct shader_info   renderer2d_line_shaders[] = {
     {GL_VERTEX_SHADER, NULL,
-        "#version 130                                       \n"
+        "#version 130                                           \n"
         "uniform mat4 mprojection;                              \n"
         "attribute vec2 vposition;                              \n"
         "void main(void) {                                      \n"
@@ -23,7 +23,7 @@ static struct shader_info   renderer2d_line_shaders[] = {
         "}                                                      \n"
     },
     {GL_FRAGMENT_SHADER, NULL,
-        "#version 130                                       \n"
+        "#version 130                                           \n"
         "uniform vec4 color;                                    \n"
         "void main(void) {                                      \n"
         "   gl_FragColor = color;                               \n"
@@ -34,7 +34,7 @@ static struct shader_info   renderer2d_line_shaders[] = {
 static GLuint   renderer2d_texture_prog = 0;
 static struct shader_info renderer2d_texture_shaders[] = {
     {GL_VERTEX_SHADER, NULL,
-        "#version 130                                       \n"
+        "#version 130                                           \n"
         "uniform mat4 mprojection;                              \n"
         "attribute vec2 vposition;                              \n"
         "attribute vec2 vtexcoord;                              \n"
