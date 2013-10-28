@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sf_list.h>
-
 #include "../window.h"
 
 static struct window *window = NULL;

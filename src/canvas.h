@@ -1,7 +1,6 @@
 #ifndef CANVAS_H
 #define CANVAS_H
 
-#include <GL/gl.h>
 #include <sf_list.h>
 
 #include "ui.h"

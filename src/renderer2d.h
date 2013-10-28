@@ -2,12 +2,12 @@
 #define RENDERER_H
 
 
-#if defined(GLES)
-#include <GLES/gl.h>
-#include <GLES/glext.h>
+#ifdef GLES2
+# include <GLES2/gl2.h>
 #else
-#include <GL/gl.h>
+# include <GL/gl.h>
 #endif
+
 #include <sf_array.h>
 
 #include "3dmath.h"
@@ -24,6 +24,9 @@ struct renderer2d {
                                          * The first elt is always the
                                          * screen's area.  */
     struct texture     *render_target;
+
+    GLuint              vbo, fbo;
+    GLuint              prog_rect, prog_texture;
 };
 
 

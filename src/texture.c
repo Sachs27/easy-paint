@@ -2,8 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <GL/glew.h>
-#include <IL/il.h>
+#ifdef GLES2
+# include <GLES2/gl2.h>
+#else
+# include <GL/glew.h>
+#endif
+
 #include <png.h>
 #include <zip.h>
 
@@ -11,7 +15,6 @@
 
 
 struct texture_inner {
-    ILuint il_id;
     uint32_t width;
     uint32_t height;
     GLenum format;
@@ -248,7 +251,7 @@ struct texture *texture_create_2d(int w, int h) {
     tex->h = h;
     glGenTextures(1, &tex->tid);
     glBindTexture(GL_TEXTURE_2D, tex->tid);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);

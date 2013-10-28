@@ -30,11 +30,6 @@ enum key {
     NKEYS,
 };
 
-struct mouse_button {
-    enum key_state state;
-    int x;
-    int y;
-};
 
 struct input_manager {
     struct {
@@ -51,5 +46,9 @@ struct input_manager {
 struct input_manager *input_manager_create(struct window *win);
 void input_manager_update();
 
+#ifdef ANDROID
+void input_manager_touch_down(int n, int x[n], int y[n]);
+void input_manager_touch_up(void);
+#endif /* ANDROID */
 
 #endif /* INPUT_MANAGER_H */

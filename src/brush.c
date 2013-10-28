@@ -50,7 +50,7 @@ static void blend_additive(struct canvas *canvas, int x, int y,
 }
 
 static void pen_plot(struct brush *brush, struct canvas *canvas,
-                           int px, int py) {
+                           int xc, int yc) {
     /*
      * z x z
      * x o x
@@ -63,6 +63,7 @@ static void pen_plot(struct brush *brush, struct canvas *canvas,
     uint8_t a1 = a0 * 0.6;
     uint8_t a2 = a0 * 0.3;
 
+#if 0
     blend_additive(canvas, px - 1, py - 1, r, g, b, a2);
     blend_additive(canvas, px, py - 1, r, g, b, a1);
     blend_additive(canvas, px + 1, py - 1, r, g, b, a2);
@@ -72,6 +73,46 @@ static void pen_plot(struct brush *brush, struct canvas *canvas,
     blend_additive(canvas, px - 1, py + 1, r, g, b, a2);
     blend_additive(canvas, px, py + 1, r, g, b, a1);
     blend_additive(canvas, px + 1, py + 1, r, g, b, a2);
+#endif
+    const int radius = 3;
+    int x = 0, y = radius, i, d;
+    int lastx = -1, lasty = -1;
+
+    d = 3 - 2 * radius;
+
+    /* fill the cycle */
+    while (x <= y) {
+        uint8_t alpha = 255;
+
+        if (lasty != y) {
+            lasty = y;
+            for (i = -x + 1; i < x; ++i) {
+                /*alpha = 255 - 255 * sqrt(i * i + y * y) / r;*/
+                blend_additive(canvas, xc + i, yc + y, r, g, b, a0);
+                if (yc - y != yc + y) {
+                    blend_additive(canvas, xc + i, yc - y, r, g, b, a0);
+                }
+            }
+        }
+        if (lastx != x) {
+            lastx = x;
+            for (i = -y + 1; i < y; ++i) {
+                /*alpha = 255 - 255 * sqrt(i * i + x * x) / r;*/
+                blend_additive(canvas, xc + i, yc + x, r, g, b, a0);
+                if (yc - x != yc + x) {
+                    blend_additive(canvas, xc + i, yc - x, r, g, b, a0);
+                }
+            }
+        }
+
+        if (d < 0) {
+            d = d + 4 * x + 6;
+        } else {
+            d = d + 4 * (x - y) + 10;
+            --y;
+        }
+        ++x;
+    }
 
 }
 

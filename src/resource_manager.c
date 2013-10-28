@@ -11,6 +11,23 @@
 
 
 static const char *texture_filenames[] = {
+#ifdef ANDROID
+    [RESOURCE_TEXTURE_ICON_PEN] = "assets/pen.png",
+    [RESOURCE_TEXTURE_ICON_PENCIL] = "assets/pencil.png",
+    [RESOURCE_TEXTURE_ICON_ERASER] = "assets/eraser.png",
+    [RESOURCE_TEXTURE_ICON_UNDO] = "assets/undo.png",
+    [RESOURCE_TEXTURE_ICON_REDO] = "assets/redo.png",
+    [RESOURCE_TEXTURE_ICON_STOP] = "assets/stop.png",
+    [RESOURCE_TEXTURE_ICON_PAUSE] = "assets/pause.png",
+    [RESOURCE_TEXTURE_ICON_PLAY] = "assets/play.png",
+    [RESOURCE_TEXTURE_ICON_FASTFORWARD] = "assets/fastforward.png",
+    [RESOURCE_TEXTURE_ICON_REWIND] = "assets/rewind.png",
+    [RESOURCE_TEXTURE_ICON_PARENT] = "assets/parent.png",
+    [RESOURCE_TEXTURE_ICON_LOGO] = "assets/logo.png",
+    [RESOURCE_TEXTURE_ICON_LABEL1] = "assets/label1.png",
+    [RESOURCE_TEXTURE_ICON_LABEL2] = "assets/label2.png",
+    [RESOURCE_TEXTURE_ICON_LABEL3] = "assets/label3.png",
+#else
     [RESOURCE_TEXTURE_ICON_PEN] = "res/icons/pen.png",
     [RESOURCE_TEXTURE_ICON_PENCIL] = "res/icons/pencil.png",
     [RESOURCE_TEXTURE_ICON_ERASER] = "res/icons/eraser.png",
@@ -26,6 +43,7 @@ static const char *texture_filenames[] = {
     [RESOURCE_TEXTURE_ICON_LABEL1] = "res/icons/label1.png",
     [RESOURCE_TEXTURE_ICON_LABEL2] = "res/icons/label2.png",
     [RESOURCE_TEXTURE_ICON_LABEL3] = "res/icons/label3.png",
+#endif
 };
 
 static int change_working_directory(const char *pathname) {

@@ -1,4 +1,8 @@
+#ifdef ANDROID
+#include <GLES/gl.h>
+#else /* ANDROID */
 #include <GL/glew.h>
+#endif /* ANDROID */
 #include <sf_utils.h>
 #include <sf_debug.h>
 
@@ -49,9 +53,7 @@ static void menu_item_on_press(struct ui *ui, int n, int x[n], int y[n]) {
 void app_load_resource(const char *rootpath) {
     int i;
 
-    if (g_app.rm == NULL) {
-        g_app.rm = resource_manager_create(rootpath);
-    }
+    g_app.rm = resource_manager_create(rootpath);
 
     for (i = 0; i < RESOURCE_NTEXTURES; ++i) {
         resource_manager_load(g_app.rm, RESOURCE_TEXTURE, i);
@@ -88,9 +90,9 @@ int app_init(void) {
         0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
                                    RESOURCE_TEXTURE_ICON_LABEL2));
 
-    g_app.label3 = ui_imagebox_create(
-        0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
-                                   RESOURCE_TEXTURE_ICON_LABEL3));
+    /*g_app.label3 = ui_imagebox_create(*/
+        /*0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,*/
+                                   /*RESOURCE_TEXTURE_ICON_LABEL3));*/
 
     g_app.menu = ui_menu_create(256, g_app.window->h);
     UI_CALLBACK(g_app.menu, press, menu_on_press);
@@ -98,7 +100,7 @@ int app_init(void) {
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.logo);
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.label1);
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.label2);
-    ui_menu_add_item(g_app.menu, (struct ui *) g_app.label3);
+    /*ui_menu_add_item(g_app.menu, (struct ui *) g_app.label3);*/
     {
         int i = 0;
         SF_LIST_BEGIN(g_app.menu->items, struct ui *, p);
@@ -174,6 +176,7 @@ void app_on_update(double dt) {
         elapse -= 1.0;
     }
 
+    input_manager_update();
     ui_manager_update(g_app.uim, g_app.im, dt);
 }
 

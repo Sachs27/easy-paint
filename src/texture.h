@@ -1,8 +1,12 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+#ifdef GLES2
+# include <GLES2/gl2.h>
+#else
+# include <GL/gl.h>
+#endif
 #include <zip.h>
-#include <GL/gl.h>
 
 struct texture {
     GLuint  tid;

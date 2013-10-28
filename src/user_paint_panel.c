@@ -160,12 +160,12 @@ static void canvas_on_press(struct canvas *canvas,
     struct user_paint_panel *upp =
         sf_container_of(canvas, struct user_paint_panel, canvas);
 
-    if (n == 1) {
-        canvas_screen_to_canvas(canvas, x[0] + canvas->ui.area.x,
-                                y[0] + canvas->ui.area.y,
-                                &canvas_lastx, &canvas_lasty);
-        record_begin(&upp->record, canvas);
-    }
+    assert(n == 1);
+
+    canvas_screen_to_canvas(canvas, x[0] + canvas->ui.area.x,
+                            y[0] + canvas->ui.area.y,
+                            &canvas_lastx, &canvas_lasty);
+    record_begin(&upp->record, canvas);
 }
 
 static void canvas_on_release(struct canvas *canvas) {

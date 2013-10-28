@@ -1,29 +1,43 @@
 #include <stdlib.h>
-#include <GL/glew.h>
+
+#ifdef GLES2
+# include <GLES2/gl2.h>
+# include <GLES2/gl2ext.h>
+#else
+# include <GL/glew.h>
+#endif
+
+#include <sf_debug.h>
 
 #include "sf_rect.h"
-#include "load_shaders.h"
 
 #include "renderer2d.h"
 
 
-static int                  isinited = 0;
-static GLuint               renderer2d_vbo = 0;
-static GLsizeiptr           renderer2d_vbo_size = 1024;
-static GLuint               renderer2d_fbo = 0;
+struct shader_info {
+    GLenum       type;
+    const char  *source;
+    GLuint       shader;
+};
 
-static GLuint               renderer2d_line_prog = 0;
-static struct shader_info   renderer2d_line_shaders[] = {
-    {GL_VERTEX_SHADER, NULL,
+
+static GLsizeiptr           renderer2d_vbo_size = 1024;
+
+static struct shader_info   renderer2d_rect_shaders[] = {
+    {GL_VERTEX_SHADER,
+#ifndef GLES2
         "#version 130                                           \n"
+#endif
         "uniform mat4 mprojection;                              \n"
         "attribute vec2 vposition;                              \n"
         "void main(void) {                                      \n"
         "    gl_Position = mprojection * vec4(vposition, 0, 1); \n"
         "}                                                      \n"
     },
-    {GL_FRAGMENT_SHADER, NULL,
+    {GL_FRAGMENT_SHADER,
+#ifndef GLES2
         "#version 130                                           \n"
+#endif
         "uniform vec4 color;                                    \n"
         "void main(void) {                                      \n"
         "   gl_FragColor = color;                               \n"
@@ -31,10 +45,11 @@ static struct shader_info   renderer2d_line_shaders[] = {
     },
     {GL_NONE, NULL}
 };
-static GLuint   renderer2d_texture_prog = 0;
 static struct shader_info renderer2d_texture_shaders[] = {
-    {GL_VERTEX_SHADER, NULL,
+    {GL_VERTEX_SHADER,
+#ifndef GLES2
         "#version 130                                           \n"
+#endif
         "uniform mat4 mprojection;                              \n"
         "attribute vec2 vposition;                              \n"
         "attribute vec2 vtexcoord;                              \n"
@@ -44,17 +59,21 @@ static struct shader_info renderer2d_texture_shaders[] = {
         "    texcoord = vtexcoord;                              \n"
         "}                                                      \n"
     },
-    {GL_FRAGMENT_SHADER, NULL,
+    {GL_FRAGMENT_SHADER,
+#ifndef GLES2
         "#version 130                                       \n"
+#else
+        "precision lowp float;                           \n"
+#endif
         "uniform sampler2D texture0;                        \n"
-        "uniform bool      iscoloring = false;              \n"
-        "uniform vec3      color = vec3(0, 0, 0);           \n"
+        "uniform bool      iscoloring;                      \n"
+        "uniform vec3      color;                           \n"
         "varying vec2 texcoord;                             \n"
         "void main(void) {                                  \n"
-        "    vec4 texcolor = texture(texture0, texcoord);   \n"
+        "    vec4 texcolor = texture2D(texture0, texcoord); \n"
         "    if (iscoloring) {                              \n"
         "        gl_FragColor = vec4(color.rgb * texcolor.a,\n"
-        "                      texcolor.a);                 \n"
+        "                            texcolor.a);           \n"
         "    } else {                                       \n"
         "        gl_FragColor = texcolor;                   \n"
         "    }                                              \n"
@@ -63,6 +82,77 @@ static struct shader_info renderer2d_texture_shaders[] = {
     {GL_NONE, NULL}
 };
 
+static int attach_shader(GLuint program, struct shader_info *info) {
+    GLint   compile_status;
+    GLuint  shader;
+    const GLchar *psrc = info->source;
+
+    shader = glCreateShader(info->type);
+    info->shader = shader;
+
+    glShaderSource(info->shader, 1, &psrc, NULL);
+
+    /* compile shader */
+    glCompileShader(shader);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
+    if (compile_status != GL_TRUE) {
+#ifndef NDEBUG
+        GLsizei len;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len); {
+            GLchar log[len];
+            glGetShaderInfoLog(shader, len, NULL, log);
+            dprintf("%s\n", log);
+        }
+#endif /* NDEBUG */
+        return -1;
+    }
+
+    glAttachShader(program, shader);
+    return 0;
+}
+
+GLuint load_shaders(struct shader_info *info) {
+    struct shader_info *entry;
+    GLint               link_status;
+    GLuint              program;
+
+    program = glCreateProgram();
+
+    for (entry = info; entry->type != GL_NONE; ++entry) {
+        entry->shader = 0;
+        if (attach_shader(program, entry) != 0) {
+            goto load_shaders_fail;
+        }
+    }
+
+    glLinkProgram(program);
+
+    glGetProgramiv(program, GL_LINK_STATUS, &link_status);
+    if (link_status != GL_TRUE) {
+#ifndef NDEBUG
+        GLsizei len;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len); {
+            GLchar log[len];
+            glGetProgramInfoLog(program, len, NULL, log);
+            dprintf("Failed to link program: %s\n", log);
+        }
+#endif /* NDEBUG */
+        goto load_shaders_fail;
+    }
+
+    return program;
+
+load_shaders_fail:
+    for (entry = info; entry->type != GL_NONE; ++entry) {
+        if (entry->shader) {
+            glDeleteShader(entry->shader);
+            entry->shader = 0;
+        }
+    }
+    glDeleteProgram(program);
+    return 0;
+}
+#if 0
 static void renderer2d_init(void) {
     glEnable(GL_CULL_FACE);
     glEnable(GL_SCISSOR_TEST);
@@ -81,6 +171,7 @@ static void renderer2d_init(void) {
 
     isinited = 1;
 }
+#endif
 
 /**
  * Set the top one of the 'viewports' to the current viewport.
@@ -103,12 +194,21 @@ static void renderer2d_set_viewport(struct renderer2d *r) {
 struct renderer2d *renderer2d_create(int w, int h) {
     struct renderer2d *r;
 
-    if (!isinited) {
-        renderer2d_init();
-    }
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_SCISSOR_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_DEPTH_TEST);
+
     r = malloc(sizeof(*r));
     r->w = w;
     r->h = h;
+    glGenBuffers(1, &r->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, r->vbo);
+    glBufferData(GL_ARRAY_BUFFER, renderer2d_vbo_size, NULL, GL_DYNAMIC_DRAW);
+    glGenFramebuffers(1, &r->fbo);
+    r->prog_rect = load_shaders(renderer2d_rect_shaders);
+    r->prog_texture = load_shaders(renderer2d_texture_shaders);
     r->viewports = sf_array_create(sizeof(struct sf_rect), SF_ARRAY_NALLOC);
     renderer2d_push_viewport(r, 0, 0, w, h);
     renderer2d_set_render_target(r, NULL);
@@ -141,13 +241,13 @@ void renderer2d_set_render_target(struct renderer2d *r, struct texture *rt) {
     r->render_target = rt;
 
     if (r->render_target) {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, renderer2d_fbo);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        glBindFramebuffer(GL_FRAMEBUFFER, r->fbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                GL_TEXTURE_2D, r->render_target->tid, 0);
         viewport->w = rt->w;
         viewport->h = rt->h;
     } else {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         viewport->w = r->w;
         viewport->h = r->h;
     }
@@ -165,19 +265,18 @@ void renderer2d_fill_rect(struct renderer2d *renderer, int x, int y,
         {x + w, y}
     };
 
-    glUseProgram(renderer2d_line_prog);
+    glUseProgram(renderer->prog_rect);
 
-    glBindBuffer(GL_ARRAY_BUFFER, renderer2d_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vposition), vposition);
 
-    glVertexAttribPointer(glGetAttribLocation(renderer2d_line_prog, "vposition"),
+    glVertexAttribPointer(glGetAttribLocation(renderer->prog_rect, "vposition"),
                           2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
 
-    glUniform4f(glGetUniformLocation(renderer2d_line_prog, "color"),
+    glUniform4f(glGetUniformLocation(renderer->prog_rect, "color"),
                 r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
-    glUniformMatrix4fv(glGetUniformLocation(renderer2d_line_prog,
-                                            "mprojection"),
+    glUniformMatrix4fv(glGetUniformLocation(renderer->prog_rect, "mprojection"),
                        1, MATRIX_GL_TRANSPOSE,
                        (GLfloat *) &renderer->projection);
 
@@ -193,17 +292,17 @@ void renderer2d_draw_line(struct renderer2d *renderer, float width,
                           uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     struct vec2 vposition[2] = { {x0, y0}, {x1, y1} };
 
-    glUseProgram(renderer2d_line_prog);
+    glUseProgram(renderer->prog_rect);
 
-    glBindBuffer(GL_ARRAY_BUFFER, renderer2d_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vposition), vposition);
-    glVertexAttribPointer(glGetAttribLocation(renderer2d_line_prog, "vposition"),
+    glVertexAttribPointer(glGetAttribLocation(renderer->prog_rect, "vposition"),
                           2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
 
-    glUniform4f(glGetUniformLocation(renderer2d_line_prog, "color"),
+    glUniform4f(glGetUniformLocation(renderer->prog_rect, "color"),
                 r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
-    glUniformMatrix4fv(glGetUniformLocation(renderer2d_line_prog,
+    glUniformMatrix4fv(glGetUniformLocation(renderer->prog_rect,
                                             "mprojection"),
                        1, MATRIX_GL_TRANSPOSE,
                        (GLfloat *) &renderer->projection);
@@ -260,27 +359,25 @@ static void renderer2d_draw_texture_inner(struct renderer2d *r,
     vtexcoord[3].x = vtexcoord[2].x;
     vtexcoord[3].y = vtexcoord[0].y;
 
-    glBindBuffer(GL_ARRAY_BUFFER, renderer2d_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, r->vbo);
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vposition), vposition);
-    glVertexAttribPointer(glGetAttribLocation(renderer2d_texture_prog,
+    glVertexAttribPointer(glGetAttribLocation(r->prog_texture,
                                               "vposition"),
                           2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
 
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(vposition), sizeof(vtexcoord),
                     vtexcoord);
-    glVertexAttribPointer(glGetAttribLocation(renderer2d_texture_prog,
-                                              "vtexcoord"),
+    glVertexAttribPointer(glGetAttribLocation(r->prog_texture, "vtexcoord"),
                           2, GL_FLOAT, GL_FALSE, 0, (void *)sizeof(vposition));
     glEnableVertexAttribArray(1);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture->tid);
-    glUniform1i(glGetUniformLocation(renderer2d_texture_prog, "texture0"), 0);
+    glUniform1i(glGetUniformLocation(r->prog_texture, "texture0"), 0);
 
-    glUniformMatrix4fv(glGetUniformLocation(renderer2d_texture_prog,
-                                            "mprojection"),
+    glUniformMatrix4fv(glGetUniformLocation(r->prog_texture, "mprojection"),
                        1, MATRIX_GL_TRANSPOSE, (GLfloat *) &r->projection);
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -295,10 +392,9 @@ void renderer2d_draw_texture(struct renderer2d *r,
                              int dx, int dy, int dw, int dh,
                              struct texture *texture,
                              int sx, int sy, int sw, int sh) {
-    glUseProgram(renderer2d_texture_prog);
+    glUseProgram(r->prog_texture);
 
-    glUniform1i(glGetUniformLocation(renderer2d_texture_prog, "iscoloring"),
-                                     0);
+    glUniform1i(glGetUniformLocation(r->prog_texture, "iscoloring"), 0);
 
     renderer2d_draw_texture_inner(r, dx, dy, dw, dh, texture, sx, sy, sw, sh);
 
@@ -310,12 +406,12 @@ void renderer2d_draw_texture_with_color(struct renderer2d *renderer,
                                         struct texture *texture,
                                         int sx, int sy, int sw, int sh,
                                         uint8_t r, uint8_t g, uint8_t b) {
-    glUseProgram(renderer2d_texture_prog);
+    glUseProgram(renderer->prog_texture);
 
-    glUniform1i(glGetUniformLocation(renderer2d_texture_prog, "iscoloring"),
+    glUniform1i(glGetUniformLocation(renderer->prog_texture, "iscoloring"),
                                      1);
 
-    glUniform3f(glGetUniformLocation(renderer2d_texture_prog, "color"),
+    glUniform3f(glGetUniformLocation(renderer->prog_texture, "color"),
                 r / 255.0f, g / 255.0f, b / 255.0f);
 
     renderer2d_draw_texture_inner(renderer, dx, dy, dw, dh,

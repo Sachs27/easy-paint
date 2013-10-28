@@ -75,8 +75,6 @@ int main(int argc, char *argv[]) {
         last_tick = cur_tick;
         cur_tick = sf_get_ticks();
 
-        input_manager_update();
-
         app_on_update((cur_tick - last_tick) * 1.0 / 1E9);
 
         app_on_render();

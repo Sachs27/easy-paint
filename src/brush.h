@@ -3,7 +3,6 @@
 
 
 #include <inttypes.h>
-#include <GL/gl.h>
 
 struct canvas;
 

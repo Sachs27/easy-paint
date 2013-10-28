@@ -1,26 +1,23 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#if defined(__WIN32__) || defined(__linux__)
-#include <GLFW/glfw3.h>
-
-struct window;
-
-typedef GLFWwindow window_handle_t;
-
-typedef void (window_on_resize_t)(struct window *, int, int);
-#endif /* defined(__WIN32__) || defined(__linux__) */
+#ifndef ANDROID
+# include <GLFW/glfw3.h>
+  struct window;
+  typedef GLFWwindow window_handle_t;
+  typedef void (window_on_resize_t)(struct window *, int, int);
+#endif /* ANDROID */
 
 struct window {
     char   *title;
     int     w;
     int     h;
 
-#if defined(__WIN32__) || defined(__linux__)
+#ifndef ANDROID
     window_on_resize_t *on_resize;
 
     window_handle_t *handle;
-#endif /* defined(__WIN32__) || defined(__linux__) */
+#endif
 };
 
 struct window *window_create(const char *title, int w, int h);
@@ -31,7 +28,9 @@ void window_destroy(void);
 
 int window_isopen(void);
 
+#ifndef ANDROID
 void window_on_resize(window_on_resize_t *resize_cb);
+#endif
 
 
 #endif
