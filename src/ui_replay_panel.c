@@ -21,8 +21,8 @@ static void ui_replay_panel_reset(struct ui_replay_panel *urp) {
     ui_imagebox_set_image(&urp->replay, urp->play_image);
 
     urp->isstop = 1;
-    while (record_canredo(&urp->record)) {
-        record_redo(&urp->record, &urp->canvas);
+    while (record_canredo(urp->record)) {
+        record_redo(urp->record, &urp->canvas);
     }
 }
 
@@ -33,8 +33,8 @@ static void replay_on_press(struct ui_imagebox *replay,
 
     if (urp->isstop) {
         urp->isstop = 0;
-        while (record_canundo(&urp->record)) {
-            record_undo(&urp->record, &urp->canvas);
+        while (record_canundo(urp->record)) {
+            record_undo(urp->record, &urp->canvas);
         }
     }
 
@@ -58,23 +58,43 @@ static void rewind_on_press(struct ui_imagebox *rewind,
                             int n, int x[n], int y[n]) {
     struct ui_replay_panel *urp =
         sf_container_of(rewind, struct ui_replay_panel, rewind);
-
+#if 0
     urp->replay_speed -= REPLAY_SPPED_DELTA;
     if (urp->replay_speed < REPLAY_SPEED_MIN) {
         urp->replay_speed = REPLAY_SPEED_MIN;
     }
+#endif
+    urp->record_id -= 1;
+    if (urp->record_id < 0) {
+        urp->record_id += RESOURCE_NRECORDS;
+    }
+    urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
+                                       urp->record_id);
+    canvas_clear(&urp->canvas);
+    record_adjust(urp->record, 0, 0,
+                  urp->canvas.ui.area.w, urp->canvas.ui.area.h);
+    record_reset(urp->record);
+    ui_replay_panel_reset(urp);
 }
 
 static void fastforward_on_press(struct ui_imagebox *fastforward,
                                  int n, int x[n], int y[n]) {
     struct ui_replay_panel *urp =
         sf_container_of(fastforward, struct ui_replay_panel, fastforward);
-
+#if 0
     urp->replay_speed += REPLAY_SPPED_DELTA;
     if (urp->replay_speed > REPLAY_SPEED_MAX) {
         urp->replay_speed = REPLAY_SPEED_MAX;
     }
-
+#endif
+    urp->record_id = (urp->record_id + 1) % RESOURCE_NRECORDS;
+    urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
+                                       urp->record_id);
+    canvas_clear(&urp->canvas);
+    record_adjust(urp->record, 0, 0,
+                  urp->canvas.ui.area.w, urp->canvas.ui.area.h);
+    record_reset(urp->record);
+    ui_replay_panel_reset(urp);
 }
 
 static void canvas_on_press(struct canvas *canvas,
@@ -94,21 +114,23 @@ static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
     } else
 #endif
     if (im->keys[KEY_2] == KEY_PRESS) {
-        if (record_load(&urp->record,
-                    get_open_file_name("Record File(*.rec)\0*.rec\0")) == 0) {
-            canvas_clear(&urp->canvas);
-            record_adjust(&urp->record, 0, 0, urp->canvas.ui.area.w, urp->canvas.ui.area.h);
-            ui_replay_panel_reset(urp);
-        }
+        urp->record_id = (urp->record_id + 1) % RESOURCE_NRECORDS;
+        urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
+                                           urp->record_id);
+        canvas_clear(&urp->canvas);
+        record_adjust(urp->record, 0, 0,
+                      urp->canvas.ui.area.w, urp->canvas.ui.area.h);
+        record_reset(urp->record);
+        ui_replay_panel_reset(urp);
     }
 
     if (urp->isreplay) {
-        if (record_canredo(&urp->record)) {
+        if (record_canredo(urp->record)) {
             int n;
             ntoreplay += urp->replay_speed * dt;
             n = ntoreplay;
             if (n > 0) {
-                record_redo_n(&urp->record, &urp->canvas, n);
+                record_redo_n(urp->record, &urp->canvas, n);
                 ntoreplay -= n;
             }
         } else {
@@ -147,6 +169,8 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
                          struct resource_manager *rm) {
     ui_init((struct ui *) urp, w, h);
 
+    urp->rm = rm;
+
     urp->isreplay = 0;
     urp->isstop = 1;
     urp->replay_speed = REPLAY_SPEED_DEFAULT;
@@ -155,7 +179,9 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
     UI_CALLBACK(&urp->canvas, update, canvas_on_update);
     UI_CALLBACK(&urp->canvas, press, canvas_on_press);
 
-    record_init(&urp->record);
+    urp->record_id = 0;
+    urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
+                                       urp->record_id);
 
     urp->stop_image = resource_manager_get(rm, RESOURCE_TEXTURE,
                                            RESOURCE_TEXTURE_ICON_STOP);
@@ -195,8 +221,8 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
 void ui_replay_panel_resize(struct ui_replay_panel *urp, int w, int h) {
     canvas_resize(&urp->canvas, w, h);
     canvas_clear(&urp->canvas);
-    record_adjust(&urp->record, 0, 0, w, h);
-    record_reset(&urp->record);
+    record_adjust(urp->record, 0, 0, w, h);
+    record_reset(urp->record);
     ui_replay_panel_reset(urp);
 
     ui_toolbox_resize(&urp->toolbox, w, urp->toolbox.ui.area.h);

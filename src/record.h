@@ -2,6 +2,8 @@
 #define RECORD_H
 
 
+#include <zip.h>
+
 #include <sf_array.h>
 
 struct canvas;
@@ -38,7 +40,10 @@ struct record *record_create(void);
 
 int record_init(struct record *record);
 
-int record_load(struct record *record, const char *pathname);
+int record_load_zip(struct record *record, struct zip *archive,
+                    const char *filename);
+
+int record_load(struct record *record, const char *filename);
 
 void record_save(struct record *record, const char *pathname);
 

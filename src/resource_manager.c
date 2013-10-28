@@ -11,39 +11,29 @@
 
 
 static const char *texture_filenames[] = {
-#ifdef ANDROID
-    [RESOURCE_TEXTURE_ICON_PEN] = "assets/pen.png",
-    [RESOURCE_TEXTURE_ICON_PENCIL] = "assets/pencil.png",
-    [RESOURCE_TEXTURE_ICON_ERASER] = "assets/eraser.png",
-    [RESOURCE_TEXTURE_ICON_UNDO] = "assets/undo.png",
-    [RESOURCE_TEXTURE_ICON_REDO] = "assets/redo.png",
-    [RESOURCE_TEXTURE_ICON_STOP] = "assets/stop.png",
-    [RESOURCE_TEXTURE_ICON_PAUSE] = "assets/pause.png",
-    [RESOURCE_TEXTURE_ICON_PLAY] = "assets/play.png",
-    [RESOURCE_TEXTURE_ICON_FASTFORWARD] = "assets/fastforward.png",
-    [RESOURCE_TEXTURE_ICON_REWIND] = "assets/rewind.png",
-    [RESOURCE_TEXTURE_ICON_PARENT] = "assets/parent.png",
-    [RESOURCE_TEXTURE_ICON_LOGO] = "assets/logo.png",
-    [RESOURCE_TEXTURE_ICON_LABEL1] = "assets/label1.png",
-    [RESOURCE_TEXTURE_ICON_LABEL2] = "assets/label2.png",
-    [RESOURCE_TEXTURE_ICON_LABEL3] = "assets/label3.png",
-#else
-    [RESOURCE_TEXTURE_ICON_PEN] = "res/icons/pen.png",
-    [RESOURCE_TEXTURE_ICON_PENCIL] = "res/icons/pencil.png",
-    [RESOURCE_TEXTURE_ICON_ERASER] = "res/icons/eraser.png",
-    [RESOURCE_TEXTURE_ICON_UNDO] = "res/icons/undo.png",
-    [RESOURCE_TEXTURE_ICON_REDO] = "res/icons/redo.png",
-    [RESOURCE_TEXTURE_ICON_STOP] = "res/icons/stop.png",
-    [RESOURCE_TEXTURE_ICON_PAUSE] = "res/icons/pause.png",
-    [RESOURCE_TEXTURE_ICON_PLAY] = "res/icons/play.png",
-    [RESOURCE_TEXTURE_ICON_FASTFORWARD] = "res/icons/fastforward.png",
-    [RESOURCE_TEXTURE_ICON_REWIND] = "res/icons/rewind.png",
-    [RESOURCE_TEXTURE_ICON_PARENT] = "res/icons/parent.png",
-    [RESOURCE_TEXTURE_ICON_LOGO] = "res/icons/logo.png",
-    [RESOURCE_TEXTURE_ICON_LABEL1] = "res/icons/label1.png",
-    [RESOURCE_TEXTURE_ICON_LABEL2] = "res/icons/label2.png",
-    [RESOURCE_TEXTURE_ICON_LABEL3] = "res/icons/label3.png",
-#endif
+    [RESOURCE_TEXTURE_ICON_PEN] = "assets/icons/pen.png",
+    [RESOURCE_TEXTURE_ICON_PENCIL] = "assets/icons/pencil.png",
+    [RESOURCE_TEXTURE_ICON_ERASER] = "assets/icons/eraser.png",
+    [RESOURCE_TEXTURE_ICON_UNDO] = "assets/icons/undo.png",
+    [RESOURCE_TEXTURE_ICON_REDO] = "assets/icons/redo.png",
+    [RESOURCE_TEXTURE_ICON_STOP] = "assets/icons/stop.png",
+    [RESOURCE_TEXTURE_ICON_PAUSE] = "assets/icons/pause.png",
+    [RESOURCE_TEXTURE_ICON_PLAY] = "assets/icons/play.png",
+    [RESOURCE_TEXTURE_ICON_FASTFORWARD] = "assets/icons/fastforward.png",
+    [RESOURCE_TEXTURE_ICON_REWIND] = "assets/icons/rewind.png",
+    [RESOURCE_TEXTURE_ICON_PARENT] = "assets/icons/parent.png",
+    [RESOURCE_TEXTURE_ICON_LOGO] = "assets/icons/logo.png",
+    [RESOURCE_TEXTURE_ICON_LABEL1] = "assets/icons/label1.png",
+    [RESOURCE_TEXTURE_ICON_LABEL2] = "assets/icons/label2.png",
+    [RESOURCE_TEXTURE_ICON_LABEL3] = "assets/icons/label3.png",
+};
+
+static const char *record_filenames[] = {
+    "assets/record/bird.rec",
+    "assets/record/cake.rec",
+    "assets/record/mushroom.rec",
+    "assets/record/uncle-sun.rec",
+    "assets/record/whale.rec",
 };
 
 static int change_working_directory(const char *pathname) {
@@ -107,6 +97,19 @@ void *resource_manager_load(struct resource_manager *rm, int type, int id) {
         }
         assert(rm->istexture_loaded[id]);
         return rm->textures + id;
+    case RESOURCE_RECORD:
+        if (rm->iszip) {
+            if (record_load_zip(rm->records + id, rm->archive,
+                                record_filenames[id]) == 0) {
+                rm->isrecord_loaded[id] = 1;
+            }
+        } else {
+            if (record_load(rm->records + id, record_filenames[id]) == 0) {
+                rm->isrecord_loaded[id] = 1;
+            }
+        }
+        assert(rm->isrecord_loaded[id]);
+        return rm->records + id;
     }
 
     return NULL;
@@ -120,6 +123,12 @@ void *resource_manager_get(struct resource_manager *rm, int type, int id) {
             resource_manager_load(rm, type, id);
         }
         return rm->textures + id;
+    case RESOURCE_RECORD:
+        assert(id < RESOURCE_NRECORDS);
+        if (!rm->isrecord_loaded[id]) {
+            resource_manager_load(rm, type, id);
+        }
+        return rm->records + id;
     }
 
     return NULL;

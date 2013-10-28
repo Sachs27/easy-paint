@@ -21,8 +21,8 @@ public class EasyPaintView extends GLSurfaceView {
     private static String TAG = "EasyPaintView";
     private static final boolean DEBUG = true;
     
-    private int[] x;
-    private int[] y;
+    private int[] x = new int[2];
+    private int[] y = new int[2];
     private boolean istouched = false;
     
 	public EasyPaintView(Context context) {
@@ -59,12 +59,8 @@ public class EasyPaintView extends GLSurfaceView {
 	        	switch (action) {
 	        	case MotionEvent.ACTION_DOWN:
 	        	case MotionEvent.ACTION_MOVE:
-	        		EasyPaintView.this.x = new int[event.getPointerCount()];
-	        		EasyPaintView.this.y = new int[event.getPointerCount()];
-	        		for (int i = 0; i < event.getPointerCount(); ++i) {
-	        			EasyPaintView.this.x[i] = (int) event.getX(i);
-	        			EasyPaintView.this.y[i] = (int) event.getY(i);
-	        		}
+	        		EasyPaintView.this.x[0] = (int) event.getX(0);
+	        		EasyPaintView.this.y[0] = (int) event.getY(0);
 	        		istouched = true;
 	        		break;
 	        	default:

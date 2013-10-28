@@ -4,10 +4,13 @@
 
 #include <zip.h>
 
+#include "record.h"
 #include "texture.h"
+
 
 enum RESOURCE_TYPE {
     RESOURCE_TEXTURE,
+    RESOURCE_RECORD,
 };
 
 enum RESOURCE_TEXTURE_ID {
@@ -29,6 +32,15 @@ enum RESOURCE_TEXTURE_ID {
     RESOURCE_NTEXTURES,
 };
 
+enum RESOURCE_RECORD_ID {
+    RESOURCE_RECORD_0,
+    RESOURCE_RECORD_1,
+    RESOURCE_RECORD_2,
+    RESOURCE_RECORD_3,
+    RESOURCE_RECORD_4,
+    RESOURCE_NRECORDS,
+};
+
 struct resource_manager {
     char           *root;
 
@@ -37,6 +49,9 @@ struct resource_manager {
 
     char            istexture_loaded[RESOURCE_NTEXTURES];
     struct texture  textures[RESOURCE_NTEXTURES];
+
+    char            isrecord_loaded[RESOURCE_NRECORDS];
+    struct record   records[RESOURCE_NRECORDS];
 };
 
 

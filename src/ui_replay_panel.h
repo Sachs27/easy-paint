@@ -14,8 +14,12 @@ struct resource_manager;
 struct ui_replay_panel {
     struct ui           ui;             /* inherit from ui, so this must be
                                          * the first element of the struct  */
+    struct resource_manager    *rm;
+
     struct canvas       canvas;
-    struct record       record;
+
+    struct record      *record;
+    int                 record_id;
 
     int                 isreplay;
     int                 isstop;

@@ -114,9 +114,11 @@ int record_init(struct record *record) {
     return 0;
 }
 
-int record_load(struct record *record, const char *pathname) {
-    static struct canvas *canvas = NULL;
-    FILE       *f;
+int record_load_zip(struct record *record, struct zip *archive,
+                    const char *filename) {
+    static struct canvas   *canvas = NULL;
+    FILE                   *raw_file;
+    struct zip_file        *zip_file;
     uint32_t    nsegments, nrecords, i, j;
 
     if (canvas == NULL) {
@@ -127,17 +129,42 @@ int record_load(struct record *record, const char *pathname) {
         return -1;
     }
 
-    f = fopen(pathname, "rb");
-
-    if (f == NULL) {
-        return -1;
+    if (record->segments == NULL) {
+        record_init(record);
     }
 
-    fread(&record->version, sizeof(record->version), 1, f);
+    if (archive) {
+        zip_file = zip_fopen(archive, filename, 0);
+        if (!zip_file) {
+            return -1;
+        }
+    } else {
+        raw_file = fopen(filename, "rb");
+        if (raw_file == NULL) {
+            return -1;
+        }
+    }
+#define READ_BYTE(buf, n) do {          \
+    if (archive) {                      \
+        zip_fread(zip_file, buf, n);    \
+    } else {                            \
+        fread(buf, 1, n, raw_file);     \
+    }                                   \
+} while (0)
+
+#define CLOSE() do {                \
+    if (archive) {                  \
+        zip_fclose(zip_file);       \
+    } else {                        \
+        fclose(raw_file);           \
+    }                               \
+} while (0)
+
+    READ_BYTE(&record->version, sizeof(record->version));
 
     if (record->version != RECORD_VERSION) {
         dprintf("Failed to load record, unsupport version: %d\n", record->version);
-        fclose(f);
+        CLOSE();
         return -1;
     }
 
@@ -145,19 +172,19 @@ int record_load(struct record *record, const char *pathname) {
     record->nrecords = 0;
     canvas_clear(canvas);
 
-    fread(&nsegments, sizeof(nsegments), 1, f);
+    READ_BYTE(&nsegments, sizeof(nsegments));
 
     for (i = 0; i < nsegments; ++i) {
         record_begin(record, canvas);
 
-        fread(&nrecords, sizeof(nrecords), 1, f);
+        READ_BYTE(&nrecords, sizeof(nrecords));
 
         for (j = 0; j < nrecords; ++j) {
             struct record_pixel pixel;
 
-            fread(&pixel.x, sizeof(pixel.x), 1, f);
-            fread(&pixel.y, sizeof(pixel.y), 1, f);
-            fread(pixel.ncolor, sizeof(pixel.ncolor), 1, f);
+            READ_BYTE(&pixel.x, sizeof(pixel.x));
+            READ_BYTE(&pixel.y, sizeof(pixel.y));
+            READ_BYTE(pixel.ncolor, sizeof(pixel.ncolor));
             canvas_plot(canvas, pixel.x, pixel.y,
                         pixel.ncolor[0], pixel.ncolor[1],
                         pixel.ncolor[2], pixel.ncolor[3]);
@@ -165,12 +192,16 @@ int record_load(struct record *record, const char *pathname) {
         record_end(record);
     }
 
-    fclose(f);
+    CLOSE();
 
     record->nsegments = 0;
     record->nrecords = 0;
 
     return 0;
+}
+
+int record_load(struct record *record, const char *pathname) {
+    return record_load_zip(record, NULL, pathname);
 }
 
 void record_save(struct record *record, const char *pathname) {

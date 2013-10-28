@@ -73,11 +73,11 @@ const char *get_save_file_name(const char *filter) {
 #else
 
 const char *get_open_file_name(const char *filter) {
-    return "record/tmp.rec";
+    return "assets/record/tmp.rec";
 }
 
 const char *get_save_file_name(const char *filter) {
-    return "record/tmp.rec";
+    return "assets/record/tmp.rec";
 }
 
 #endif /* defined(__WIN32__) */
