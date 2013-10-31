@@ -31,6 +31,7 @@ LOCAL_SRC_FILES :=	\
 	ui_menu.c		\
 	ui_replay_panel.c	\
 	ui_toolbox.c	\
+	user_learn_panel.c	\
 	user_paint_panel.c	\
 	vector.c		\
 	$(MY_JNI_PATH)/input_manager.c						\

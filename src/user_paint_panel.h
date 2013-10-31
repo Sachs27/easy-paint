@@ -11,6 +11,8 @@
 #include "ui_toolbox.h"
 #include "ui_imagebox.h"
 
+struct resource_manager;
+
 
 struct user_paint_panel {
     struct ui           ui;             /* inherit from ui, so this must be
@@ -52,6 +54,8 @@ struct user_paint_panel *user_paint_panel_create(int w, int h,
                                                  struct resource_manager *rm);
 
 void user_paint_panel_resize(struct user_paint_panel *upp, int w, int h);
+
+void user_paint_panel_move(struct user_paint_panel *upp, int x, int y);
 
 
 #endif /* USER_PAINT_PANEL_H */

@@ -3,7 +3,6 @@
 
 #include <sf_utils.h>
 
-#include "app.h"
 #include "user_paint_panel.h"
 #include "system.h"
 #include "resource_manager.h"
@@ -81,10 +80,10 @@ static void brush_on_press(struct ui_imagebox *brush,
         sf_container_of(brush, struct user_paint_panel, brush);
 
     if (upp->brushbox.ui.state == UI_STATE_SHOW) {
-        ui_hide((struct ui *) &g_app.upp->brushbox);
+        ui_hide((struct ui *) &upp->brushbox);
         ui_hide(&upp->blank);
     } else {
-        ui_show((struct ui *) &g_app.upp->brushbox);
+        ui_show((struct ui *) &upp->brushbox);
         ui_show(&upp->blank);
     }
 }
@@ -317,4 +316,20 @@ void user_paint_panel_resize(struct user_paint_panel *upp, int w, int h) {
     ui_toolbox_move(&upp->brushbox, upp->canvas.ui.area.x,
                     upp->canvas.ui.area.y + upp->canvas.ui.area.h
                     - 2 * TOOLBOX_HEIGHT);
+}
+
+void user_paint_panel_move(struct user_paint_panel *upp, int x, int y) {
+    upp->ui.area.x = x;
+    upp->ui.area.y = y;
+
+    upp->canvas.ui.area.x = x;
+    upp->canvas.ui.area.y = y;
+
+    upp->blank.area.x = x;
+    upp->blank.area.y = y;
+
+    ui_toolbox_move(&upp->brushbox, x,
+                    y + upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT);
+
+    ui_toolbox_move(&upp->toolbox, x, y + upp->canvas.ui.area.h - TOOLBOX_HEIGHT);
 }

@@ -99,6 +99,7 @@ static void fastforward_on_press(struct ui_imagebox *fastforward,
 
 static void canvas_on_press(struct canvas *canvas,
                             int n, int x[n], int y[n]) {
+    /* Just empty */
 }
 
 static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
@@ -107,22 +108,6 @@ static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
 
     struct ui_replay_panel *urp =
         sf_container_of(canvas, struct ui_replay_panel, canvas);
-#if 0
-    if (im->keys[KEY_1] == KEY_PRESS) {
-        record_save(&urp->record,
-                    get_save_file_name("Record File(*.rec)\0*.rec\0"));
-    } else
-#endif
-    if (im->keys[KEY_2] == KEY_PRESS) {
-        urp->record_id = (urp->record_id + 1) % RESOURCE_NRECORDS;
-        urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
-                                           urp->record_id);
-        canvas_clear(&urp->canvas);
-        record_adjust(urp->record, 0, 0,
-                      urp->canvas.ui.area.w, urp->canvas.ui.area.h);
-        record_reset(urp->record);
-        ui_replay_panel_reset(urp);
-    }
 
     if (urp->isreplay) {
         if (record_canredo(urp->record)) {

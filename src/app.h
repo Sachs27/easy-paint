@@ -37,7 +37,7 @@ struct app {
     struct ui_imagebox         *menuicon;
 
     struct user_paint_panel    *upp;
-    struct ui_replay_panel     *urp;
+    struct user_learn_panel    *ulp;
 };
 
 
