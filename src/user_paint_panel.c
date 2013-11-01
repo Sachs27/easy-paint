@@ -158,11 +158,12 @@ static void canvas_on_press(struct canvas *canvas,
                             int n, int x[n], int y[n]) {
     struct user_paint_panel *upp =
         sf_container_of(canvas, struct user_paint_panel, canvas);
+    int xscreen, yscreen;
 
     assert(n == 1);
 
-    canvas_screen_to_canvas(canvas, x[0] + canvas->ui.area.x,
-                            y[0] + canvas->ui.area.y,
+    ui_get_screen_pos((struct ui *) canvas, &xscreen, &yscreen);
+    canvas_screen_to_canvas(canvas, x[0] + xscreen, y[0] + yscreen,
                             &canvas_lastx, &canvas_lasty);
     record_begin(&upp->record, canvas);
 }
@@ -197,32 +198,24 @@ static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
     }
 }
 
-static void user_paint_panel_on_push(struct user_paint_panel *upp,
-                                     struct ui_manager *uim,
-                                     int x, int y) {
-    ui_manager_push(uim, x, y, (struct ui *) &upp->canvas);
-
-    ui_manager_push(uim, x, y, &upp->blank);
-    ui_hide(&upp->blank);
-
-    ui_manager_push(uim, x, y + upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT,
-                    (struct ui *) &upp->brushbox);
-    ui_hide((struct ui *) &upp->brushbox);
-
-    ui_manager_push(uim, x, y + upp->canvas.ui.area.h - TOOLBOX_HEIGHT,
-                    (struct ui *) &upp->toolbox);
-}
-
 static void user_paint_panel_on_show(struct user_paint_panel *upp) {
-    ui_show((struct ui *) &upp->canvas);
-    ui_show((struct ui *) &upp->toolbox);
+    ui_hide((struct ui *) &upp->brushbox);
+    ui_hide(&upp->blank);
 }
 
-static void user_paint_panel_on_hide(struct user_paint_panel *upp) {
-    ui_hide((struct ui *) &upp->canvas);
-    ui_hide((struct ui *) &upp->toolbox);
-    ui_hide((struct ui *) &upp->brushbox);
+static void user_paint_panel_on_resize(struct user_paint_panel *upp,
+                                       int w, int h) {
+    ui_resize((struct ui *) &upp->canvas, w,  h);
+    
+    ui_resize((struct ui *) &upp->toolbox, w, upp->toolbox.ui.area.h);
+    ui_move((struct ui *) &upp->toolbox, 0,
+            upp->canvas.ui.area.h - TOOLBOX_HEIGHT);
+            
+    ui_resize((struct ui *) &upp->brushbox, w, upp->brushbox.ui.area.h);
+    ui_move((struct ui *) &upp->brushbox, 0,
+            upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT);
 }
+
 
 struct user_paint_panel *user_paint_panel_create(int w, int h,
                                                  struct resource_manager *rm) {
@@ -255,6 +248,7 @@ struct user_paint_panel *user_paint_panel_create(int w, int h,
     UI_CALLBACK(&upp->canvas, update, canvas_on_update);
     UI_CALLBACK(&upp->canvas, press, canvas_on_press);
     UI_CALLBACK(&upp->canvas, release, canvas_on_release);
+    ui_add_child((struct ui *) upp, (struct ui *) &upp->canvas, 0, 0);
 
     record_init(&upp->record);
 
@@ -277,6 +271,8 @@ struct user_paint_panel *user_paint_panel_create(int w, int h,
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->undo);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->brush);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->redo);
+    ui_add_child((struct ui *) upp, (struct ui *) &upp->toolbox,
+                 0, upp->canvas.ui.area.h - TOOLBOX_HEIGHT);
 
     ui_toolbox_init(&upp->brushbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 240);
     ui_toolbox_add_button(&upp->brushbox, (struct ui *) &upp->brush_pen_icon);
@@ -284,52 +280,15 @@ struct user_paint_panel *user_paint_panel_create(int w, int h,
                           (struct ui *) &upp->brush_pencil_icon);
     ui_toolbox_add_button(&upp->brushbox,
                           (struct ui *) &upp->brush_eraser_icon);
-
+    ui_add_child((struct ui *) upp, (struct ui *) &upp->brushbox,
+                 0, upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT);
 
     ui_init(&upp->blank, w, h - 2 * TOOLBOX_HEIGHT);
     UI_CALLBACK(&upp->blank, press, blank_on_press);
+    ui_add_child((struct ui *) upp, &upp->blank, 0, 0);
 
-    UI_CALLBACK(upp, push, user_paint_panel_on_push);
     UI_CALLBACK(upp, show, user_paint_panel_on_show);
-    UI_CALLBACK(upp, hide, user_paint_panel_on_hide);
+    UI_CALLBACK(upp, resize, user_paint_panel_on_resize);
 
     return upp;
-}
-
-void user_paint_panel_resize(struct user_paint_panel *upp, int w, int h) {
-    canvas_resize(&upp->canvas, w, h);
-
-    if (w < TOOLBOX_MIN_WIDTH) {
-        ui_toolbox_resize(&upp->toolbox,
-                          TOOLBOX_MIN_WIDTH, upp->toolbox.ui.area.h);
-        ui_toolbox_resize(&upp->brushbox,
-                          TOOLBOX_MIN_WIDTH, upp->toolbox.ui.area.h);
-    } else {
-        ui_toolbox_resize(&upp->toolbox, w, upp->toolbox.ui.area.h);
-        ui_toolbox_resize(&upp->brushbox, w, upp->toolbox.ui.area.h);
-    }
-
-    ui_toolbox_move(&upp->toolbox, upp->canvas.ui.area.x,
-                    upp->canvas.ui.area.y + upp->canvas.ui.area.h
-                    - TOOLBOX_HEIGHT);
-
-    ui_toolbox_move(&upp->brushbox, upp->canvas.ui.area.x,
-                    upp->canvas.ui.area.y + upp->canvas.ui.area.h
-                    - 2 * TOOLBOX_HEIGHT);
-}
-
-void user_paint_panel_move(struct user_paint_panel *upp, int x, int y) {
-    upp->ui.area.x = x;
-    upp->ui.area.y = y;
-
-    upp->canvas.ui.area.x = x;
-    upp->canvas.ui.area.y = y;
-
-    upp->blank.area.x = x;
-    upp->blank.area.y = y;
-
-    ui_toolbox_move(&upp->brushbox, x,
-                    y + upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT);
-
-    ui_toolbox_move(&upp->toolbox, x, y + upp->canvas.ui.area.h - TOOLBOX_HEIGHT);
 }

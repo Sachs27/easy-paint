@@ -9,7 +9,7 @@ static void ui_menu_update_items(struct ui_menu *menu) {
     SF_LIST_BEGIN(menu->items, struct ui *, pui);
         struct ui *ui = *pui;
         ui->area.x = 0;
-        ui->area.y += y;
+        ui->area.y = y;
         y += ui->area.h;
     SF_LIST_END();
 }
@@ -44,28 +44,6 @@ static void ui_menu_on_press(struct ui_menu *menu, int n, int x[n], int y[n]) {
      */
 }
 
-static void ui_menu_on_push(struct ui_menu *menu, struct ui_manager *uim,
-                               int x, int y) {
-    ui_menu_update_items(menu);
-    SF_LIST_BEGIN(menu->items, struct ui *, pui);
-        struct ui *item = *pui;
-        ui_manager_push(uim, x + item->area.x, y + item->area.y, item);
-    SF_LIST_END();
-    menu->ispushed = 1;
-}
-
-static void ui_menu_on_show(struct ui_menu *menu) {
-    SF_LIST_BEGIN(menu->items, struct ui *, pui);
-        ui_show(*pui);
-    SF_LIST_END();
-}
-
-static void ui_menu_on_hide(struct ui_menu *menu) {
-    SF_LIST_BEGIN(menu->items, struct ui *, pui);
-        ui_hide(*pui);
-    SF_LIST_END();
-}
-
 
 struct ui_menu *ui_menu_create(int w, int h) {
     struct ui_menu *menu;
@@ -73,13 +51,9 @@ struct ui_menu *ui_menu_create(int w, int h) {
     menu = malloc(sizeof(*menu));
     ui_init((struct ui *) menu, w, h);
     menu->items = sf_list_create(sizeof(struct ui *));
-    menu->ispushed = 0;
 
     UI_CALLBACK(menu, render, ui_menu_on_render);
     UI_CALLBACK(menu, press, ui_menu_on_press);
-    UI_CALLBACK(menu, push, ui_menu_on_push);
-    UI_CALLBACK(menu, show, ui_menu_on_show);
-    UI_CALLBACK(menu, hide, ui_menu_on_hide);
 
     return menu;
 }
@@ -93,8 +67,7 @@ void ui_menu_set_background_color(struct ui_menu *menu, uint8_t r, uint8_t g,
 }
 
 void ui_menu_add_item(struct ui_menu *menu, struct ui *item) {
-    if (menu->ispushed) {
-        return;
-    }
     sf_list_push(menu->items, &item);
+    ui_add_child((struct ui *) menu, item, 0, 0);
+    ui_menu_update_items(menu);
 }

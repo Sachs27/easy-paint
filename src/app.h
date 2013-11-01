@@ -3,7 +3,7 @@
 
 #define WINDOW_TITLE "Easy Paint"
 #define WINDOW_WIDTH 480
-#define WINDOW_HEIGHT 800
+#define WINDOW_HEIGHT 600
 
 struct window;
 struct renderer2d;

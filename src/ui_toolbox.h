@@ -12,7 +12,6 @@ struct ui_toolbox {
                                      * the first element of the struct  */
     uint8_t             background_color[4];
     struct sf_list     *buttons;    /* elt: (struct ui *) */
-    int                 ispushed;
 };
 
 
@@ -27,10 +26,6 @@ int ui_toolbox_init(struct ui_toolbox *tb, int w, int h,
  *  toolbox to ui manager.
  */
 void ui_toolbox_add_button(struct ui_toolbox *tb, struct ui *ui);
-
-void ui_toolbox_resize(struct ui_toolbox *tb, int w, int h);
-
-void ui_toolbox_move(struct ui_toolbox *tb, int x, int y);
 
 
 #endif /* UI_TOOLBOX_H */

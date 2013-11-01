@@ -442,3 +442,13 @@ void renderer2d_pop_viewport(struct renderer2d *r) {
 
     renderer2d_set_viewport(r);
 }
+
+void renderer2d_get_viewport(struct renderer2d *r, int *o_x, int *o_y,
+                             int *o_w, int *o_h) {
+    struct sf_rect *vp = SF_ARRAY_TAIL(r->viewports);
+#define PTR_ASSIGN(ptr, val) do { if (ptr) { (*ptr) = val; } } while (0)
+    PTR_ASSIGN(o_x, vp->x);
+    PTR_ASSIGN(o_y, vp->y);
+    PTR_ASSIGN(o_w, vp->w);
+    PTR_ASSIGN(o_h, vp->h);
+}

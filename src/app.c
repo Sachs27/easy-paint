@@ -27,12 +27,10 @@ static void menu_on_press(struct ui *ui, int n, int x[n], int y[n]) {
 static void app_change_stage(int stage) {
     switch (stage) {
     case APP_STAGE_DOODLE:
-        ui_hide((struct ui *) g_app.ulp);
-        ui_show((struct ui *) g_app.upp);
+        ui_manager_set_root(g_app.uim, (struct ui *) g_app.upp);
         break;
     case APP_STAGE_TEACHING:
-        ui_hide((struct ui *) g_app.upp);
-        ui_show((struct ui *) g_app.ulp);
+        ui_manager_set_root(g_app.uim, (struct ui *) g_app.ulp);
         break;
     }
 }
@@ -66,18 +64,18 @@ int app_init(void) {
 
     g_app.upp = user_paint_panel_create(g_app.window->w, g_app.window->h,
                                         g_app.rm);
-    ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.upp);
 
     g_app.ulp = user_learn_panel_create(g_app.window->w, g_app.window->h,
                                         g_app.rm);
-    ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.ulp);
 
     g_app.menuicon = ui_imagebox_create(
         0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
                                    RESOURCE_TEXTURE_ICON_PARENT));
     UI_CALLBACK(g_app.menuicon, press, menuicon_on_press);
-    ui_manager_push(g_app.uim, 0, g_app.window->h - g_app.menuicon->ui.area.h,
-                    (struct ui *) g_app.menuicon);
+    ui_add_child((struct ui *) g_app.upp, (struct ui *) g_app.menuicon,
+                 0, g_app.window->h - g_app.menuicon->ui.area.h);
+    ui_add_child((struct ui *) g_app.ulp, (struct ui *) g_app.menuicon,
+                 0, g_app.window->h - g_app.menuicon->ui.area.h);
 
     g_app.logo = ui_imagebox_create(
         0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
@@ -90,9 +88,9 @@ int app_init(void) {
         0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
                                    RESOURCE_TEXTURE_ICON_LABEL2));
 
-    /*g_app.label3 = ui_imagebox_create(*/
-        /*0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,*/
-                                   /*RESOURCE_TEXTURE_ICON_LABEL3));*/
+    g_app.label3 = ui_imagebox_create(
+        0, 0, resource_manager_get(g_app.rm, RESOURCE_TEXTURE,
+                                   RESOURCE_TEXTURE_ICON_LABEL3));
 
     g_app.menu = ui_menu_create(256, g_app.window->h);
     UI_CALLBACK(g_app.menu, press, menu_on_press);
@@ -100,7 +98,7 @@ int app_init(void) {
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.logo);
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.label1);
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.label2);
-    /*ui_menu_add_item(g_app.menu, (struct ui *) g_app.label3);*/
+    ui_menu_add_item(g_app.menu, (struct ui *) g_app.label3);
     {
         int i = 0;
         SF_LIST_BEGIN(g_app.menu->items, struct ui *, p);
@@ -111,7 +109,11 @@ int app_init(void) {
             ++i;
         SF_LIST_END();
     }
-    ui_manager_push(g_app.uim, 0, 0, (struct ui *) g_app.menu);
+    ui_add_child((struct ui *) g_app.upp, (struct ui *) g_app.menu, 0, 0);
+    ui_add_child((struct ui *) g_app.ulp, (struct ui *) g_app.menu, 0, 0);
+    
+    ui_show((struct ui *) g_app.upp);
+    ui_show((struct ui *) g_app.ulp);
     ui_hide((struct ui *) g_app.menu);
 
     app_change_stage(APP_STAGE_DOODLE);
@@ -122,12 +124,11 @@ int app_init(void) {
 void app_on_resize(struct window *win, int w, int h) {
     renderer2d_resize(g_app.renderer2d, w, h);
 
-    user_paint_panel_resize(g_app.upp, w, h);
+    ui_resize((struct ui *) g_app.upp, w, h);
+    ui_resize((struct ui *) g_app.ulp, w, h);
+    ui_move((struct ui *) g_app.menuicon, 0, h - g_app.menuicon->ui.area.h);
 
-    user_learn_panel_resize(g_app.ulp, w, h);
-
-    g_app.menuicon->ui.area.y = h - g_app.menuicon->ui.area.h;
-    g_app.menu->ui.area.h = h;
+    ui_resize((struct ui *) g_app.menu, g_app.menu->ui.area.w, h);
 }
 
 #if 0

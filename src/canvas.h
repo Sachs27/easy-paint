@@ -36,8 +36,6 @@ int canvas_init(struct canvas *canvas, int w, int h);
 
 void canvas_clear(struct canvas *canvas);
 
-void canvas_resize(struct canvas *canvas, int w, int h);
-
 /**
  * Convert point (x, y) from screen's coordinate to canvas' coordinate.
  */

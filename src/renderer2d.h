@@ -80,5 +80,8 @@ void renderer2d_push_viewport(struct renderer2d *r,
 
 void renderer2d_pop_viewport(struct renderer2d *r);
 
+void renderer2d_get_viewport(struct renderer2d *r, int *o_x, int *o_y,
+                             int *o_w, int *o_h);
+
 
 #endif /* RENDERER_H */

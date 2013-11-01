@@ -124,22 +124,19 @@ static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
     }
 }
 
-static void ui_replay_panel_on_push(struct ui_replay_panel *urp,
-                                    struct ui_manager *uim, int x, int y) {
-    ui_manager_push(uim, x, y, (struct ui *) &urp->canvas);
-    ui_manager_push(uim, x, y + urp->canvas.ui.area.h - TOOLBOX_HEIGHT,
-                    (struct ui *) &urp->toolbox);
+static void ui_replay_panel_on_resize(struct ui_replay_panel *urp,
+                                      int w, int h) {
+    ui_resize((struct ui *) &urp->canvas, w, h);
+    ui_resize((struct ui *) &urp->toolbox, w, urp->toolbox.ui.area.h);
+    ui_move((struct ui *) &urp->toolbox, 0,
+            urp->canvas.ui.area.h - TOOLBOX_HEIGHT);
+    
+    canvas_clear(&urp->canvas);
+    record_adjust(urp->record, 0, 0, w, h);
+    record_reset(urp->record);
+    ui_replay_panel_reset(urp);
 }
 
-static void ui_replay_panel_on_show(struct ui_replay_panel *urp) {
-    ui_show((struct ui *) &urp->canvas);
-    ui_show((struct ui *) &urp->toolbox);
-}
-
-static void ui_replay_panel_on_hide(struct ui_replay_panel *urp) {
-    ui_hide((struct ui *) &urp->canvas);
-    ui_hide((struct ui *) &urp->toolbox);
-}
 
 struct ui_replay_panel *ui_replay_panel_create(int w, int h,
                                                struct resource_manager *rm) {
@@ -163,6 +160,7 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
     canvas_init(&urp->canvas, w, h);
     UI_CALLBACK(&urp->canvas, update, canvas_on_update);
     UI_CALLBACK(&urp->canvas, press, canvas_on_press);
+    ui_add_child((struct ui *) urp, (struct ui *) &urp->canvas, 0, 0);
 
     urp->record_id = 0;
     urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
@@ -195,24 +193,11 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
     ui_toolbox_add_button(&urp->toolbox, (struct ui *) &urp->stop);
     ui_toolbox_add_button(&urp->toolbox, (struct ui *) &urp->rewind);
     ui_toolbox_add_button(&urp->toolbox, (struct ui *) &urp->fastforward);
+    ui_add_child((struct ui *) urp, (struct ui *) &urp->toolbox,
+                 0, urp->canvas.ui.area.h - TOOLBOX_HEIGHT);
 
-    UI_CALLBACK(urp, push, ui_replay_panel_on_push);
-    UI_CALLBACK(urp, show, ui_replay_panel_on_show);
-    UI_CALLBACK(urp, hide, ui_replay_panel_on_hide);
+    UI_CALLBACK(urp, resize, ui_replay_panel_on_resize);
 
     return 0;
 }
 
-void ui_replay_panel_resize(struct ui_replay_panel *urp, int w, int h) {
-    canvas_resize(&urp->canvas, w, h);
-    canvas_clear(&urp->canvas);
-    record_adjust(urp->record, 0, 0, w, h);
-    record_reset(urp->record);
-    ui_replay_panel_reset(urp);
-
-    ui_toolbox_resize(&urp->toolbox, w, urp->toolbox.ui.area.h);
-
-    ui_toolbox_move(&urp->toolbox, urp->canvas.ui.area.x,
-                    urp->canvas.ui.area.y + urp->canvas.ui.area.h
-                    - TOOLBOX_HEIGHT);
-}

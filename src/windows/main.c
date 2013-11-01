@@ -70,6 +70,8 @@ int main(int argc, char *argv[]) {
 
     app_init();
 
+    app_on_resize(g_app.window, g_app.window->w, g_app.window->h);
+
     cur_tick = sf_get_ticks();
     while (window_isopen()) {
         last_tick = cur_tick;

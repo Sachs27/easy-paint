@@ -25,19 +25,20 @@ typedef void (ui_on_render_t)(struct ui *, struct renderer2d *);
  * Callback function called when user press in the ui's area.
  *
  * (x, y) is the pressed point which is in the ui's coordinate.
+ *
+ * @return whether the press event will pass to parent ?
+ *         0     - no
+ *         other - yes
  */
-typedef void (ui_on_press_t)(struct ui *ui, int n, int x[n], int y[n]);
+typedef int (ui_on_press_t)(struct ui *ui, int n, int x[n], int y[n]);
 
 typedef void (ui_on_release_t)(struct ui *ui);
-
-/**
- * Callback function called when the ui is pushing to the manager.
- */
-typedef void (ui_on_push_t)(struct ui *ui, struct ui_manager *uim, int x, int y);
 
 typedef void (ui_on_show_t)(struct ui *ui);
 
 typedef void (ui_on_hide_t)(struct ui *ui);
+
+typedef void (ui_on_resize_t)(struct ui *ui, int w, int h);
 
 enum ui_state {
     UI_STATE_HIDE,
@@ -47,44 +48,42 @@ enum ui_state {
 struct ui {
     enum ui_state       state;
     struct sf_rect      area;
-
+    
+    struct ui          *parent;
+    struct sf_list     *childs; /* elt: (struct ui *) */
+    
 #define UI_CB_DEC(e) ui_on_ ## e ## _t *on_ ## e
     UI_CB_DEC(update);
     UI_CB_DEC(render);
     UI_CB_DEC(press);
     UI_CB_DEC(release);
-    UI_CB_DEC(push);
     UI_CB_DEC(show);
     UI_CB_DEC(hide);
+    UI_CB_DEC(resize);
 #undef UI_CB_DEC
 };
 
 
 int ui_init(struct ui *ui, int w, int h);
 
-inline static void ui_show(struct ui *ui) {
-    ui->state = UI_STATE_SHOW;
-    if (ui->on_show) {
-        ui->on_show(ui);
-    }
-}
+/**
+ * (x, y) is the position of the ui's upper-left corner which is in the
+ * parent's coordinates.
+ */
+int ui_add_child(struct ui *ui, struct ui *child, int x, int y);
 
-inline static void ui_hide(struct ui *ui) {
-    ui->state = UI_STATE_HIDE;
-    if (ui->on_hide) {
-        ui->on_hide(ui);
-    }
-}
+void ui_show(struct ui *ui);
+
+void ui_hide(struct ui *ui);
+
+void ui_move(struct ui *ui, int x, int y);
+
+void ui_resize(struct ui *ui, int w, int h);
+
+void ui_get_screen_pos(struct ui *ui, int *o_x, int *o_y);
 
 /**
  * Register callback function for the ui's event.
- *
- * Available event value are:
- *    update
- *    render
- *    press
- *    release
- *    push
  *
  * @p pointer of the struct ui or it's child
  * @e event the callback function will register for
@@ -97,12 +96,12 @@ inline static void ui_hide(struct ui *ui) {
 
 /* ======================================================================= */
 
-
 struct ui_manager {
     struct sf_list     *uis;        /* elt: (struct ui *) */
-    int                 ispressed;  /* only one ui can be pressed
-                                     * at one time.  */
-    struct ui          *ui_pressed;
+
+    struct ui          *ui_pressed; /* only one ui can be
+                                     * pressed at one time.  */
+    struct ui          *root;
 };
 
 
@@ -113,11 +112,8 @@ void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
 
 void ui_manager_render(struct ui_manager *uim, struct renderer2d *r);
 
-/**
- * (x, y) is the position of the ui's upper-left corner which is in the
- * screen coordinate.
- */
-void ui_manager_push(struct ui_manager *uim, int x, int y, struct ui *ui);
+
+void ui_manager_set_root(struct ui_manager *uim, struct ui *root);
 
 
 #endif /* UI_H */

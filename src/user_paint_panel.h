@@ -53,9 +53,5 @@ struct user_paint_panel {
 struct user_paint_panel *user_paint_panel_create(int w, int h,
                                                  struct resource_manager *rm);
 
-void user_paint_panel_resize(struct user_paint_panel *upp, int w, int h);
-
-void user_paint_panel_move(struct user_paint_panel *upp, int x, int y);
-
 
 #endif /* USER_PAINT_PANEL_H */

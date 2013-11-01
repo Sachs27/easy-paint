@@ -95,7 +95,7 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
     uint32_t *colors; /*[ct->dirty_rect.w * ct->dirty_rect.h];*/
     uint32_t *row;
     uint32_t *src_row;
-    int i, j;
+    int       i;
 
     src_row = ((uint32_t *) (ct->colors))
                                 + ct->dirty_rect.y * ct->texture->w
@@ -196,6 +196,16 @@ static void canvas_on_render(struct canvas *canvas,
     SF_LIST_END();
 }
 
+static void canvas_on_resize(struct canvas *canvas, int w, int h) {
+    float scale = ((float) canvas->viewport.w) / canvas->ui.area.w;
+
+    canvas->ui.area.w = w;
+    canvas->ui.area.h = h;
+
+    canvas->viewport.w = canvas->ui.area.w;
+    canvas->viewport.h = canvas->ui.area.h;
+}
+
 
 struct canvas *canvas_create(int w, int h) {
     struct canvas *canvas;
@@ -222,6 +232,7 @@ int canvas_init(struct canvas *canvas, int w, int h) {
     canvas->record = NULL;
 
     UI_CALLBACK(canvas, render, canvas_on_render);
+    UI_CALLBACK(canvas, resize, canvas_on_resize);
 
     return 0;
 }
@@ -239,20 +250,12 @@ void canvas_clear(struct canvas *canvas) {
     SF_LIST_END();
 }
 
-void canvas_resize(struct canvas *canvas, int w, int h) {
-    float scale = ((float) canvas->viewport.w) / canvas->ui.area.w;
-
-    canvas->ui.area.w = w;
-    canvas->ui.area.h = h;
-
-    canvas->viewport.w = scale * canvas->ui.area.w;
-    canvas->viewport.h = scale * canvas->ui.area.h;
-}
-
 void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
                              int *o_x, int *o_y) {
-    x -= canvas->ui.area.x;
-    y -= canvas->ui.area.y;
+    int xscreen, yscreen;
+    ui_get_screen_pos((struct ui *) canvas, &xscreen, &yscreen);
+    x -= xscreen;
+    y -= yscreen;
 
     x = ((float) x) / canvas->ui.area.w * canvas->viewport.w;
     y = ((float) y) / canvas->ui.area.h * canvas->viewport.h;

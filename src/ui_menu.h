@@ -17,8 +17,6 @@ struct ui_menu {
     struct sf_list     *items;
 
     uint8_t             background_color[4];
-
-    int                 ispushed;
 };
 
 struct ui_menu *ui_menu_create(int w, int h);
