@@ -109,10 +109,18 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
     }
     /* use dirty rect */
     glBindTexture(GL_TEXTURE_2D, ct->texture->tid);
+
+    /* On some Android device, glTexSubImage2D don't work, why? */
+#ifdef ANDROID
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ct->texture->w, ct->texture->h,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, ct->colors);
+#else
     glTexSubImage2D(GL_TEXTURE_2D, 0,
                     ct->dirty_rect.x, ct->dirty_rect.y,
                     ct->dirty_rect.w, ct->dirty_rect.h,
                     GL_RGBA, GL_UNSIGNED_BYTE, colors);
+#endif
+    
     glBindTexture(GL_TEXTURE_2D, 0);
     ct->isdirty = 0;
     free(colors);

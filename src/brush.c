@@ -62,7 +62,7 @@ static void pen_plot(struct brush *brush, struct canvas *canvas,
     uint8_t a0 = brush->color[3];
     uint8_t a1 = a0 * 0.6;
     uint8_t a2 = a0 * 0.3;
-
+#if 0
     blend_additive(canvas, px - 1, py - 1, r, g, b, a2);
     blend_additive(canvas, px, py - 1, r, g, b, a1);
     blend_additive(canvas, px + 1, py - 1, r, g, b, a2);
@@ -72,8 +72,9 @@ static void pen_plot(struct brush *brush, struct canvas *canvas,
     blend_additive(canvas, px - 1, py + 1, r, g, b, a2);
     blend_additive(canvas, px, py + 1, r, g, b, a1);
     blend_additive(canvas, px + 1, py + 1, r, g, b, a2);
-#if 0
+#endif
     const int radius = 3;
+    int xc = px, yc = py;
     int x = 0, y = radius, i, d;
     int lastx = -1, lasty = -1;
 
@@ -112,7 +113,6 @@ static void pen_plot(struct brush *brush, struct canvas *canvas,
         }
         ++x;
     }
-#endif
 }
 
 static void pencil_plot(struct brush *brush, struct canvas *canvas,
