@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+#include <sf/utils.h>
+
 #include "ui_imagebox.h"
 #include "texture.h"
 
@@ -15,7 +17,7 @@ static void ui_imagebox_on_render(struct ui_imagebox *ib,
 struct ui_imagebox *ui_imagebox_create(int w, int h, struct texture *img) {
     struct ui_imagebox *ib;
 
-    ib = malloc(sizeof(*ib));
+    ib = sf_alloc(sizeof(*ib));
     ui_imagebox_init(ib, w, h, img);
 
     return ib;

@@ -11,6 +11,8 @@
 #include <png.h>
 #include <zip.h>
 
+#include <sf/utils.h>
+
 #include "texture.h"
 
 
@@ -118,7 +120,7 @@ static int readpng(struct texture_inner *tex_inner, struct zip *archive,
     png_read_update_info(png, info);
 
     rowbytes = png_get_rowbytes(png, info);
-    tex_inner->pixels = malloc(rowbytes * tex_inner->height);
+    tex_inner->pixels = sf_alloc(rowbytes * tex_inner->height);
     if (!tex_inner->pixels) {
         png_destroy_read_struct(&png, &info, NULL);
         CLOSE();
@@ -245,7 +247,7 @@ int texture_load_2d(struct texture *tex, const char *pathname) {
 struct texture *texture_create_2d(int w, int h) {
     struct texture *tex;
 
-    tex = malloc(sizeof(*tex));
+    tex = sf_alloc(sizeof(*tex));
     tex->type = GL_TEXTURE_2D;
     tex->w = w;
     tex->h = h;

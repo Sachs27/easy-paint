@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+#include <sf/utils.h>
+
 #include "user_learn_panel.h"
 #include "ui_replay_panel.h"
 #include "user_paint_panel.h"
@@ -18,7 +20,7 @@ struct user_learn_panel *user_learn_panel_create(int w, int h,
                                                  struct resource_manager *rm) {
     struct user_learn_panel *ulp;
 
-    ulp = malloc(sizeof(*ulp));
+    ulp = sf_alloc(sizeof(*ulp));
     user_learn_panel_init(ulp, w, h, rm);
     return ulp;
 }
@@ -26,7 +28,7 @@ struct user_learn_panel *user_learn_panel_create(int w, int h,
 int user_learn_panel_init(struct user_learn_panel *ulp, int w, int h,
                           struct resource_manager *rm) {
     ui_init((struct ui *) ulp, w, h);
-    
+
     ulp->urp_h = h / 2;
     ulp->urp = ui_replay_panel_create(w, ulp->urp_h, rm);
     ui_add_child((struct ui *) ulp, (struct ui *) ulp->urp, 0, 0);

@@ -1,25 +1,28 @@
 #include <stdlib.h>
 
+#include <sf/utils.h>
+
 #include "ui_toolbox.h"
 
 
 static void ui_toolbox_update_buttons(struct ui_toolbox *tb) {
+    sf_list_iter_t iter;
     float xstep;
     float x;
 
     /*
-     * ¼ÙÉèÃ¿¸ö buttons µÄ¿í¶ÈÏàÍ¬£¬¸ß¶ÈºÍ toolbox Ò»Ñù¡£
-     * ºóÆÚ¸Ä½ø¿ÉÒÔÊ¹ÓÃÈ¨ÖØÀ´¼ÆËãÃ¿¸ö button µÄÎ»ÖÃ¡£
+     * å‡è®¾æ¯ä¸ª buttons çš„å®½åº¦ç›¸åŒï¼Œé«˜åº¦å’Œ toolbox ä¸€æ ·ã€‚
+     * åŽæœŸæ”¹è¿›å¯ä»¥ä½¿ç”¨æƒé‡æ¥è®¡ç®—æ¯ä¸ª button çš„ä½ç½®ã€‚
      */
-    xstep = tb->ui.area.w * 1.0f / (tb->buttons->nelts + 1);
+    xstep = tb->ui.area.w * 1.0f / (sf_list_cnt(&tb->buttons) + 1);
 
     x = xstep;
 
-    SF_LIST_BEGIN(tb->buttons, struct ui *, pui);
-        struct ui *button = *pui;
+    if (sf_list_begin(&tb->buttons, &iter)) do {
+        struct ui *button = *(struct ui**) sf_list_iter_elt(&iter);
         ui_move(button, x - button->area.w / 2, 0);
         x += xstep;
-    SF_LIST_END();
+    } while (sf_list_iter_next(&iter));
 }
 
 static void ui_toolbox_on_render(struct ui_toolbox *tb,
@@ -54,7 +57,7 @@ struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
                                      uint8_t b, uint8_t a) {
     struct ui_toolbox *tb;
 
-    tb = malloc(sizeof(*tb));
+    tb = sf_alloc(sizeof(*tb));
     if (ui_toolbox_init(tb, w, h, r, g, b, a) != 0) {
         free(tb);
         return NULL;
@@ -64,12 +67,17 @@ struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
 
 int ui_toolbox_init(struct ui_toolbox *tb, int w, int h,
                     uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    sf_list_def_t def;
+
     ui_init((struct ui *) tb, w, h);
     tb->background_color[0] = r;
     tb->background_color[1] = g;
     tb->background_color[2] = b;
     tb->background_color[3] = a;
-    if ((tb->buttons = sf_list_create(sizeof(struct ui *))) == NULL) {
+
+    sf_memzero(&def, sizeof(def));
+    def.size = sizeof(struct ui *);
+    if (sf_list_init(&tb->buttons, &def) != SF_OK) {
         return -1;
     }
 
@@ -81,7 +89,7 @@ int ui_toolbox_init(struct ui_toolbox *tb, int w, int h,
 }
 
 void ui_toolbox_add_button(struct ui_toolbox *tb, struct ui *ui) {
-    sf_list_push(tb->buttons, &ui);
+    sf_list_push(&tb->buttons, &ui);
     ui_add_child((struct ui *) tb, ui, 0, 0);
     ui_toolbox_update_buttons(tb);
 }

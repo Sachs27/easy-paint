@@ -2,7 +2,7 @@
 #define USER_PAINT_PANEL_H
 
 
-#include <sf_array.h>
+#include <sf/array.h>
 
 #include "ui.h"
 #include "canvas.h"

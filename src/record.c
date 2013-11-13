@@ -1,8 +1,11 @@
+#include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sf_debug.h>
+
+#include <sf/utils.h>
+#include <sf/log.h>
 
 #include "record.h"
 #include "canvas.h"
@@ -11,7 +14,7 @@
 #define RECORD_PIXEL_NALLOC 1024
 
 static int record_undo_1(struct record *record, struct canvas *canvas) {
-    struct sf_array        *segment;
+    sf_array_t             *segment;
     struct record_pixel    *pixel;
 
     if (record->canvas || !record_canundo(record)) {
@@ -19,16 +22,14 @@ static int record_undo_1(struct record *record, struct canvas *canvas) {
     }
 
     if (record->nrecords) {
-        segment = *(struct sf_array **)
-                   SF_ARRAY_NTH(record->segments, record->nsegments - 1);
+        segment = sf_array_nth(&record->segments, record->nsegments - 1);
     } else {
         --record->nsegments;
-        segment = *(struct sf_array **)
-                   SF_ARRAY_NTH(record->segments, record->nsegments - 1);
+        segment = sf_array_nth(&record->segments, record->nsegments - 1);
         record->nrecords = segment->nelts;
     }
 
-    pixel = SF_ARRAY_NTH(segment, record->nrecords - 1);
+    pixel = sf_array_nth(segment, record->nrecords - 1);
 
     /*
      * Make sure that canvas __will_not__ record this plot.
@@ -42,8 +43,7 @@ static int record_undo_1(struct record *record, struct canvas *canvas) {
     if (record->nrecords == 0) {
         --record->nsegments;
         if (record->nsegments > 0) {
-            segment = *(struct sf_array **)
-                       SF_ARRAY_NTH(record->segments, record->nsegments - 1);
+            segment = sf_array_nth(&record->segments, record->nsegments - 1);
             record->nrecords = segment->nelts;
         }
     }
@@ -63,19 +63,17 @@ static int record_redo_1(struct record *record, struct canvas *canvas) {
         ++record->nsegments;
     }
 
-    segment = *(struct sf_array **)
-               SF_ARRAY_NTH(record->segments, record->nsegments - 1);
+    segment = sf_array_nth(&record->segments, record->nsegments - 1);
 
     if (record->nrecords >= segment->nelts) {
         ++record->nsegments;
         record->nrecords = 1;
-        segment = *(struct sf_array **)
-                   SF_ARRAY_NTH(record->segments, record->nsegments - 1);
+        segment = sf_array_nth(&record->segments, record->nsegments - 1);
     } else {
         ++record->nrecords;
     }
 
-    pixel = SF_ARRAY_NTH(segment, record->nrecords - 1);
+    pixel = sf_array_nth(segment, record->nrecords - 1);
 
     /*
      * Make sure that canvas __will_not__ record this plot.
@@ -92,7 +90,7 @@ static int record_redo_1(struct record *record, struct canvas *canvas) {
 struct record *record_create(void) {
     struct record *record;
 
-    record = malloc(sizeof(*record));
+    record = sf_alloc(sizeof(*record));
 
     if (record_init(record) != 0) {
         free(record);
@@ -103,11 +101,15 @@ struct record *record_create(void) {
 }
 
 int record_init(struct record *record) {
+    sf_array_def_t def;
+
     record->version = RECORD_VERSION;
     record->nsegments = 0;
     record->nrecords = 0;
-    if ((record->segments = sf_array_create(sizeof(struct sf_array *),
-                                            SF_ARRAY_NALLOC)) == NULL) {
+
+    sf_memzero(&def, sizeof(def));
+    def.size = sizeof(sf_array_t);
+    if (sf_array_init(&record->segments, &def) != SF_OK) {
         return -1;
     }
     record->canvas = NULL;
@@ -125,13 +127,7 @@ int record_load_zip(struct record *record, struct zip *archive,
         canvas = canvas_create(1, 1);
     }
 
-    if (record->canvas != NULL) {
-        return -1;
-    }
-
-    if (record->segments == NULL) {
-        record_init(record);
-    }
+    record_init(record);
 
     if (archive) {
         zip_file = zip_fopen(archive, filename, 0);
@@ -163,7 +159,8 @@ int record_load_zip(struct record *record, struct zip *archive,
     READ_BYTE(&record->version, sizeof(record->version));
 
     if (record->version != RECORD_VERSION) {
-        dprintf("Failed to load record, unsupport version: %d\n", record->version);
+        sf_log(SF_LOG_ERR, "Failed to load record, unsupport version: %d\n",
+               record->version);
         CLOSE();
         return -1;
     }
@@ -205,7 +202,7 @@ int record_load(struct record *record, const char *pathname) {
 }
 
 void record_save(struct record *record, const char *pathname) {
-    struct sf_array *segment;
+    sf_array_t *segment;
     uint32_t i, nsegments;
     FILE *f;
 
@@ -230,28 +227,31 @@ void record_save(struct record *record, const char *pathname) {
     fwrite(&nsegments, sizeof(nsegments), 1, f);
 
     for (i = 0; i < record->nsegments - 1; ++i) {
-        segment = *(struct sf_array **) SF_ARRAY_NTH(record->segments, i);
+        sf_array_iter_t iter;
+
+        segment = sf_array_nth(&record->segments, i);
         assert(segment->nelts > 0);
         fwrite(&segment->nelts, sizeof(segment->nelts), 1, f);
 
-        SF_ARRAY_BEGIN(segment, struct record_pixel, pixel);
+        if (sf_array_begin(&record->segments, &iter)) do {
+            struct record_pixel *pixel = sf_array_iter_elt(&iter);
             fwrite(&pixel->x, sizeof(pixel->x), 1, f);
             fwrite(&pixel->y, sizeof(pixel->y), 1, f);
             fwrite(pixel->ncolor, sizeof(pixel->ncolor), 1, f);
-        SF_ARRAY_END();
+        } while (sf_array_iter_next(&iter));
     }
 
     if (record->nrecords) {
-        struct record_pixel *pixel;
         int n;
 
-        segment = *(struct sf_array **)
-                   SF_ARRAY_NTH(record->segments, record->nsegments - 1);
-        assert(segment->nelts > 0);
+        segment = sf_array_nth(&record->segments, record->nsegments - 1);
+        assert(sf_array_cnt(segment) > 0);
         n = record->nrecords;
         fwrite(&n, sizeof(n), 1, f);
         for (i = 0; i < n; ++i) {
-            pixel = SF_ARRAY_NTH(segment, i);
+            struct record_pixel *pixel;
+
+            pixel = sf_array_nth(segment, i);
             fwrite(&pixel->x, sizeof(pixel->x), 1, f);
             fwrite(&pixel->y, sizeof(pixel->y), 1, f);
             fwrite(pixel->ncolor, sizeof(pixel->ncolor), 1, f);
@@ -267,7 +267,6 @@ void record_reset(struct record *record) {
 }
 
 void record_begin(struct record *record, struct canvas *canvas) {
-    struct sf_array *segment;
     if (record->canvas) {
         return;
     }
@@ -281,19 +280,23 @@ void record_begin(struct record *record, struct canvas *canvas) {
 
     ++record->nsegments;
     record->nrecords = 0;
-    if (record->nsegments >= record->segments->nelts) {
-        segment = sf_array_create(sizeof(struct record_pixel),
-                                  RECORD_PIXEL_NALLOC);
-        sf_array_push(record->segments, &segment);
+    if (record->nsegments >= sf_array_cnt(&record->segments)) {
+        sf_array_t     newsegment;
+        sf_array_def_t def;
+
+        sf_memzero(&def, sizeof(def));
+        def.size = sizeof(struct record_pixel);
+        sf_array_init(&newsegment, &def);
+        sf_array_push(&record->segments, &newsegment);
     } else {
         int i;
         /*
          * Make sure (nsegments - 1) is the last segment,
          * and (nsegments - 1) is empty.
          */
-        for (i = record->nsegments - 1; i < record->segments->nelts; ++i) {
-            sf_array_clear(*(struct sf_array **)
-                            SF_ARRAY_NTH(record->segments, i), NULL);
+        for (i = record->nsegments - 1;
+             i < sf_array_cnt(&record->segments); ++i) {
+            sf_array_clear(sf_array_nth(&record->segments, i));
         }
     }
 }
@@ -306,7 +309,7 @@ void record_end(struct record *record) {
 void record_record(struct record *record, int x, int y,
                    uint8_t or, uint8_t og, uint8_t ob, uint8_t oa,
                    uint8_t nr, uint8_t ng, uint8_t nb, uint8_t na) {
-    struct sf_array    *segment;
+    sf_array_t         *segment;
     struct record_pixel pixel;
 
     pixel.x = x;
@@ -320,10 +323,9 @@ void record_record(struct record *record, int x, int y,
     pixel.ncolor[2] = nb;
     pixel.ncolor[3] = na;
 
-    segment = *(struct sf_array **)
-               SF_ARRAY_NTH(record->segments, record->nsegments - 1);
+    segment = sf_array_nth(&record->segments, record->nsegments - 1);
     if (record->nrecords < segment->nelts) {
-        struct record_pixel *p = SF_ARRAY_NTH(segment, record->nrecords);
+        struct record_pixel *p = sf_array_nth(segment, record->nrecords);
         memcpy(p, &pixel, sizeof(pixel));
     } else {
         sf_array_push(segment, &pixel);
@@ -342,8 +344,8 @@ int record_canundo(struct record *record) {
 }
 
 void record_undo(struct record *record, struct canvas *canvas) {
-    struct sf_array    *segment;
-    int                 n;
+    sf_array_t *segment;
+    int         n;
 
     if (record->canvas || !record_canundo(record)) {
         return;
@@ -352,9 +354,8 @@ void record_undo(struct record *record, struct canvas *canvas) {
     if (record->nrecords) {
         n = record->nrecords;
     } else {
-        segment = *(struct sf_array **)
-                   SF_ARRAY_NTH(record->segments, record->nsegments - 2);
-        n = segment->nelts;
+        segment = sf_array_nth(&record->segments, record->nsegments - 2);
+        n = sf_array_cnt(segment);
     }
 
     record_undo_n(record, canvas, n);
@@ -365,21 +366,20 @@ void record_undo_n(struct record *record, struct canvas *canvas, uint32_t n) {
 }
 
 int record_canredo(struct record *record) {
-    struct sf_array *segment;
-    int i;
+    sf_array_t *segment;
+    int         i;
 
     if (record->nsegments) {
-        segment = *(struct sf_array **)
-                   SF_ARRAY_NTH(record->segments, record->nsegments - 1);
+        segment = sf_array_nth(&record->segments, record->nsegments - 1);
 
-        if (record->nrecords < segment->nelts) {
+        if (record->nrecords < sf_array_cnt(segment)) {
             return 1;
         }
     }
 
-    for (i = record->nsegments; i < record->segments->nelts; ++i) {
-        segment = *(struct sf_array **) SF_ARRAY_NTH(record->segments, i);
-        if (segment->nelts > 0) {
+    for (i = record->nsegments; i < sf_array_cnt(&record->segments); ++i) {
+        segment = sf_array_nth(&record->segments, i);
+        if (sf_array_cnt(segment) > 0) {
             return 1;
         }
     }
@@ -388,27 +388,24 @@ int record_canredo(struct record *record) {
 }
 
 void record_redo(struct record *record, struct canvas *canvas) {
-    struct sf_array    *segment;
-    int                 n;
+    sf_array_t *segment;
+    int         n;
 
     if (record->canvas || !record_canredo(record)) {
         return;
     }
 
     if (record->nsegments) {
-        segment = *(struct sf_array **)
-                   SF_ARRAY_NTH(record->segments, record->nsegments - 1);
+        segment = sf_array_nth(&record->segments, record->nsegments - 1);
 
         if (record->nrecords >= segment->nelts) {
-            segment = *(struct sf_array **)
-                       SF_ARRAY_NTH(record->segments, record->nsegments);
-            n = segment->nelts;
+            segment = sf_array_nth(&record->segments, record->nsegments);
+            n = sf_array_cnt(segment);
         } else {
-            n = segment->nelts - record->nrecords;
+            n = sf_array_cnt(segment) - record->nrecords;
         }
     } else {
-        segment = *(struct sf_array **)
-                   SF_ARRAY_NTH(record->segments, record->nsegments);
+        segment = sf_array_nth(&record->segments, record->nsegments);
         n = segment->nelts;
     }
 
@@ -422,9 +419,13 @@ void record_redo_n(struct record *record, struct canvas *canvas, uint32_t n) {
 void record_adjust(struct record *record, int x, int y, int w, int h) {
     int xmin = INT_MAX, ymin = INT_MAX, xmax = 0, ymax = 0;
     int dx, dy;
+    sf_array_iter_t seg_iter, rp_iter;
 
-    SF_ARRAY_BEGIN(record->segments, struct sf_array *, p);
-        SF_ARRAY_BEGIN(*p, struct record_pixel, pixel);
+    if (sf_array_begin(&record->segments, &seg_iter)) do {
+        sf_array_t *p = sf_array_iter_elt(&seg_iter);
+
+        if (sf_array_begin(p, &rp_iter)) do {
+            struct record_pixel *pixel = sf_array_iter_elt(&rp_iter);
             if (pixel->x < xmin) {
                 xmin = pixel->x;
             }
@@ -437,16 +438,20 @@ void record_adjust(struct record *record, int x, int y, int w, int h) {
             if (pixel->y > ymax) {
                 ymax = pixel->y;
             }
-        SF_ARRAY_END();
-    SF_ARRAY_END();
+        } while (sf_array_iter_next(&rp_iter));
+    } while (sf_array_iter_next(&seg_iter));
 
     dx = ((xmin - x) + (x + w - xmax)) / 2 - xmin;
     dy = ((ymin - y) + (y + h - ymax)) / 2 - ymin;
 
-    SF_ARRAY_BEGIN(record->segments, struct sf_array *, p);
-        SF_ARRAY_BEGIN(*p, struct record_pixel, pixel);
+    if (sf_array_begin(&record->segments, &seg_iter)) do {
+        sf_array_t *p = sf_array_iter_elt(&seg_iter);
+
+        if (sf_array_begin(p, &rp_iter)) do {
+            struct record_pixel *pixel = sf_array_iter_elt(&rp_iter);
+
             pixel->x += dx;
             pixel->y += dy;
-        SF_ARRAY_END();
-    SF_ARRAY_END();
+        } while (sf_array_iter_next(&rp_iter));
+    } while (sf_array_iter_next(&seg_iter));
 }

@@ -7,7 +7,8 @@
 # include <GL/glew.h>
 #endif
 
-#include <sf_debug.h>
+#include <sf/utils.h>
+#include <sf/log.h>
 
 #include "sf_rect.h"
 
@@ -96,14 +97,12 @@ static int attach_shader(GLuint program, struct shader_info *info) {
     glCompileShader(shader);
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
     if (compile_status != GL_TRUE) {
-#ifndef NDEBUG
         GLsizei len;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len); {
             GLchar log[len];
             glGetShaderInfoLog(shader, len, NULL, log);
-            dprintf("%s\n", log);
+            sf_log(SF_LOG_ERR, "%s\n", log);
         }
-#endif /* NDEBUG */
         return -1;
     }
 
@@ -129,14 +128,12 @@ GLuint load_shaders(struct shader_info *info) {
 
     glGetProgramiv(program, GL_LINK_STATUS, &link_status);
     if (link_status != GL_TRUE) {
-#ifndef NDEBUG
         GLsizei len;
         glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len); {
             GLchar log[len];
             glGetProgramInfoLog(program, len, NULL, log);
-            dprintf("Failed to link program: %s\n", log);
+            sf_log(SF_LOG_ERR, "Failed to link program: %s\n", log);
         }
-#endif /* NDEBUG */
         goto load_shaders_fail;
     }
 
@@ -177,8 +174,8 @@ static void renderer2d_init(void) {
  * Set the top one of the 'viewports' to the current viewport.
  */
 static void renderer2d_set_viewport(struct renderer2d *r) {
-    struct sf_rect *window = SF_ARRAY_HEAD(r->viewports);
-    struct sf_rect *viewport = SF_ARRAY_TAIL(r->viewports);
+    struct sf_rect *window = sf_array_head(&r->viewports);
+    struct sf_rect *viewport = sf_array_tail(&r->viewports);
     int x = viewport->x;
     int y = viewport->y;
     int w = viewport->w;
@@ -192,6 +189,7 @@ static void renderer2d_set_viewport(struct renderer2d *r) {
 
 
 struct renderer2d *renderer2d_create(int w, int h) {
+    sf_array_def_t def;
     struct renderer2d *r;
 
     glEnable(GL_CULL_FACE);
@@ -200,7 +198,7 @@ struct renderer2d *renderer2d_create(int w, int h) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
 
-    r = malloc(sizeof(*r));
+    r = sf_alloc(sizeof(*r));
     r->w = w;
     r->h = h;
     glGenBuffers(1, &r->vbo);
@@ -209,7 +207,11 @@ struct renderer2d *renderer2d_create(int w, int h) {
     glGenFramebuffers(1, &r->fbo);
     r->prog_rect = load_shaders(renderer2d_rect_shaders);
     r->prog_texture = load_shaders(renderer2d_texture_shaders);
-    r->viewports = sf_array_create(sizeof(struct sf_rect), SF_ARRAY_NALLOC);
+
+    sf_memzero(&def, sizeof(def));
+    def.size = sizeof(struct sf_rect);
+    sf_array_init(&r->viewports, &def);
+
     renderer2d_push_viewport(r, 0, 0, w, h);
     renderer2d_set_render_target(r, NULL);
 
@@ -217,7 +219,7 @@ struct renderer2d *renderer2d_create(int w, int h) {
 }
 
 void renderer2d_resize(struct renderer2d *r, int w, int h) {
-    struct sf_rect *viewport = SF_ARRAY_HEAD(r->viewports);
+    struct sf_rect *viewport = sf_array_head(&r->viewports);
 
     r->w = w;
     r->h = h;
@@ -237,7 +239,7 @@ void renderer2d_clear(struct renderer2d *renderer,
 }
 
 void renderer2d_set_render_target(struct renderer2d *r, struct texture *rt) {
-    struct sf_rect *viewport = SF_ARRAY_HEAD(r->viewports);
+    struct sf_rect *viewport = sf_array_head(&r->viewports);
     r->render_target = rt;
 
     if (r->render_target) {
@@ -324,7 +326,7 @@ static void renderer2d_draw_texture_inner(struct renderer2d *r,
     struct vec2 vtexcoord[4];
     float ntw, nth;
 
-    viewport = SF_ARRAY_TAIL(r->viewports);
+    viewport = sf_array_tail(&r->viewports);
     if (dw == 0) {
         dw = viewport->w;
     }
@@ -430,14 +432,14 @@ void renderer2d_push_viewport(struct renderer2d *r,
     viewport.w = w;
     viewport.h = h;
 
-    sf_array_push(r->viewports, &viewport);
+    sf_array_push(&r->viewports, &viewport);
 
     renderer2d_set_viewport(r);
 }
 
 void renderer2d_pop_viewport(struct renderer2d *r) {
-    if (r->viewports->nelts > 1) {
-        sf_array_pop(r->viewports, NULL);
+    if (sf_array_cnt(&r->viewports) > 1) {
+        sf_array_pop(&r->viewports);
     }
 
     renderer2d_set_viewport(r);
@@ -445,7 +447,7 @@ void renderer2d_pop_viewport(struct renderer2d *r) {
 
 void renderer2d_get_viewport(struct renderer2d *r, int *o_x, int *o_y,
                              int *o_w, int *o_h) {
-    struct sf_rect *vp = SF_ARRAY_TAIL(r->viewports);
+    struct sf_rect *vp = sf_array_tail(&r->viewports);
 #define PTR_ASSIGN(ptr, val) do { if (ptr) { (*ptr) = val; } } while (0)
     PTR_ASSIGN(o_x, vp->x);
     PTR_ASSIGN(o_y, vp->y);

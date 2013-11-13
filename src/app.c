@@ -3,8 +3,8 @@
 #else /* ANDROID */
 #include <GL/glew.h>
 #endif /* ANDROID */
-#include <sf_utils.h>
-#include <sf_debug.h>
+#include <sf/utils.h>
+#include <sf/log.h>
 
 #include "app.h"
 #include "user_paint_panel.h"
@@ -37,15 +37,17 @@ static void app_change_stage(int stage) {
 
 static void menu_item_on_press(struct ui *ui, int n, int x[n], int y[n]) {
     int i = 0;
-    SF_LIST_BEGIN(g_app.menu->items, struct ui *, p);
-        struct ui *item = *p;
+    sf_list_iter_t iter;
+
+    if (sf_list_begin(&g_app.menu->items, &iter)) do {
+        struct ui *item = *(struct ui **) sf_list_iter_elt(&iter);
         if (item == ui) {
             app_change_stage(i);
             ui_hide((struct ui *) g_app.menu);
             return;
         }
         ++i;
-    SF_LIST_END();
+    } while (sf_list_iter_next(&iter));
 }
 
 void app_load_resource(const char *rootpath) {
@@ -101,17 +103,19 @@ int app_init(void) {
     ui_menu_add_item(g_app.menu, (struct ui *) g_app.label3);
     {
         int i = 0;
-        SF_LIST_BEGIN(g_app.menu->items, struct ui *, p);
-            struct ui *item = *p;
+        sf_list_iter_t iter;
+
+        if (sf_list_begin(&g_app.menu->items, &iter)) do {
+            struct ui *item = *(struct ui**) sf_list_iter_elt(&iter);
             if (i != 0) {
                 UI_CALLBACK(item, press, menu_item_on_press);
             }
             ++i;
-        SF_LIST_END();
+        } while (sf_list_iter_next(&iter));
     }
     ui_add_child((struct ui *) g_app.upp, (struct ui *) g_app.menu, 0, 0);
     ui_add_child((struct ui *) g_app.ulp, (struct ui *) g_app.menu, 0, 0);
-    
+
     ui_show((struct ui *) g_app.upp);
     ui_show((struct ui *) g_app.ulp);
     ui_hide((struct ui *) g_app.menu);
@@ -172,7 +176,7 @@ void app_on_update(double dt) {
     ++cnt;
     elapse += dt;
     if (elapse > 1.0) {
-        dprintf("FPS: %d\n", cnt);
+        sf_log(SF_LOG_INFO, "FPS: %d\n", cnt);
         cnt = 0;
         elapse -= 1.0;
     }

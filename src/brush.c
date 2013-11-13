@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <sf_utils.h>
+#include <sf/utils.h>
 
 #include "brush.h"
 #include "canvas.h"

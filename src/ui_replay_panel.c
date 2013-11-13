@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include <sf_utils.h>
+#include <sf/utils.h>
 
 #include "ui_replay_panel.h"
 #include "system.h"
@@ -130,7 +130,7 @@ static void ui_replay_panel_on_resize(struct ui_replay_panel *urp,
     ui_resize((struct ui *) &urp->toolbox, w, urp->toolbox.ui.area.h);
     ui_move((struct ui *) &urp->toolbox, 0,
             urp->canvas.ui.area.h - TOOLBOX_HEIGHT);
-    
+
     canvas_clear(&urp->canvas);
     record_adjust(urp->record, 0, 0, w, h);
     record_reset(urp->record);
@@ -142,7 +142,7 @@ struct ui_replay_panel *ui_replay_panel_create(int w, int h,
                                                struct resource_manager *rm) {
     struct ui_replay_panel *urp;
 
-    urp = malloc(sizeof(*urp));
+    urp = sf_alloc(sizeof(*urp));
     ui_replay_panel_init(urp, w, h, rm);
     return urp;
 }

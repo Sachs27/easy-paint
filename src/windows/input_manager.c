@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
-#include <sf_list.h>
 
 #include "../input_manager.h"
 

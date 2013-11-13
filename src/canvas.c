@@ -2,9 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <sf_utils.h>
-#include <sf_array.h>
-#include <sf_debug.h>
+#include <sf/utils.h>
+#include <sf/array.h>
+#include <sf/log.h>
 
 #include "texture.h"
 #include "3dmath.h"
@@ -100,7 +100,8 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
     src_row = ((uint32_t *) (ct->colors))
                                 + ct->dirty_rect.y * ct->texture->w
                                 + ct->dirty_rect.x;
-    row = colors = malloc(ct->dirty_rect.w * ct->dirty_rect.h * sizeof(uint32_t));
+    colors = sf_alloc(ct->dirty_rect.w * ct->dirty_rect.h * sizeof(uint32_t));
+    row = colors;
 
     for (i = 0; i < ct->dirty_rect.h; ++i) {
         memcpy(row, src_row, ct->dirty_rect.w * sizeof(uint32_t));
@@ -120,7 +121,7 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
                     ct->dirty_rect.w, ct->dirty_rect.h,
                     GL_RGBA, GL_UNSIGNED_BYTE, colors);
 #endif
-    
+
     glBindTexture(GL_TEXTURE_2D, 0);
     ct->isdirty = 0;
     free(colors);
@@ -147,18 +148,23 @@ static struct canvas_tile *canvas_add_tile(struct canvas *canvas,
 
     canvas_tile_init(&ct, xtile, ytile);
 
-    dprintf("canvas has %d tiles\n", canvas->tiles->nelts + 1);
+    sf_log(SF_LOG_INFO, "canvas has %d tiles\n",
+           sf_list_cnt(&canvas->tiles) + 1);
 
-    return sf_list_push(canvas->tiles, &ct);
+    sf_list_push(&canvas->tiles, &ct);
+
+    return sf_list_tail(&canvas->tiles);
 }
 
 static void canvas_on_render(struct canvas *canvas,
                              struct renderer2d *renderer2d) {
+    sf_list_iter_t iter;
     float scale = canvas->viewport.w * 1.0 / canvas->ui.area.w;
     /* draw background */
     renderer2d_clear(renderer2d, 255, 255, 255, 0);
     /* draw pixels */
-    SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
+    if (sf_list_begin(&canvas->tiles, &iter)) do {
+        struct canvas_tile *ct = sf_list_iter_elt(&iter);
         int x0, y0, x1, y1, x2, y2, x3, y3;
 
         if (!sf_rect_isintersect(&canvas->viewport, &ct->area)) {
@@ -201,11 +207,11 @@ static void canvas_on_render(struct canvas *canvas,
                                 x0, y0, x1 - x0, y1 - y0,
                                 ct->texture,
                                 x2, y2, x3 - x2, y3 - y2);
-    SF_LIST_END();
+    } while (sf_list_iter_next(&iter));
 }
 
 static void canvas_on_resize(struct canvas *canvas, int w, int h) {
-    float scale = ((float) canvas->viewport.w) / canvas->ui.area.w;
+    /*float scale = ((float) canvas->viewport.w) / canvas->ui.area.w;*/
 
     canvas->ui.area.w = w;
     canvas->ui.area.h = h;
@@ -218,13 +224,14 @@ static void canvas_on_resize(struct canvas *canvas, int w, int h) {
 struct canvas *canvas_create(int w, int h) {
     struct canvas *canvas;
 
-    canvas = malloc(sizeof(*canvas));
-    assert(canvas != NULL);
+    canvas = sf_alloc(sizeof(*canvas));
     canvas_init(canvas, w, h);
     return canvas;
 }
 
 int canvas_init(struct canvas *canvas, int w, int h) {
+    sf_list_def_t def;
+
     ui_init((struct ui *) canvas, w, h);
 
     canvas->background = NULL;
@@ -233,7 +240,10 @@ int canvas_init(struct canvas *canvas, int w, int h) {
     canvas->viewport.w = w;
     canvas->viewport.h = h;
     canvas->dx = canvas->dy = 0.0f;
-    if ((canvas->tiles = sf_list_create(sizeof(struct canvas_tile))) == NULL) {
+
+    sf_memzero(&def, sizeof(def));
+    def.size = sizeof(struct canvas_tile);
+    if (sf_list_init(&canvas->tiles, &def) != SF_OK) {
         return -1;
     }
     canvas_add_tile(canvas, 0, 0);
@@ -246,7 +256,11 @@ int canvas_init(struct canvas *canvas, int w, int h) {
 }
 
 void canvas_clear(struct canvas *canvas) {
-    SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
+    sf_list_iter_t iter;
+
+    if (sf_list_begin(&canvas->tiles, &iter)) do {
+        struct canvas_tile *ct = sf_list_iter_elt(&iter);
+
         memset(ct->colors, 0,
                ct->texture->w * ct->texture->h * 4 * sizeof(uint8_t));
 
@@ -255,7 +269,7 @@ void canvas_clear(struct canvas *canvas) {
         ct->dirty_rect.y = 0;
         ct->dirty_rect.w = ct->texture->w;
         ct->dirty_rect.h = ct->texture->h;
-    SF_LIST_END();
+    } while (sf_list_iter_next(&iter));
 }
 
 void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
@@ -273,9 +287,12 @@ void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
 
 void canvas_plot(struct canvas *canvas, int x, int y,
                  uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    uint8_t ocolor[4];
+    sf_list_iter_t  iter;
+    uint8_t         ocolor[4];
 
-    SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
+    if (sf_list_begin(&canvas->tiles, &iter)) do {
+        struct canvas_tile *ct = sf_list_iter_elt(&iter);
+
         if (sf_rect_iscontain(&ct->area, x, y)) {
             if (canvas->record) {
                 canvas_pick(canvas, x, y,
@@ -287,7 +304,7 @@ void canvas_plot(struct canvas *canvas, int x, int y,
             canvas_tile_plot(ct, x, y, r, g, b, a);
             return;
         }
-    SF_LIST_END();
+    } while (sf_list_iter_next(&iter));
 
     /*
      * It is reasonable to add a new tile only if a != 0
@@ -306,8 +323,12 @@ void canvas_plot(struct canvas *canvas, int x, int y,
 
 void canvas_pick(struct canvas *canvas, int x, int y,
                  uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a) {
+    sf_list_iter_t iter;
+
 #define PTR_ASSIGN(p, v) do if (p) { *(p) = (v); } while(0)
-    SF_LIST_BEGIN(canvas->tiles, struct canvas_tile, ct);
+    if (sf_list_begin(&canvas->tiles, &iter)) do {
+        struct canvas_tile *ct = sf_list_iter_elt(&iter);
+
         if (sf_rect_iscontain(&ct->area, x, y)) {
             uint8_t *color;
             /* conver coordinate to canvas tile's */
@@ -321,7 +342,7 @@ void canvas_pick(struct canvas *canvas, int x, int y,
             PTR_ASSIGN(a, color[3]);
             return;
         }
-    SF_LIST_END();
+    } while (sf_list_iter_next(&iter));
 
     PTR_ASSIGN(r, 0);
     PTR_ASSIGN(g, 0);

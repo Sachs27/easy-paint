@@ -4,7 +4,7 @@
 
 #include <zip.h>
 
-#include <sf_array.h>
+#include <sf/array.h>
 
 struct canvas;
 
@@ -29,7 +29,7 @@ struct record {
      */
     uint32_t            nrecords;
 
-    struct sf_array    *segments;       /* elt: (struct sf_array *)
+    sf_array_t          segments;       /* elt: (sf_array_t)
                                          * |- elt: (struct record_pixel) */
 
     struct canvas      *canvas;

@@ -2,7 +2,7 @@
 #define UI_H
 
 
-#include <sf_list.h>
+#include <sf/list.h>
 #include "sf_rect.h"
 
 #include "input_manager.h"
@@ -46,12 +46,12 @@ enum ui_state {
 };
 
 struct ui {
-    enum ui_state       state;
-    struct sf_rect      area;
-    
-    struct ui          *parent;
-    struct sf_list     *childs; /* elt: (struct ui *) */
-    
+    enum ui_state   state;
+    struct sf_rect  area;
+
+    struct ui      *parent;
+    sf_list_t       childs; /* elt: (struct ui *) */
+
 #define UI_CB_DEC(e) ui_on_ ## e ## _t *on_ ## e
     UI_CB_DEC(update);
     UI_CB_DEC(render);
@@ -97,11 +97,11 @@ void ui_get_screen_pos(struct ui *ui, int *o_x, int *o_y);
 /* ======================================================================= */
 
 struct ui_manager {
-    struct sf_list     *uis;        /* elt: (struct ui *) */
+    sf_list_t   uis;        /* elt: (struct ui *) */
 
-    struct ui          *ui_pressed; /* only one ui can be
-                                     * pressed at one time.  */
-    struct ui          *root;
+    struct ui  *ui_pressed; /* only one ui can be
+                             * pressed at one time.  */
+    struct ui  *root;
 };
 
 

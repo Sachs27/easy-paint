@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-#include <sf_list.h>
+#include <sf/list.h>
 
 #include "ui.h"
 
@@ -14,7 +14,7 @@ struct ui_imagebox;
 struct ui_menu {
     struct ui           ui;         /* inherit from ui, so this must be
                                      * the first element of the struct  */
-    struct sf_list     *items;
+    sf_list_t           items;
 
     uint8_t             background_color[4];
 };

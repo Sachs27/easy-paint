@@ -2,16 +2,16 @@
 #define UI_TOOLBOX_H
 
 
-#include <sf_list.h>
+#include <sf/list.h>
 
 #include "ui.h"
 
 
 struct ui_toolbox {
-    struct ui           ui;         /* inherit from ui, so this must be
-                                     * the first element of the struct  */
-    uint8_t             background_color[4];
-    struct sf_list     *buttons;    /* elt: (struct ui *) */
+    struct ui   ui;                     /* inherit from ui, so this must be
+                                         * the first element of the struct  */
+    uint8_t     background_color[4];
+    sf_list_t   buttons;                /* elt: (struct ui *) */
 };
 
 

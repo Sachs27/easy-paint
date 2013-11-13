@@ -8,7 +8,7 @@
 # include <GL/gl.h>
 #endif
 
-#include <sf_array.h>
+#include <sf/array.h>
 
 #include "3dmath.h"
 #include "texture.h"
@@ -20,7 +20,7 @@ struct renderer2d {
 
     struct mat4         projection;
 
-    struct sf_array    *viewports;      /* elt: (struct sf_rect)
+    sf_array_t          viewports;      /* elt: (struct sf_rect)
                                          * The first elt is always the
                                          * screen's area.  */
     struct texture     *render_target;

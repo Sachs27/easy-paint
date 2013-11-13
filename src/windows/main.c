@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <sf_utils.h>
+
+#include <sf/utils.h>
 
 #include "../app.h"
 #include "../window.h"
@@ -59,6 +62,14 @@ static int init(void) {
     return 0;
 }
 
+static uint64_t sf_get_ticks(void) {
+    struct timespec t;
+
+    clock_gettime(CLOCK_REALTIME, &t);
+
+    return t.tv_sec * 1e9 + t.tv_nsec;
+}
+
 int main(int argc, char *argv[]) {
     uint64_t cur_tick, last_tick;
 
@@ -86,6 +97,8 @@ int main(int argc, char *argv[]) {
     }
 
     glfwTerminate();
+
+    sf_memcheck();
 
     return 0;
 }

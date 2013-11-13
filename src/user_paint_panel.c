@@ -1,7 +1,8 @@
+#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 
-#include <sf_utils.h>
+#include <sf/utils.h>
 
 #include "user_paint_panel.h"
 #include "system.h"
@@ -206,11 +207,11 @@ static void user_paint_panel_on_show(struct user_paint_panel *upp) {
 static void user_paint_panel_on_resize(struct user_paint_panel *upp,
                                        int w, int h) {
     ui_resize((struct ui *) &upp->canvas, w,  h);
-    
+
     ui_resize((struct ui *) &upp->toolbox, w, upp->toolbox.ui.area.h);
     ui_move((struct ui *) &upp->toolbox, 0,
             upp->canvas.ui.area.h - TOOLBOX_HEIGHT);
-            
+
     ui_resize((struct ui *) &upp->brushbox, w, upp->brushbox.ui.area.h);
     ui_move((struct ui *) &upp->brushbox, 0,
             upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT);
@@ -221,7 +222,7 @@ struct user_paint_panel *user_paint_panel_create(int w, int h,
                                                  struct resource_manager *rm) {
     struct user_paint_panel *upp;
 
-    upp = malloc(sizeof(*upp));
+    upp = sf_alloc(sizeof(*upp));
     ui_init(&upp->ui, w, h);
 
     brush_init(&upp->brush_pen, BRUSH_PEN);

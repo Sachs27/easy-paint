@@ -1,7 +1,7 @@
 #ifndef CANVAS_H
 #define CANVAS_H
 
-#include <sf_list.h>
+#include <sf/list.h>
 
 #include "ui.h"
 
@@ -24,7 +24,7 @@ struct canvas {
 
     float               dx, dy;         /* the delta of offset */
 
-    struct sf_list     *tiles;          /* elt: (struct canvas_tile) */
+    sf_list_t           tiles;          /* elt: (struct canvas_tile) */
 
     struct record      *record;
 };
