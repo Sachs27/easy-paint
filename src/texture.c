@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #ifdef GLES2
@@ -126,11 +125,11 @@ static int readpng(struct texture_inner *tex_inner, struct zip *archive,
         CLOSE();
         return -1;
     }
-    row_pointers = calloc(tex_inner->height, sizeof(png_bytep));
+    row_pointers = sf_calloc(tex_inner->height * sizeof(png_bytep));
     if (!row_pointers) {
         png_destroy_read_struct(&png, &info, NULL);
         CLOSE();
-        free(tex_inner->pixels);
+        sf_free(tex_inner->pixels);
         return -1;
     }
     for (i = 0; i < tex_inner->height; ++i) {
@@ -141,7 +140,7 @@ static int readpng(struct texture_inner *tex_inner, struct zip *archive,
     tex_inner->format = GL_RGBA;
     tex_inner->type = GL_UNSIGNED_BYTE;
 
-    free(row_pointers);
+    sf_free(row_pointers);
     CLOSE();
     return 0;
 }
@@ -226,7 +225,7 @@ int texture_load_2d_zip(struct texture *tex, struct zip *archive,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    free(tex_inner.pixels);
+    sf_free(tex_inner.pixels);
 
     if ((err = glGetError()) != GL_NO_ERROR) {
         goto texture_load_failed;
@@ -269,5 +268,5 @@ void texture_set_parameteri(struct texture *tex, GLenum pname, GLint param) {
 
 void texture_destroy(struct texture *tex) {
     glDeleteTextures(1, &tex->tid);
-    free(tex);
+    sf_free(tex);
 }

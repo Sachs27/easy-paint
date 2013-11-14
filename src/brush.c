@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <math.h>
 
 #include <sf/utils.h>
@@ -252,7 +251,7 @@ static int brush_pencil_init(struct brush *pencil) {
 
 static int brush_pen_init(struct brush *pen) {
     pen->plot = pen_plot;
-    brush_set_color(pen, 0, 0, 0, 255);
+    brush_set_color(pen, 0, 0, 0, 128);
     return 0;
 }
 

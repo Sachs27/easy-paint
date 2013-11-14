@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 #include <sf/utils.h>
 
 #include "user_learn_panel.h"

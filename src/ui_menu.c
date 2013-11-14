@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 #include <sf/utils.h>
 
 #include "ui_menu.h"

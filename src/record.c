@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <limits.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -93,7 +92,7 @@ struct record *record_create(void) {
     record = sf_alloc(sizeof(*record));
 
     if (record_init(record) != 0) {
-        free(record);
+        sf_free(record);
         return NULL;
     }
 

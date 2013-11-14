@@ -1,6 +1,5 @@
 #include <math.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <sf/utils.h>
 #include <sf/array.h>
@@ -39,7 +38,7 @@ static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
     ct->dirty_rect.y = 0;
     ct->dirty_rect.w = ct->area.w;
     ct->dirty_rect.h = ct->area.h;
-    ct->colors = calloc(ct->texture->w * ct->texture->h, 4 * sizeof(uint8_t));
+    ct->colors = sf_calloc(ct->texture->w * ct->texture->h * 4 * sizeof(uint8_t));
 }
 
 static void canvas_tile_plot(struct canvas_tile *ct, int x, int y,
@@ -124,7 +123,7 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
 
     glBindTexture(GL_TEXTURE_2D, 0);
     ct->isdirty = 0;
-    free(colors);
+    sf_free(colors);
 }
 
 /**

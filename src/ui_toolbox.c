@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 #include <sf/utils.h>
 
 #include "ui_toolbox.h"
@@ -59,7 +57,7 @@ struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
 
     tb = sf_alloc(sizeof(*tb));
     if (ui_toolbox_init(tb, w, h, r, g, b, a) != 0) {
-        free(tb);
+        sf_free(tb);
         return NULL;
     }
     return tb;

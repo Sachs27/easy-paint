@@ -1,5 +1,6 @@
-#include <stdlib.h>
 #include <GLFW/glfw3.h>
+
+#include <sf/utils.h>
 
 #include "../input_manager.h"
 
@@ -87,10 +88,10 @@ static void on_key(GLFWwindow *handle, int key, int scancode,
 
 struct input_manager *input_manager_create(struct window *win) {
     if (input_manager) {
-        free(input_manager);
+        sf_free(input_manager);
     }
 
-    input_manager = calloc(1, sizeof(*input_manager));
+    input_manager = sf_calloc(sizeof(*input_manager));
     input_manager->win = win;
 
     glfwSetMouseButtonCallback(win->handle, on_mouse_button);

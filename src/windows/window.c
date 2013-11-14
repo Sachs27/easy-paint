@@ -1,5 +1,6 @@
-#include <stdlib.h>
 #include <string.h>
+
+#include <sf/utils.h>
 
 #include "../window.h"
 
@@ -22,14 +23,14 @@ struct window *window_create(const char *title, int w, int h) {
         window_destroy();
     }
 
-    window = malloc(sizeof(*window));
+    window = sf_alloc(sizeof(*window));
     window->title = strdup(title);
     window->w = w;
     window->h = h;
     window->handle = glfwCreateWindow(w, h, title, NULL, NULL);
 
     if (window->handle == NULL) {
-        free(window);
+        sf_free(window);
         window = NULL;
         return NULL;
     }
@@ -50,8 +51,8 @@ void window_destroy(void) {
     }
 
     glfwDestroyWindow(window->handle);
-    free(window->title);
-    free(window);
+    sf_free(window->title);
+    sf_free(window);
     window = NULL;
 }
 

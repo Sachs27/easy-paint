@@ -1,7 +1,8 @@
 #include <assert.h>
 #include <string.h>
-#include <stdlib.h>
 #include <unistd.h>
+
+#include <sf/utils.h>
 
 #include "resource_manager.h"
 
@@ -61,7 +62,7 @@ struct resource_manager *resource_manager_create(const char *pathname) {
     struct resource_manager *rm;
     char *ptr;
 
-    rm = calloc(1, sizeof(*rm));
+    rm = sf_calloc(sizeof(*rm));
     rm->root = strdup(pathname);
 
     ptr = strrchr(pathname, '.');
