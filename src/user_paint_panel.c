@@ -161,6 +161,7 @@ static int blank_on_press(struct ui *blank, int x, int y) {
 
 static int canvas_lastx;
 static int canvas_lasty;
+static int isdrawing = 0;
 
 static int canvas_on_press(struct ui *ui, int x, int y) {
     struct canvas *canvas = (struct canvas *) ui;
@@ -171,6 +172,7 @@ static int canvas_on_press(struct ui *ui, int x, int y) {
     ui_get_screen_pos((struct ui *) canvas, &xscreen, &yscreen);
     canvas_screen_to_canvas(canvas, x + xscreen, y + yscreen,
                             &canvas_lastx, &canvas_lasty);
+    isdrawing = 1;
     record_begin(&upp->record, canvas);
 
     return 0;
@@ -178,6 +180,7 @@ static int canvas_on_press(struct ui *ui, int x, int y) {
 
 static void canvas_on_release(struct ui *ui) {
     struct canvas *canvas = (struct canvas *) ui;
+    isdrawing = 0;
     record_end(canvas->record);
 }
 
@@ -187,7 +190,7 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
     struct user_paint_panel *upp =
         sf_container_of(canvas, struct user_paint_panel, canvas);
 
-    if (canvas->record) {
+    if (isdrawing) {
         int mx, my;
 
         canvas_screen_to_canvas(canvas, im->mouse.x, im->mouse.y, &mx, &my);

@@ -38,7 +38,7 @@ static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
     ct->dirty_rect.y = 0;
     ct->dirty_rect.w = ct->area.w;
     ct->dirty_rect.h = ct->area.h;
-    ct->colors = sf_calloc(ct->texture->w * ct->texture->h * 4 * sizeof(uint8_t));
+    ct->colors = sf_calloc(ct->texture->w * ct->texture->h * sizeof(uint32_t));
 }
 
 static void canvas_tile_plot(struct canvas_tile *ct, int x, int y,
@@ -90,8 +90,10 @@ static void canvas_tile_plot(struct canvas_tile *ct, int x, int y,
     }
 }
 
+static uint32_t canvas_update_tile_buf[CANVAS_TILE_WIDTH * CANVAS_TILE_HEIGHT];
+
 static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
-    uint32_t *colors; /*[ct->dirty_rect.w * ct->dirty_rect.h];*/
+    uint32_t *colors = canvas_update_tile_buf;
     uint32_t *row;
     uint32_t *src_row;
     int       i;
@@ -99,7 +101,6 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
     src_row = ((uint32_t *) (ct->colors))
                                 + ct->dirty_rect.y * ct->texture->w
                                 + ct->dirty_rect.x;
-    colors = sf_alloc(ct->dirty_rect.w * ct->dirty_rect.h * sizeof(uint32_t));
     row = colors;
 
     for (i = 0; i < ct->dirty_rect.h; ++i) {
@@ -123,7 +124,6 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
 
     glBindTexture(GL_TEXTURE_2D, 0);
     ct->isdirty = 0;
-    sf_free(colors);
 }
 
 /**
