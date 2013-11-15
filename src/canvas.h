@@ -31,9 +31,9 @@ struct canvas {
 };
 
 
-struct canvas *canvas_create(int w, int h);
-
 int canvas_init(struct canvas *canvas, int w, int h);
+
+void canvas_destroy(struct canvas *canvas);
 
 void canvas_clear(struct canvas *canvas);
 

@@ -48,12 +48,16 @@ static int ui_menu_on_press(struct ui *ui, int x, int y) {
     return 0;
 }
 
+static void ui_menu_on_destroy(struct ui *ui) {
+    struct ui_menu *menu = (struct ui_menu *) ui;
 
-struct ui_menu *ui_menu_create(int w, int h) {
-    struct ui_menu *menu;
+    sf_list_destroy(&menu->items);
+}
+
+
+int ui_menu_init(struct ui_menu *menu, int w, int h) {
     sf_list_def_t   def;
 
-    menu = sf_alloc(sizeof(*menu));
     ui_init((struct ui *) menu, w, h);
 
     sf_memzero(&def, sizeof(def));
@@ -62,8 +66,9 @@ struct ui_menu *ui_menu_create(int w, int h) {
 
     UI_CALLBACK(menu, render, ui_menu_on_render);
     UI_CALLBACK(menu, press, ui_menu_on_press);
+    UI_CALLBACK(menu, destroy, ui_menu_on_destroy);
 
-    return menu;
+    return 0;
 }
 
 void ui_menu_set_background_color(struct ui_menu *menu, uint8_t r, uint8_t g,

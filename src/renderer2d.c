@@ -105,6 +105,7 @@ static int attach_shader(GLuint program, struct shader_info *info) {
     }
 
     glAttachShader(program, shader);
+    glDeleteShader(shader);
     return 0;
 }
 
@@ -186,9 +187,8 @@ static void renderer2d_set_viewport(struct renderer2d *r) {
 }
 
 
-struct renderer2d *renderer2d_create(int w, int h) {
+int renderer2d_init(struct renderer2d *r, int w, int h) {
     sf_array_def_t def;
-    struct renderer2d *r;
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_SCISSOR_TEST);
@@ -196,7 +196,6 @@ struct renderer2d *renderer2d_create(int w, int h) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
 
-    r = sf_alloc(sizeof(*r));
     r->w = w;
     r->h = h;
     glGenBuffers(1, &r->vbo);
@@ -212,8 +211,16 @@ struct renderer2d *renderer2d_create(int w, int h) {
 
     renderer2d_push_viewport(r, 0, 0, w, h);
     renderer2d_set_render_target(r, NULL);
+    return 0;
+}
 
-    return r;
+void renderer2d_destroy(struct renderer2d *r) {
+    glDeleteBuffers(1, &r->vbo);
+    glDeleteFramebuffers(1, &r->fbo);
+    glDeleteProgram(r->prog_rect);
+    glDeleteProgram(r->prog_texture);
+
+    sf_array_destroy(&r->viewports);
 }
 
 void renderer2d_resize(struct renderer2d *r, int w, int h) {

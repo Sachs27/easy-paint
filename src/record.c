@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <limits.h>
-#include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 
 #include <sf/utils.h>
 #include <sf/log.h>
@@ -11,6 +10,15 @@
 
 
 #define RECORD_PIXEL_NALLOC 1024
+
+
+static struct canvas   *record_canvas = NULL;
+
+static void record_cleanup(void) {
+    canvas_destroy(record_canvas);
+    sf_free(record_canvas);
+}
+
 
 static int record_undo_1(struct record *record, struct canvas *canvas) {
     sf_array_t             *segment;
@@ -86,19 +94,6 @@ static int record_redo_1(struct record *record, struct canvas *canvas) {
 }
 
 
-struct record *record_create(void) {
-    struct record *record;
-
-    record = sf_alloc(sizeof(*record));
-
-    if (record_init(record) != 0) {
-        sf_free(record);
-        return NULL;
-    }
-
-    return record;
-}
-
 int record_init(struct record *record) {
     sf_array_def_t def;
 
@@ -108,6 +103,7 @@ int record_init(struct record *record) {
 
     sf_memzero(&def, sizeof(def));
     def.size = sizeof(sf_array_t);
+    def.free = (void (*)(void *)) (sf_array_destroy);
     if (sf_array_init(&record->segments, &def) != SF_OK) {
         return -1;
     }
@@ -115,16 +111,25 @@ int record_init(struct record *record) {
     return 0;
 }
 
+void record_destroy(struct record *record) {
+    record->canvas = NULL;
+    sf_array_destroy(&record->segments);
+}
+
 int record_load_zip(struct record *record, struct zip *archive,
                     const char *filename) {
-    static struct canvas   *canvas = NULL;
+    struct canvas          *canvas;
     FILE                   *raw_file;
     struct zip_file        *zip_file;
     uint32_t    nsegments, nrecords, i, j;
 
-    if (canvas == NULL) {
-        canvas = canvas_create(1, 1);
+    if (record_canvas == NULL) {
+        record_canvas = sf_alloc(sizeof(*record_canvas));
+        canvas_init(record_canvas, 1, 1);
+        atexit(record_cleanup);
     }
+
+    canvas = record_canvas;
 
     record_init(record);
 

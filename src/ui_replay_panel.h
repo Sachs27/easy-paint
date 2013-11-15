@@ -42,9 +42,6 @@ struct ui_replay_panel {
 };
 
 
-struct ui_replay_panel *ui_replay_panel_create(int w, int h,
-                                               struct resource_manager *rm);
-
 int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
                          struct resource_manager *rm);
 

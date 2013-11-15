@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -73,6 +73,8 @@ static uint64_t sf_get_ticks(void) {
 int main(int argc, char *argv[]) {
     uint64_t cur_tick, last_tick;
 
+    atexit((void (*)(void)) sf_memcheck);
+
     if (init() != 0) {
         return -1;
     }
@@ -96,9 +98,9 @@ int main(int argc, char *argv[]) {
         glfwPollEvents();
     }
 
-    glfwTerminate();
+    app_destory();
 
-    sf_memcheck();
+    glfwTerminate();
 
     return 0;
 }

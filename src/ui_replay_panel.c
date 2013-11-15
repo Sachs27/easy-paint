@@ -145,15 +145,6 @@ static void ui_replay_panel_on_resize(struct ui *ui, int w, int h) {
 }
 
 
-struct ui_replay_panel *ui_replay_panel_create(int w, int h,
-                                               struct resource_manager *rm) {
-    struct ui_replay_panel *urp;
-
-    urp = sf_alloc(sizeof(*urp));
-    ui_replay_panel_init(urp, w, h, rm);
-    return urp;
-}
-
 int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
                          struct resource_manager *rm) {
     ui_init((struct ui *) urp, w, h);

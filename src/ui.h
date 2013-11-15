@@ -40,6 +40,8 @@ typedef void (ui_on_hide_t)(struct ui *ui);
 
 typedef void (ui_on_resize_t)(struct ui *ui, int w, int h);
 
+typedef void (ui_on_destroy_t)(struct ui *ui);
+
 enum ui_state {
     UI_STATE_HIDE,
     UI_STATE_SHOW,
@@ -50,7 +52,8 @@ struct ui {
     struct sf_rect  area;
 
     struct ui      *parent;
-    sf_list_t       childs; /* elt: (struct ui *) */
+
+    sf_list_t      *childen; /* elt: (struct ui *) */
 
 #define UI_CB_DEC(e) ui_on_ ## e ## _t *on_ ## e
     UI_CB_DEC(update);
@@ -60,17 +63,22 @@ struct ui {
     UI_CB_DEC(show);
     UI_CB_DEC(hide);
     UI_CB_DEC(resize);
+    UI_CB_DEC(destroy);
 #undef UI_CB_DEC
 };
 
 
 int ui_init(struct ui *ui, int w, int h);
 
+void ui_destroy(struct ui *ui);
+
 /**
  * (x, y) is the position of the ui's upper-left corner which is in the
  * parent's coordinates.
  */
 int ui_add_child(struct ui *ui, struct ui *child, int x, int y);
+
+void ui_remove_child(struct ui *ui, struct ui *child);
 
 void ui_show(struct ui *ui);
 
@@ -97,15 +105,15 @@ void ui_get_screen_pos(struct ui *ui, int *o_x, int *o_y);
 /* ======================================================================= */
 
 struct ui_manager {
-    sf_list_t   uis;        /* elt: (struct ui *) */
-
     struct ui  *ui_pressed; /* only one ui can be
                              * pressed at one time.  */
     struct ui  *root;
 };
 
 
-struct ui_manager *ui_manager_create(void);
+int ui_manager_init(struct ui_manager *uim);
+
+void ui_manager_destroy(struct ui_manager *uim);
 
 void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
                        double dt);

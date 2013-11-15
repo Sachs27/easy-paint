@@ -42,7 +42,7 @@ enum RESOURCE_RECORD_ID {
 };
 
 struct resource_manager {
-    char           *root;
+    const char     *root;
 
     int             iszip;
     struct zip     *archive;
@@ -55,7 +55,9 @@ struct resource_manager {
 };
 
 
-struct resource_manager *resource_manager_create(const char *pathname);
+int resource_manager_init(struct resource_manager *rm, const char *pathname);
+
+void resource_manager_destroy(struct resource_manager *rm);
 
 void *resource_manager_load(struct resource_manager *rm, int type, int id);
 

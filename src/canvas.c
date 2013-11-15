@@ -23,22 +23,29 @@ struct canvas_tile {
 
     uint8_t            *colors;     /* R-G-B-A (8-bit each) */
 
-    struct texture     *texture;
+    struct texture      texture;
 };
 
 
 static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
-    ct->texture = texture_create_2d(CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
+    texture_init_2d(&ct->texture, CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
     ct->area.x = x;
     ct->area.y = y;
-    ct->area.w = ct->texture->w;
-    ct->area.h = ct->texture->h;
+    ct->area.w = ct->texture.w;
+    ct->area.h = ct->texture.h;
     ct->isdirty = 1;
     ct->dirty_rect.x = 0;
     ct->dirty_rect.y = 0;
     ct->dirty_rect.w = ct->area.w;
     ct->dirty_rect.h = ct->area.h;
-    ct->colors = sf_calloc(ct->texture->w * ct->texture->h * sizeof(uint32_t));
+    ct->colors = sf_calloc(ct->texture.w * ct->texture.h * sizeof(uint32_t));
+}
+
+static void canvas_tile_free(void *p) {
+    struct canvas_tile *ct = p;
+
+    texture_destroy(&ct->texture);
+    sf_free(ct->colors);
 }
 
 static void canvas_tile_plot(struct canvas_tile *ct, int x, int y,
@@ -56,7 +63,7 @@ static void canvas_tile_plot(struct canvas_tile *ct, int x, int y,
     x -= ct->area.x;
     y -= ct->area.y;
 
-    color = ct->colors + 4 * (y * ct->texture->h + x);
+    color = ct->colors + 4 * (y * ct->texture.h + x);
     color[0] = r;
     color[1] = g;
     color[2] = b;
@@ -99,17 +106,17 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
     int       i;
 
     src_row = ((uint32_t *) (ct->colors))
-                                + ct->dirty_rect.y * ct->texture->w
+                                + ct->dirty_rect.y * ct->texture.w
                                 + ct->dirty_rect.x;
     row = colors;
 
     for (i = 0; i < ct->dirty_rect.h; ++i) {
         memcpy(row, src_row, ct->dirty_rect.w * sizeof(uint32_t));
         row += ct->dirty_rect.w;
-        src_row += ct->texture->w;
+        src_row += ct->texture.w;
     }
     /* use dirty rect */
-    glBindTexture(GL_TEXTURE_2D, ct->texture->tid);
+    glBindTexture(GL_TEXTURE_2D, ct->texture.tid);
 
     /* On some Android device, glTexSubImage2D don't work, why? */
 #ifdef ANDROID
@@ -182,8 +189,8 @@ static void canvas_on_render(struct ui *ui, struct renderer2d *renderer2d) {
 }while (0)
         x0 = ct->area.x - canvas->viewport.x;
         y0 = ct->area.y - canvas->viewport.y;
-        x1 = x0 + ct->texture->w;
-        y1 = y0 + ct->texture->h;
+        x1 = x0 + ct->texture.w;
+        y1 = y0 + ct->texture.h;
         CLAMP(x0, 0, canvas->viewport.w);
         CLAMP(y0, 0, canvas->viewport.h);
         CLAMP(x1, 0, canvas->viewport.w);
@@ -197,14 +204,14 @@ static void canvas_on_render(struct ui *ui, struct renderer2d *renderer2d) {
         y2 = canvas->viewport.y - ct->area.y;
         x3 = x2 + canvas->viewport.w;
         y3 = y2 + canvas->viewport.h;
-        CLAMP(x2, 0, ct->texture->w);
-        CLAMP(y2, 0, ct->texture->h);
-        CLAMP(x3, 0, ct->texture->w);
-        CLAMP(y3, 0, ct->texture->h);
+        CLAMP(x2, 0, ct->texture.w);
+        CLAMP(y2, 0, ct->texture.h);
+        CLAMP(x3, 0, ct->texture.w);
+        CLAMP(y3, 0, ct->texture.h);
 #undef CLAMP
         renderer2d_draw_texture(renderer2d,
                                 x0, y0, x1 - x0, y1 - y0,
-                                ct->texture,
+                                &ct->texture,
                                 x2, y2, x3 - x2, y3 - y2);
     } while (sf_list_iter_next(&iter));
 }
@@ -220,14 +227,10 @@ static void canvas_on_resize(struct ui *ui, int w, int h) {
     canvas->viewport.h = canvas->ui.area.h;
 }
 
-
-struct canvas *canvas_create(int w, int h) {
-    struct canvas *canvas;
-
-    canvas = sf_alloc(sizeof(*canvas));
-    canvas_init(canvas, w, h);
-    return canvas;
+static void canvas_on_destroy(struct ui *ui) {
+    canvas_destroy((struct canvas *) ui);
 }
+
 
 int canvas_init(struct canvas *canvas, int w, int h) {
     sf_list_def_t def;
@@ -243,6 +246,7 @@ int canvas_init(struct canvas *canvas, int w, int h) {
 
     sf_memzero(&def, sizeof(def));
     def.size = sizeof(struct canvas_tile);
+    def.free = canvas_tile_free;
     if (sf_list_init(&canvas->tiles, &def) != SF_OK) {
         return -1;
     }
@@ -251,8 +255,13 @@ int canvas_init(struct canvas *canvas, int w, int h) {
 
     UI_CALLBACK(canvas, render, canvas_on_render);
     UI_CALLBACK(canvas, resize, canvas_on_resize);
+    UI_CALLBACK(canvas, destroy, canvas_on_destroy);
 
     return 0;
+}
+
+void canvas_destroy(struct canvas *canvas) {
+    sf_list_destroy(&canvas->tiles);
 }
 
 void canvas_clear(struct canvas *canvas) {
@@ -262,13 +271,13 @@ void canvas_clear(struct canvas *canvas) {
         struct canvas_tile *ct = sf_list_iter_elt(&iter);
 
         memset(ct->colors, 0,
-               ct->texture->w * ct->texture->h * 4 * sizeof(uint8_t));
+               ct->texture.w * ct->texture.h * 4 * sizeof(uint8_t));
 
         ct->isdirty = 1;
         ct->dirty_rect.x = 0;
         ct->dirty_rect.y = 0;
-        ct->dirty_rect.w = ct->texture->w;
-        ct->dirty_rect.h = ct->texture->h;
+        ct->dirty_rect.w = ct->texture.w;
+        ct->dirty_rect.h = ct->texture.h;
     } while (sf_list_iter_next(&iter));
 }
 
@@ -335,7 +344,7 @@ void canvas_pick(struct canvas *canvas, int x, int y,
             x -= ct->area.x;
             y -= ct->area.y;
 
-            color = ct->colors + 4 * (y * ct->texture->h + x);
+            color = ct->colors + 4 * (y * ct->texture.h + x);
             PTR_ASSIGN(r, color[0]);
             PTR_ASSIGN(g, color[1]);
             PTR_ASSIGN(b, color[2]);

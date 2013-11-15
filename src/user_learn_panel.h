@@ -1,8 +1,10 @@
-#ifndef USER_LERAN_PANEL_H
+#ifndef USER_LEARN_PANEL_H
 #define USER_LEARN_PANEL_H
 
 
 #include "ui.h"
+#include "user_paint_panel.h"
+#include "ui_replay_panel.h"
 
 struct resource_manager;
 
@@ -11,16 +13,13 @@ struct user_learn_panel {
                                          * the first element of the struct  */
 
     int                      urp_h;
-    struct ui_replay_panel  *urp;
-    struct user_paint_panel *upp;
+    struct ui_replay_panel   urp;
+    struct user_paint_panel  upp;
 };
 
-
-struct user_learn_panel *user_learn_panel_create(int w, int h,
-                                                 struct resource_manager *rm);
 
 int user_learn_panel_init(struct user_learn_panel *ulp, int w, int h,
                           struct resource_manager *rm);
 
 
-#endif /* USER_LERAN_PANEL_H */
+#endif /* USER_LEARN_PANEL_H */

@@ -24,7 +24,7 @@ struct window *window_create(const char *title, int w, int h) {
     }
 
     window = sf_alloc(sizeof(*window));
-    window->title = strdup(title);
+    window->title = title;
     window->w = w;
     window->h = h;
     window->handle = glfwCreateWindow(w, h, title, NULL, NULL);
@@ -51,7 +51,6 @@ void window_destroy(void) {
     }
 
     glfwDestroyWindow(window->handle);
-    sf_free(window->title);
     sf_free(window);
     window = NULL;
 }

@@ -13,15 +13,6 @@ static void ui_imagebox_on_render(struct ui *ui,
 }
 
 
-struct ui_imagebox *ui_imagebox_create(int w, int h, struct texture *img) {
-    struct ui_imagebox *ib;
-
-    ib = sf_alloc(sizeof(*ib));
-    ui_imagebox_init(ib, w, h, img);
-
-    return ib;
-}
-
 int ui_imagebox_init(struct ui_imagebox *ib,
                      int w, int h, struct texture *img) {
     if (w == 0) {

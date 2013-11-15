@@ -33,7 +33,9 @@ struct renderer2d {
 /**
  * w, h are the screen's width and height
  */
-struct renderer2d *renderer2d_create(int w, int h);
+int renderer2d_init(struct renderer2d *r, int w, int h);
+
+void renderer2d_destroy(struct renderer2d *r);
 
 void renderer2d_resize(struct renderer2d *r, int w, int h);
 

@@ -243,10 +243,7 @@ int texture_load_2d(struct texture *tex, const char *pathname) {
     return texture_load_2d_zip(tex, NULL, pathname);
 }
 
-struct texture *texture_create_2d(int w, int h) {
-    struct texture *tex;
-
-    tex = sf_alloc(sizeof(*tex));
+int texture_init_2d(struct texture *tex, int w, int h) {
     tex->type = GL_TEXTURE_2D;
     tex->w = w;
     tex->h = h;
@@ -257,7 +254,7 @@ struct texture *texture_create_2d(int w, int h) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    return tex;
+    return 0;
 }
 
 void texture_set_parameteri(struct texture *tex, GLenum pname, GLint param) {
@@ -268,5 +265,4 @@ void texture_set_parameteri(struct texture *tex, GLenum pname, GLint param) {
 
 void texture_destroy(struct texture *tex) {
     glDeleteTextures(1, &tex->tid);
-    sf_free(tex);
 }

@@ -1,34 +1,77 @@
 #include <string.h>
 
+#include <sf/log.h>
 #include <sf/utils.h>
 
 #include "ui.h"
 
 
 int ui_init(struct ui *ui, int w, int h) {
-    sf_list_def_t def;
-
-    memset(ui, 0, sizeof(*ui));
+    sf_memzero(ui, sizeof(*ui));
 
     ui->state = UI_STATE_HIDE;
     ui->area.x = 0;
     ui->area.y = 0;
     ui->area.w = w;
     ui->area.h = h;
-
-    sf_memzero(&def, sizeof(def));
-    def.size = sizeof(struct ui *);
-    sf_list_init(&ui->childs, &def);
+    ui->childen = NULL;
 
     return 0;
 }
 
+void ui_destroy(struct ui *ui) {
+    if (ui->childen) {
+        /* first destroy childen recursively */
+        while (sf_list_cnt(ui->childen)) {
+            struct ui *child = *(struct ui **) sf_list_head(ui->childen);
+            ui_remove_child(ui, child);
+            ui_destroy(child);
+        }
+
+        sf_list_destroy(ui->childen);
+        sf_free(ui->childen);
+    }
+
+    if (ui->on_destroy) {
+        ui->on_destroy(ui);
+    }
+}
+
 int ui_add_child(struct ui *ui, struct ui *child, int x, int y) {
+    if (ui->childen == NULL) {
+        sf_list_def_t def;
+
+        sf_memzero(&def, sizeof(def));
+        def.size = sizeof(struct ui *);
+
+        ui->childen = sf_alloc(sizeof(*ui->childen));
+        sf_list_init(ui->childen, &def);
+    }
+
     child->area.x = x;
     child->area.y = y;
     child->parent = ui;
-    sf_list_push(&ui->childs, &child);
+    sf_list_push(ui->childen, &child);
     return 0;
+}
+
+void ui_remove_child(struct ui *ui, struct ui *child) {
+    sf_list_iter_t iter;
+
+    if (ui->childen && sf_list_begin(ui->childen, &iter)) do {
+        struct ui *p = *(struct ui **) sf_list_iter_elt(&iter);
+        if (child == p) {
+            if (child->parent != ui) {
+                sf_log(SF_LOG_WARN, "ui_remove_child: parent's child doesn't"
+                       " belevie it is his parent.");
+            }
+            sf_list_remove(ui->childen, &iter);
+            child->parent = NULL;
+            return;
+        }
+    } while (sf_list_iter_next(&iter));
+
+    sf_log(SF_LOG_WARN, "ui_remove_child: don't have any childen.");
 }
 
 void ui_show(struct ui *ui) {
@@ -36,7 +79,7 @@ void ui_show(struct ui *ui) {
 
     ui->state = UI_STATE_SHOW;
 
-    if (sf_list_begin(&ui->childs, &iter)) do {
+    if (ui->childen && sf_list_begin(ui->childen, &iter)) do {
         ui_show(*(struct ui **) sf_list_iter_elt(&iter));
     } while (sf_list_iter_next(&iter));
 
@@ -48,7 +91,7 @@ void ui_show(struct ui *ui) {
 void ui_hide(struct ui *ui) {
     sf_list_iter_t iter;
 
-    if (sf_list_begin(&ui->childs, &iter)) do {
+    if (ui->childen && sf_list_begin(ui->childen, &iter)) do {
         ui_hide(*(struct ui **) sf_list_iter_elt(&iter));
     } while (sf_list_iter_next(&iter));
 
@@ -89,21 +132,16 @@ void ui_get_screen_pos(struct ui *ui, int *o_x, int *o_y) {
 
 /* ======================================================================= */
 
-struct ui_manager *ui_manager_create(void) {
-    struct ui_manager  *uim;
-    sf_list_def_t       def;
 
-    uim = sf_alloc(sizeof(*uim));
-
-    sf_memzero(&def, sizeof(def));
-    def.size = sizeof(struct ui *);
-    sf_list_init(&uim->uis, &def);
-
+int ui_manager_init(struct ui_manager *uim) {
     uim->ui_pressed = NULL;
     uim->root = NULL;
-
-    return uim;
+    return 0;
 }
+
+void ui_manager_destroy(struct ui_manager *uim) {
+}
+
 
 /**
  * @return whether the event will pass to parent ?
@@ -115,7 +153,7 @@ static int handle_press_event(struct ui_manager *uim, struct ui *ui,
     sf_list_iter_t  iter;
     int             ispass = 1;
 
-    if (sf_list_rbegin(&ui->childs, &iter)) do {
+    if (ui->childen && sf_list_rbegin(ui->childen, &iter)) do {
         struct ui *ui = *(struct ui**) sf_list_iter_elt(&iter);
 
         if (ui->state != UI_STATE_SHOW
@@ -144,7 +182,7 @@ static int handle_press_event(struct ui_manager *uim, struct ui *ui,
 static void update_ui(struct ui *ui, struct input_manager *im, double dt) {
     sf_list_iter_t iter;
 
-    if (sf_list_begin(&ui->childs, &iter)) do {
+    if (ui->childen && sf_list_begin(ui->childen, &iter)) do {
         update_ui(*(struct ui**) sf_list_iter_elt(&iter), im, dt);
     } while (sf_list_iter_next(&iter));
 
@@ -191,7 +229,7 @@ static void render_ui(struct ui *ui, struct renderer2d *r) {
         ui->on_render(ui, r);
     }
 
-    if (sf_list_begin(&ui->childs, &iter)) do {
+    if (ui->childen && sf_list_begin(ui->childen, &iter)) do {
         render_ui(*(struct ui **) sf_list_iter_elt(&iter), r);
     } while (sf_list_iter_next(&iter));
 

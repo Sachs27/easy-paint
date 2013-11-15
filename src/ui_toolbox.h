@@ -15,9 +15,6 @@ struct ui_toolbox {
 };
 
 
-struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
-                                     uint8_t b, uint8_t a);
-
 int ui_toolbox_init(struct ui_toolbox *tb, int w, int h,
                     uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 

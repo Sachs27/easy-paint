@@ -9,7 +9,7 @@
 #endif /* ANDROID */
 
 struct window {
-    char   *title;
+    const char   *title;
     int     w;
     int     h;
 

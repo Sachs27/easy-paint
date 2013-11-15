@@ -230,12 +230,14 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h) {
             upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT);
 }
 
+static void user_paint_panel_on_destroy(struct ui *ui) {
+    struct user_paint_panel *upp = (struct user_paint_panel *) ui;
 
-struct user_paint_panel *user_paint_panel_create(int w, int h,
-                                                 struct resource_manager *rm) {
-    struct user_paint_panel *upp;
+    record_destroy(&upp->record);
+}
 
-    upp = sf_alloc(sizeof(*upp));
+int user_paint_panel_init(struct user_paint_panel *upp, int w, int h,
+                          struct resource_manager *rm) {
     ui_init(&upp->ui, w, h);
 
     brush_init(&upp->brush_pen, BRUSH_PEN);
@@ -303,6 +305,7 @@ struct user_paint_panel *user_paint_panel_create(int w, int h,
 
     UI_CALLBACK(upp, show, user_paint_panel_on_show);
     UI_CALLBACK(upp, resize, user_paint_panel_on_resize);
+    UI_CALLBACK(upp, destroy, user_paint_panel_on_destroy);
 
-    return upp;
+    return 0;
 }

@@ -1,6 +1,13 @@
 #ifndef APP_H
 #define APP_H
 
+
+#include "resource_manager.h"
+#include "user_paint_panel.h"
+#include "user_learn_panel.h"
+#include "ui_menu.h"
+
+
 #define WINDOW_TITLE "Easy Paint"
 #define WINDOW_WIDTH 480
 #define WINDOW_HEIGHT 600
@@ -8,11 +15,6 @@
 struct window;
 struct renderer2d;
 struct input_manager;
-struct resource_manager;
-struct ui_manager;
-struct user_paint_panel;
-struct ui_menu;
-struct ui_replay_panel;
 
 enum app_stage {
     APP_STAGE_DOODLE = 1,
@@ -24,24 +26,29 @@ struct app {
     int                         stage;
 
     struct window              *window;
-    struct renderer2d          *renderer2d;
     struct input_manager       *im;
-    struct resource_manager    *rm;
-    struct ui_manager          *uim;
+    struct renderer2d           renderer2d;
+    struct resource_manager     rm;
+    struct ui_manager           uim;
 
-    struct ui_imagebox         *logo;
-    struct ui_imagebox         *label1;
-    struct ui_imagebox         *label2;
-    struct ui_imagebox         *label3;
-    struct ui_menu             *menu;
-    struct ui_imagebox         *menuicon;
 
-    struct user_paint_panel    *upp;
-    struct user_learn_panel    *ulp;
+    struct ui                   root;
+
+    struct ui_imagebox          logo;
+    struct ui_imagebox          label1;
+    struct ui_imagebox          label2;
+    struct ui_imagebox          label3;
+    struct ui_menu              menu;
+    struct ui_imagebox          menuicon;
+
+    struct user_paint_panel     upp;
+    struct user_learn_panel     ulp;
 };
 
 
 int app_init(void);
+
+void app_destory(void);
 
 void app_load_resource(const char *rootpath);
 

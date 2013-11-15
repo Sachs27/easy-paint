@@ -44,6 +44,9 @@ struct input_manager {
 
 
 struct input_manager *input_manager_create(struct window *win);
+
+void input_manager_destroy(void);
+
 void input_manager_update();
 
 #ifdef ANDROID

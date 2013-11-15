@@ -50,18 +50,12 @@ static void ui_toolbox_on_resize(struct ui *ui, int w, int h) {
     ui_toolbox_update_buttons((struct ui_toolbox *) ui);
 }
 
+static void ui_toolbox_on_destroy(struct ui *ui) {
+    struct ui_toolbox *tb = (struct ui_toolbox *) ui;
 
-struct ui_toolbox *ui_toolbox_create(int w, int h, uint8_t r, uint8_t g,
-                                     uint8_t b, uint8_t a) {
-    struct ui_toolbox *tb;
-
-    tb = sf_alloc(sizeof(*tb));
-    if (ui_toolbox_init(tb, w, h, r, g, b, a) != 0) {
-        sf_free(tb);
-        return NULL;
-    }
-    return tb;
+    sf_list_destroy(&tb->buttons);
 }
+
 
 int ui_toolbox_init(struct ui_toolbox *tb, int w, int h,
                     uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
@@ -82,6 +76,7 @@ int ui_toolbox_init(struct ui_toolbox *tb, int w, int h,
     UI_CALLBACK(tb, render, ui_toolbox_on_render);
     UI_CALLBACK(tb, press, ui_toolbox_on_press);
     UI_CALLBACK(tb, resize, ui_toolbox_on_resize);
+    UI_CALLBACK(tb, destroy, ui_toolbox_on_destroy);
 
     return 0;
 }

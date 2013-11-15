@@ -89,6 +89,7 @@ static void on_key(GLFWwindow *handle, int key, int scancode,
 struct input_manager *input_manager_create(struct window *win) {
     if (input_manager) {
         sf_free(input_manager);
+        input_manager = NULL;
     }
 
     input_manager = sf_calloc(sizeof(*input_manager));
@@ -99,6 +100,21 @@ struct input_manager *input_manager_create(struct window *win) {
     glfwSetKeyCallback(win->handle, on_key);
 
     return input_manager;
+}
+
+void input_manager_destroy(void) {
+    struct window *win;
+
+    if (input_manager == NULL) {
+        return;
+    }
+
+    win = input_manager->win;
+
+    glfwSetMouseButtonCallback(win->handle, 0);
+    glfwSetCursorPosCallback(win->handle, 0);
+    glfwSetKeyCallback(win->handle, 0);
+    sf_free(input_manager);
 }
 
 void input_manager_update(void) {

@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <sf/utils.h>
@@ -58,12 +57,12 @@ static int change_working_directory(const char *pathname) {
 }
 
 
-struct resource_manager *resource_manager_create(const char *pathname) {
-    struct resource_manager *rm;
+int resource_manager_init(struct resource_manager *rm, const char *pathname) {
     char *ptr;
 
-    rm = sf_calloc(sizeof(*rm));
-    rm->root = strdup(pathname);
+    sf_memzero(rm, sizeof(*rm));
+
+    rm->root = pathname;
 
     ptr = strrchr(pathname, '.');
     if (ptr && (strcmp(ptr, ".zip") == 0 || strcmp(ptr, ".apk") == 0)) {
@@ -74,7 +73,29 @@ struct resource_manager *resource_manager_create(const char *pathname) {
         assert(change_working_directory(pathname) == 0);
     }
 
-    return rm;
+    return 0;
+}
+
+void resource_manager_destroy(struct resource_manager *rm) {
+    int id;
+
+    for (id = 0; id < RESOURCE_NTEXTURES; ++id) {
+        if (rm->istexture_loaded[id]) {
+            texture_destroy(rm->textures + id);
+            rm->istexture_loaded[id] = 0;
+        }
+    }
+
+    for (id = 0; id < RESOURCE_NRECORDS; ++id) {
+        if (rm->isrecord_loaded[id]) {
+            record_destroy(rm->records + id);
+            rm->isrecord_loaded[id] = 0;
+        }
+    }
+
+    if (rm->iszip) {
+        zip_close(rm->archive);
+    }
 }
 
 void *resource_manager_load(struct resource_manager *rm, int type, int id) {

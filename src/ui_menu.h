@@ -19,7 +19,7 @@ struct ui_menu {
     uint8_t             background_color[4];
 };
 
-struct ui_menu *ui_menu_create(int w, int h);
+int ui_menu_init(struct ui_menu *menu, int w, int h);
 
 void ui_menu_set_background_color(struct ui_menu *menu, uint8_t r, uint8_t g,
                                   uint8_t b, uint8_t a);
