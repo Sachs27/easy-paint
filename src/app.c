@@ -16,12 +16,14 @@
 
 
 struct app g_app;
-static void menuicon_on_press(struct ui *ui, int n, int x[n], int y[n]) {
+static int menuicon_on_press(struct ui *ui, int x, int y) {
     ui_show((struct ui *) g_app.menu);
+    return 0;
 }
 
-static void menu_on_press(struct ui *ui, int n, int x[n], int y[n]) {
+static int menu_on_press(struct ui *ui, int x, int y) {
     ui_hide((struct ui *) g_app.menu);
+    return 0;
 }
 
 static void app_change_stage(int stage) {
@@ -35,7 +37,7 @@ static void app_change_stage(int stage) {
     }
 }
 
-static void menu_item_on_press(struct ui *ui, int n, int x[n], int y[n]) {
+static int menu_item_on_press(struct ui *ui, int x, int y) {
     int i = 0;
     sf_list_iter_t iter;
 
@@ -44,10 +46,12 @@ static void menu_item_on_press(struct ui *ui, int n, int x[n], int y[n]) {
         if (item == ui) {
             app_change_stage(i);
             ui_hide((struct ui *) g_app.menu);
-            return;
+            break;
         }
         ++i;
     } while (sf_list_iter_next(&iter));
+
+    return 0;
 }
 
 void app_load_resource(const char *rootpath) {

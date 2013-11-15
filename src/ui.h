@@ -30,7 +30,7 @@ typedef void (ui_on_render_t)(struct ui *, struct renderer2d *);
  *         0     - no
  *         other - yes
  */
-typedef int (ui_on_press_t)(struct ui *ui, int n, int x[n], int y[n]);
+typedef int (ui_on_press_t)(struct ui *ui, int x, int y);
 
 typedef void (ui_on_release_t)(struct ui *ui);
 
@@ -90,7 +90,7 @@ void ui_get_screen_pos(struct ui *ui, int *o_x, int *o_y);
  * @func callback function
  */
 #define UI_CALLBACK(p, e, func) do {                            \
-    ((struct ui *) (p))->on_ ## e = (ui_on_ ## e ## _t *) func; \
+    ((struct ui *) (p))->on_ ## e = func; \
 } while (0)
 
 

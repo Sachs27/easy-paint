@@ -155,8 +155,8 @@ static struct canvas_tile *canvas_add_tile(struct canvas *canvas,
     return sf_list_tail(&canvas->tiles);
 }
 
-static void canvas_on_render(struct canvas *canvas,
-                             struct renderer2d *renderer2d) {
+static void canvas_on_render(struct ui *ui, struct renderer2d *renderer2d) {
+    struct canvas *canvas = (struct canvas *) ui;
     sf_list_iter_t iter;
     float scale = canvas->viewport.w * 1.0 / canvas->ui.area.w;
     /* draw background */
@@ -209,7 +209,8 @@ static void canvas_on_render(struct canvas *canvas,
     } while (sf_list_iter_next(&iter));
 }
 
-static void canvas_on_resize(struct canvas *canvas, int w, int h) {
+static void canvas_on_resize(struct ui *ui, int w, int h) {
+    struct canvas *canvas = (struct canvas *) ui;
     /*float scale = ((float) canvas->viewport.w) / canvas->ui.area.w;*/
 
     canvas->ui.area.w = w;

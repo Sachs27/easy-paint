@@ -15,7 +15,8 @@
 /*
  * The following callback function use global variable g_app.
  */
-static void undo_on_render(struct ui_imagebox *undo, struct renderer2d *r) {
+static void undo_on_render(struct ui *ui, struct renderer2d *r) {
+    struct ui_imagebox *undo = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
         sf_container_of(undo, struct user_paint_panel, undo);
 
@@ -31,8 +32,8 @@ static void undo_on_render(struct ui_imagebox *undo, struct renderer2d *r) {
     }
 }
 
-static void undo_on_press(struct ui_imagebox *undo,
-                          int n, int x[n], int y[n]) {
+static int undo_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *undo = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
         sf_container_of(undo, struct user_paint_panel, undo);
 
@@ -42,9 +43,11 @@ static void undo_on_press(struct ui_imagebox *undo,
     }
 
     record_undo(&upp->record, &upp->canvas);
+    return 0;
 }
 
-static void redo_on_render(struct ui_imagebox *redo, struct renderer2d *r) {
+static void redo_on_render(struct ui *ui, struct renderer2d *r) {
+    struct ui_imagebox *redo = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
         sf_container_of(redo, struct user_paint_panel, redo);
 
@@ -61,8 +64,8 @@ static void redo_on_render(struct ui_imagebox *redo, struct renderer2d *r) {
     }
 }
 
-static void redo_on_press(struct ui_imagebox *redo,
-                          int n, int x[n], int y[n]) {
+static int redo_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *redo = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
         sf_container_of(redo, struct user_paint_panel, redo);
 
@@ -72,10 +75,11 @@ static void redo_on_press(struct ui_imagebox *redo,
     }
 
     record_redo(&upp->record, &upp->canvas);
+    return 0;
 }
 
-static void brush_on_press(struct ui_imagebox *brush,
-                           int n, int x[n], int y[n]) {
+static int brush_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *brush = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
         sf_container_of(brush, struct user_paint_panel, brush);
 
@@ -86,10 +90,10 @@ static void brush_on_press(struct ui_imagebox *brush,
         ui_show((struct ui *) &upp->brushbox);
         ui_show(&upp->blank);
     }
+    return 0;
 }
 #if 0
-static void brushicon_on_press(struct ui_imagebox *button,
-                               int n, int x[n], int y[n]) {
+static void brushicon_on_press(struct ui_imagebox *button, int x, int y) {
     struct user_paint_panel *upp = g_app.upp;
     int i = 0;
 
@@ -110,8 +114,8 @@ static void brushicon_on_press(struct ui_imagebox *button,
 }
 #endif
 
-static void brush_pen_on_press(struct ui_imagebox *brush_pen_icon,
-                               int n, int x[n], int y[n]) {
+static int brush_pen_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *brush_pen_icon = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp = sf_container_of(brush_pen_icon,
                                                    struct user_paint_panel,
                                                    brush_pen_icon);
@@ -119,10 +123,11 @@ static void brush_pen_on_press(struct ui_imagebox *brush_pen_icon,
     ui_imagebox_set_image(&upp->brush, upp->brush_pen_icon.image);
     ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
+    return 0;
 }
 
-static void brush_pencil_on_press(struct ui_imagebox *brush_pencil_icon,
-                                  int n, int x[n], int y[n]) {
+static int brush_pencil_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *brush_pencil_icon = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp = sf_container_of(brush_pencil_icon,
                                                    struct user_paint_panel,
                                                    brush_pencil_icon);
@@ -130,10 +135,11 @@ static void brush_pencil_on_press(struct ui_imagebox *brush_pencil_icon,
     ui_imagebox_set_image(&upp->brush, upp->brush_pencil_icon.image);
     ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
+    return 0;
 }
 
-static void brush_eraser_on_press(struct ui_imagebox *brush_eraser_icon,
-                                  int n, int x[n], int y[n]) {
+static int brush_eraser_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *brush_eraser_icon = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp = sf_container_of(brush_eraser_icon,
                                                    struct user_paint_panel,
                                                    brush_eraser_icon);
@@ -141,39 +147,43 @@ static void brush_eraser_on_press(struct ui_imagebox *brush_eraser_icon,
     ui_imagebox_set_image(&upp->brush, upp->brush_eraser_icon.image);
     ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
+    return 0;
 }
 
-static void blank_on_press(struct ui *blank, int n, int x[n], int y[n]) {
+static int blank_on_press(struct ui *blank, int x, int y) {
     struct user_paint_panel *upp =
         sf_container_of(blank, struct user_paint_panel, blank);
 
     ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
+    return 0;
 }
 
 static int canvas_lastx;
 static int canvas_lasty;
 
-static void canvas_on_press(struct canvas *canvas,
-                            int n, int x[n], int y[n]) {
+static int canvas_on_press(struct ui *ui, int x, int y) {
+    struct canvas *canvas = (struct canvas *) ui;
     struct user_paint_panel *upp =
         sf_container_of(canvas, struct user_paint_panel, canvas);
     int xscreen, yscreen;
 
-    assert(n == 1);
-
     ui_get_screen_pos((struct ui *) canvas, &xscreen, &yscreen);
-    canvas_screen_to_canvas(canvas, x[0] + xscreen, y[0] + yscreen,
+    canvas_screen_to_canvas(canvas, x + xscreen, y + yscreen,
                             &canvas_lastx, &canvas_lasty);
     record_begin(&upp->record, canvas);
+
+    return 0;
 }
 
-static void canvas_on_release(struct canvas *canvas) {
+static void canvas_on_release(struct ui *ui) {
+    struct canvas *canvas = (struct canvas *) ui;
     record_end(canvas->record);
 }
 
-static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
+static void canvas_on_update(struct ui *ui, struct input_manager *im,
                              double dt) {
+    struct canvas *canvas = (struct canvas *) ui;
     struct user_paint_panel *upp =
         sf_container_of(canvas, struct user_paint_panel, canvas);
 
@@ -198,13 +208,14 @@ static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
     }
 }
 
-static void user_paint_panel_on_show(struct user_paint_panel *upp) {
+static void user_paint_panel_on_show(struct ui *ui) {
+    struct user_paint_panel *upp = (struct user_paint_panel *) ui;
     ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
 }
 
-static void user_paint_panel_on_resize(struct user_paint_panel *upp,
-                                       int w, int h) {
+static void user_paint_panel_on_resize(struct ui *ui, int w, int h) {
+    struct user_paint_panel *upp = (struct user_paint_panel *) ui;
     ui_resize((struct ui *) &upp->canvas, w,  h);
 
     ui_resize((struct ui *) &upp->toolbox, w, upp->toolbox.ui.area.h);

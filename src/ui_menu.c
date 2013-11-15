@@ -15,7 +15,8 @@ static void ui_menu_update_items(struct ui_menu *menu) {
     } while (sf_list_iter_next(&iter));
 }
 
-static void ui_menu_on_render(struct ui_menu *menu, struct renderer2d *r) {
+static void ui_menu_on_render(struct ui *ui, struct renderer2d *r) {
+    struct ui_menu *menu = (struct ui_menu *) ui;
     int y = 0;
     sf_list_iter_t iter;
 
@@ -40,10 +41,11 @@ static void ui_menu_on_render(struct ui_menu *menu, struct renderer2d *r) {
     } while (sf_list_iter_next(&iter));
 }
 
-static void ui_menu_on_press(struct ui_menu *menu, int n, int x[n], int y[n]) {
+static int ui_menu_on_press(struct ui *ui, int x, int y) {
     /*
      * Just ignore the press event.
      */
+    return 0;
 }
 
 

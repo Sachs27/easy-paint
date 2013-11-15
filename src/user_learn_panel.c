@@ -5,8 +5,8 @@
 #include "user_paint_panel.h"
 
 
-static void user_learn_panel_on_resize(struct user_learn_panel *ulp,
-                                       int w, int h) {
+static void user_learn_panel_on_resize(struct ui *ui, int w, int h) {
+    struct user_learn_panel *ulp = (struct user_learn_panel *) ui;
     ulp->urp_h = h / 2;
     ui_resize((struct ui *) ulp->urp, w, ulp->urp_h);
     ui_resize((struct ui *) ulp->upp, w, h - ulp->urp_h);

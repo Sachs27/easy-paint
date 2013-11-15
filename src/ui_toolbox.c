@@ -23,8 +23,8 @@ static void ui_toolbox_update_buttons(struct ui_toolbox *tb) {
     } while (sf_list_iter_next(&iter));
 }
 
-static void ui_toolbox_on_render(struct ui_toolbox *tb,
-                                 struct renderer2d *r) {
+static void ui_toolbox_on_render(struct ui *ui, struct renderer2d *r) {
+    struct ui_toolbox *tb = (struct ui_toolbox *) ui;
     /* draw background */
     renderer2d_fill_rect(r, 0, 0, tb->ui.area.w, tb->ui.area.h,
                          tb->background_color[0],
@@ -39,15 +39,15 @@ static void ui_toolbox_on_render(struct ui_toolbox *tb,
                          tb->background_color[3]);
 }
 
-static void ui_toolbox_on_press(struct ui_toolbox *tb,
-                                int n, int x[n], int y[n]) {
+static int ui_toolbox_on_press(struct ui *ui, int x, int y) {
     /*
      * Just ignore the press event.
      */
+    return 0;
 }
 
-static void ui_toolbox_on_resize(struct ui_toolbox *tb, int w, int h) {
-    ui_toolbox_update_buttons(tb);
+static void ui_toolbox_on_resize(struct ui *ui, int w, int h) {
+    ui_toolbox_update_buttons((struct ui_toolbox *) ui);
 }
 
 

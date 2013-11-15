@@ -111,58 +111,32 @@ struct ui_manager *ui_manager_create(void) {
  *         other - yes
  */
 static int handle_press_event(struct ui_manager *uim, struct ui *ui,
-                              int n, int *x, int *y) {
-    int             i;
-    sf_array_def_t  def;
-    sf_array_t      ax, ay;
+                              int x, int y) {
     sf_list_iter_t  iter;
     int             ispass = 1;
-
-    sf_memzero(&def, sizeof(def));
-    def.size = sizeof(int);
-    sf_array_init(&ax, &def);
-    sf_array_init(&ay, &def);
 
     if (sf_list_rbegin(&ui->childs, &iter)) do {
         struct ui *ui = *(struct ui**) sf_list_iter_elt(&iter);
 
-        if (ui->state != UI_STATE_SHOW) {
-            continue;
-        }
-        sf_array_clear(&ax);
-        sf_array_clear(&ay);
-
-        for (i = 0; i < n; ++i) {
-            if (sf_rect_iscontain(&ui->area, x[i], y[i])) {
-                int tmp;
-                tmp = x[i] - ui->area.x;
-                sf_array_push(&ax, &tmp);
-                tmp = y[i] - ui->area.y;
-                sf_array_push(&ay, &tmp);
-            }
-        }
-
-        if (sf_array_cnt(&ax) == 0) {
+        if (ui->state != UI_STATE_SHOW
+            || !sf_rect_iscontain(&ui->area, x, y)) {
             continue;
         }
 
-        ispass = handle_press_event(uim, ui, sf_array_cnt(&ax),
-                                    sf_array_head(&ax), sf_array_head(&ay));
+        ispass = handle_press_event(uim, ui, x - ui->area.x, y - ui->area.y);
+
         if (!ispass) {
             break;
         }
     } while (sf_list_iter_next(&iter));
 
     if (ispass && ui->on_press) {
-        ispass = ui->on_press(ui, n, x, y);
+        ispass = ui->on_press(ui, x, y);
 
         /* for now, just notify the top ui for the press event */
         ispass = 0;
         uim->ui_pressed = ui;
     }
-
-    sf_array_destroy(&ax);
-    sf_array_destroy(&ay);
 
     return ispass;
 }
@@ -186,7 +160,7 @@ void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
         int x, y;
         x = im->mouse.x - uim->root->area.x;
         y = im->mouse.y - uim->root->area.y;
-        handle_press_event(uim, uim->root, 1, &x, &y);
+        handle_press_event(uim, uim->root, x, y);
     } else if (im->keys[KEY_MB_LEFT] == KEY_RELEASE) {
         if (uim->ui_pressed) {
             if (uim->ui_pressed->on_release) {

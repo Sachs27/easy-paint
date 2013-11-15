@@ -4,8 +4,9 @@
 #include "texture.h"
 
 
-static void ui_imagebox_on_render(struct ui_imagebox *ib,
+static void ui_imagebox_on_render(struct ui *ui,
                                   struct renderer2d *r) {
+    struct ui_imagebox *ib = (struct ui_imagebox *) ui;
     if (ib->image) {
         renderer2d_draw_texture(r, 0, 0, 0, 0, ib->image, 0, 0, 0, 0);
     }

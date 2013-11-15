@@ -24,8 +24,8 @@ static void ui_replay_panel_reset(struct ui_replay_panel *urp) {
     }
 }
 
-static void replay_on_press(struct ui_imagebox *replay,
-                            int n, int x[n], int y[n]) {
+static int replay_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *replay = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
         sf_container_of(replay, struct ui_replay_panel, replay);
 
@@ -43,17 +43,22 @@ static void replay_on_press(struct ui_imagebox *replay,
         urp->isreplay = 1;
         ui_imagebox_set_image(replay, urp->pause_image);
     }
+
+    return 0;
 }
 
-static void stop_on_press(struct ui_imagebox *stop,
-                          int n, int x[n], int y[n]) {
+static int stop_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *stop = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
         sf_container_of(stop, struct ui_replay_panel, stop);
+
     ui_replay_panel_reset(urp);
+
+    return 0;
 }
 
-static void rewind_on_press(struct ui_imagebox *rewind,
-                            int n, int x[n], int y[n]) {
+static int rewind_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *rewind = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
         sf_container_of(rewind, struct ui_replay_panel, rewind);
 #if 0
@@ -73,10 +78,12 @@ static void rewind_on_press(struct ui_imagebox *rewind,
                   urp->canvas.ui.area.w, urp->canvas.ui.area.h);
     record_reset(urp->record);
     ui_replay_panel_reset(urp);
+
+    return 0;
 }
 
-static void fastforward_on_press(struct ui_imagebox *fastforward,
-                                 int n, int x[n], int y[n]) {
+static int fastforward_on_press(struct ui *ui, int x, int y) {
+    struct ui_imagebox *fastforward = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
         sf_container_of(fastforward, struct ui_replay_panel, fastforward);
 #if 0
@@ -93,15 +100,17 @@ static void fastforward_on_press(struct ui_imagebox *fastforward,
                   urp->canvas.ui.area.w, urp->canvas.ui.area.h);
     record_reset(urp->record);
     ui_replay_panel_reset(urp);
+    return 0;
 }
 
-static void canvas_on_press(struct canvas *canvas,
-                            int n, int x[n], int y[n]) {
+static int canvas_on_press(struct ui *ui, int x, int y) {
     /* Just empty */
+    return 0;
 }
 
-static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
+static void canvas_on_update(struct ui *ui, struct input_manager *im,
                              double dt) {
+    struct canvas *canvas = (struct canvas *) ui;
     static double ntoreplay = 0;
 
     struct ui_replay_panel *urp =
@@ -122,8 +131,8 @@ static void canvas_on_update(struct canvas *canvas, struct input_manager *im,
     }
 }
 
-static void ui_replay_panel_on_resize(struct ui_replay_panel *urp,
-                                      int w, int h) {
+static void ui_replay_panel_on_resize(struct ui *ui, int w, int h) {
+    struct ui_replay_panel *urp = (struct ui_replay_panel *) ui;
     ui_resize((struct ui *) &urp->canvas, w, h);
     ui_resize((struct ui *) &urp->toolbox, w, urp->toolbox.ui.area.h);
     ui_move((struct ui *) &urp->toolbox, 0,
