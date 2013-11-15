@@ -13,8 +13,8 @@ enum BRUSH_TYPE {
 };
 
 struct brush {
-    uint8_t color[4];
-
+    uint8_t     color[4];
+    uint32_t    radius;
     /*
      * each brush has it's own plot function to generate different shape.
      */
