@@ -1,9 +1,49 @@
 #include <math.h>
 
+#include <sf/array.h>
 #include <sf/utils.h>
 
 #include "brush.h"
 #include "canvas.h"
+
+
+struct brush_buf {
+    int         x, y;
+    int         w, h;
+    sf_array_t  pixels;     /* elt: uint32_t */
+} brush_buf;
+
+
+void brush_buf_set_area(struct brush_buf *bb, int x, int y, int w, int h) {
+    uint32_t
+    uint32_t color = 0;
+
+    sf_array_clear(&bb->pixels);
+
+    sf_array_alloc(&bb->pixels, w * h);
+
+    bb->x = x;
+    bb->y = y;
+    bb->w = w;
+    bb->h = h;
+}
+
+void brush_buf_plot(struct brush_buf *bb, int x, int y,
+                    uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    uint8_t *color;
+
+    x -= bb->x;
+    y -= bb->y;
+
+    if (x < 0 || x >= bb->w || y < 0 || y >= bb->h) {
+        return;
+    }
+    color = (uint8_t *) sf_array_nth(&bb->pixels, y * bb->w + x);
+    color[0] = r;
+    color[1] = g;
+    color[2] = b;
+    color[3] = a;
+}
 
 
 static void blend_alpha(struct canvas *canvas, int x, int y, uint8_t a) {
@@ -236,6 +276,48 @@ static void eraser_plot(struct brush *brush, struct canvas *canvas,
     }
 }
 
+static void plot_circle(struct brush *brush, sf_list_t *buf, int xc, int yc,
+                        int r, int pressure) {
+    /*const int r = 8;*/
+    int x = 0, y = r, i, d;
+    int lastx = -1, lasty = -1;
+
+    d = 3 - 2 * r;
+
+    /* fill the cycle */
+    while (x <= y) {
+        uint8_t alpha = 255;
+
+        if (lasty != y) {
+            lasty = y;
+            for (i = -x + 1; i < x; ++i) {
+                /*alpha = 255 - 255 * sqrt(i * i + y * y) / r;*/
+                blend_alpha(canvas, xc + i, yc + y, alpha);
+                if (yc - y != yc + y) {
+                    blend_alpha(canvas, xc + i, yc - y, alpha);
+                }
+            }
+        }
+        if (lastx != x) {
+            lastx = x;
+            for (i = -y + 1; i < y; ++i) {
+                /*alpha = 255 - 255 * sqrt(i * i + x * x) / r;*/
+                blend_alpha(canvas, xc + i, yc + x, alpha);
+                if (yc - x != yc + x) {
+                    blend_alpha(canvas, xc + i, yc - x, alpha);
+                }
+            }
+        }
+
+        if (d < 0) {
+            d = d + 4 * x + 6;
+        } else {
+            d = d + 4 * (x - y) + 10;
+            --y;
+        }
+        ++x;
+    }
+}
 
 static int brush_eraser_init(struct brush *eraser) {
     eraser->plot = eraser_plot;
