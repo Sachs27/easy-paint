@@ -109,15 +109,20 @@ static void blend_additive(struct canvas *canvas, int x, int y,
     uint8_t dst_color[4];
     uint8_t color[4];
 
+    if (a == 0) {
+        return;
+    }
+
     canvas_pick(canvas, x, y, dst_color, dst_color + 1, dst_color + 2,
                 dst_color + 3);
 
-    alpha = dst_color[3] / 255.0f;
+    alpha = a / 255.0f;
     color[0] = r * alpha + dst_color[0] * (1 - alpha);
     color[1] = g * alpha + dst_color[1] * (1 - alpha);
     color[2] = b * alpha + dst_color[2] * (1 - alpha);
-    alpha = a + dst_color[3];
-    color[3] = alpha >= 255.0f ? (uint8_t) 255 : (uint8_t) alpha;
+    /*alpha = a + dst_color[3];*/
+    /*color[3] = alpha >= 255.0f ? (uint8_t) 255 : (uint8_t) alpha;*/
+    color[3] = a;
 
     /* no need to plot the same color */
     if (color[0] == dst_color[0] && color[1] == dst_color[1]
@@ -380,7 +385,7 @@ static int brush_pencil_init(struct brush *pencil) {
 
 static int brush_pen_init(struct brush *pen) {
     pen->plot = pen_plot;
-    brush_set_color(pen, 255, 0, 0, 255);
+    brush_set_color(pen, 255, 0, 0, 64);
     return 0;
 }
 
