@@ -56,8 +56,6 @@ void brush_buf_set_area(struct brush_buf *bb, int x0, int y0,
 void brush_buf_plot(struct brush_buf *bb, int x, int y,
                     uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     uint8_t *color;
-    float oalpha2, nalpha2;
-    uint32_t ointent, nintent;
 
     x -= bb->area.x;
     y -= bb->area.y;
@@ -68,16 +66,7 @@ void brush_buf_plot(struct brush_buf *bb, int x, int y,
 
     color = (uint8_t *) sf_array_nth(&bb->pixels, y * bb->area.w + x);
 
-    oalpha2 = color[3] / 255.0f;
-    oalpha2 *= oalpha2;
-    ointent = color[0] * color[0] * oalpha2 + color[1] * color[1] * oalpha2
-              + color[2] * color[2] * oalpha2;
-
-    nalpha2 = a / 255.0f;
-    nalpha2 *= nalpha2;
-    nintent = r * r * nalpha2 + g * g * nalpha2 + b * b * nalpha2;
-
-    if (nintent > ointent) {
+    if (a > color[3]) {
         color[0] = r;
         color[1] = g;
         color[2] = b;
@@ -105,6 +94,13 @@ static void blend_alpha(struct canvas *canvas, int x, int y, uint8_t a) {
 
 static void blend_additive(struct canvas *canvas, int x, int y,
                       uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+#define CLAMP(i, min, max) do { \
+    if (a < min) {              \
+        a = min;                \
+    } else if (a > max) {       \
+        a = max;                \
+    }                           \
+} while (0)
     float   alpha;
     uint8_t dst_color[4];
     uint8_t color[4];
@@ -115,20 +111,35 @@ static void blend_additive(struct canvas *canvas, int x, int y,
 
     canvas_pick(canvas, x, y, dst_color, dst_color + 1, dst_color + 2,
                 dst_color + 3);
+#if 0
+    dst_color[0] = 255 - dst_color[0];
+    dst_color[1] = 255 - dst_color[1];
+    dst_color[2] = 255 - dst_color[2];
+    dst_color[3] = 255 - dst_color[3];
+
+    r = 255 - r;
+    g = 255 - g;
+    b = 255 - b;
+#endif
 
     alpha = a / 255.0f;
-    color[0] = r * alpha + dst_color[0] * (1 - alpha);
-    color[1] = g * alpha + dst_color[1] * (1 - alpha);
-    color[2] = b * alpha + dst_color[2] * (1 - alpha);
-    /*alpha = a + dst_color[3];*/
-    /*color[3] = alpha >= 255.0f ? (uint8_t) 255 : (uint8_t) alpha;*/
-    color[3] = a;
+    color[0] = dst_color[0] * (1 - alpha) + r * alpha;
+    color[1] = dst_color[1] * (1 - alpha) + g * alpha;
+    color[2] = dst_color[2] * (1 - alpha) + b * alpha;
+    float aaaa = dst_color[3] / 255.0f;
+    alpha = alpha * a + dst_color[3];
+    color[3] = alpha >= 255.0f ? (uint8_t) 255 : (uint8_t) alpha;
+    /*color[3] = dst_color[3] * (1 - alpha) + a * alpha + a;*/
 
     /* no need to plot the same color */
     if (color[0] == dst_color[0] && color[1] == dst_color[1]
         && color[2] == dst_color[2] && color[3] == dst_color[3]) {
         return;
     }
+#if 0
+    canvas_plot(canvas, x, y, 255 - color[0], 255 - color[1],
+                255 - color[2], 255 - color[3]);
+#endif
     canvas_plot(canvas, x, y, color[0], color[1], color[2], color[3]);
 }
 
@@ -320,54 +331,34 @@ static void eraser_plot(struct brush *brush, struct canvas *canvas,
     }
 }
 
-static void plot_circle(struct brush *brush, struct brush_buf *bb,
+static void plot_point(struct brush *brush, struct brush_buf *bb,
+                       int xc, int yc) {
+    brush_buf_plot(bb, xc, yc, brush->color[0], brush->color[1],
+                   brush->color[2], brush->color[3]);
+}
+
+static void plot_circle(struct canvas * canvas, struct brush *brush,
+                        struct brush_buf *bb,
                         int xc, int yc) {
-    int r = brush->radius;
-    int x = 0, y = r, i, d;
-    int lastx = -1, lasty = -1;
+    int r = 7;
+    int r2 = brush->radius * brush->radius;
+    int x, y;
 
-    d = 3 - 2 * r;
+    for (x = bb->area.x; x < bb->area.x + bb->area.w; ++x)
+    for (y = bb->area.y; y < bb->area.y + bb->area.h; ++y) {
+        int dx = x - xc;
+        int dy = y - yc;
+        int d2 = dx * dx + dy * dy;
+        if (d2 < r2) {
+            float t = 1.0f * d2 / r2;
+            uint8_t a;
 
-    /* fill the cycle */
-    while (x <= y) {
-        /*uint8_t alpha = 255;*/
-
-        if (lasty != y) {
-            lasty = y;
-            for (i = -x + 1; i < x; ++i) {
-                /*alpha = 255 - 255 * sqrt(i * i + y * y) / r;*/
-                brush_buf_plot(bb, xc + i, yc + y, brush->color[0],
-                               brush->color[1], brush->color[2],
-                               brush->color[3]);
-                if (yc - y != yc + y) {
-                    brush_buf_plot(bb, xc + i, yc + y, brush->color[0],
-                                   brush->color[1], brush->color[2],
-                                   brush->color[3]);
-                }
-            }
+            a = (1 - t) * brush->color[3];
+            /*blend_additive(canvas, x, y, brush->color[0], brush->color[1],*/
+                           /*brush->color[2], a);*/
+            brush_buf_plot(bb, x, y, brush->color[0],
+                           brush->color[1], brush->color[2], a);
         }
-        if (lastx != x) {
-            lastx = x;
-            for (i = -y + 1; i < y; ++i) {
-                /*alpha = 255 - 255 * sqrt(i * i + x * x) / r;*/
-                brush_buf_plot(bb, xc + i, yc + y, brush->color[0],
-                               brush->color[1], brush->color[2],
-                               brush->color[3]);
-                if (yc - x != yc + x) {
-                    brush_buf_plot(bb, xc + i, yc + y, brush->color[0],
-                                   brush->color[1], brush->color[2],
-                                   brush->color[3]);
-                }
-            }
-        }
-
-        if (d < 0) {
-            d = d + 4 * x + 6;
-        } else {
-            d = d + 4 * (x - y) + 10;
-            --y;
-        }
-        ++x;
     }
 }
 
@@ -379,18 +370,18 @@ static int brush_eraser_init(struct brush *eraser) {
 
 static int brush_pencil_init(struct brush *pencil) {
     pencil->plot = pencil_plot;
-    brush_set_color(pencil, 0, 0, 0, 64);
+    brush_set_color(pencil, 0, 0, 0, 200);
     return 0;
 }
 
 static int brush_pen_init(struct brush *pen) {
     pen->plot = pen_plot;
-    brush_set_color(pen, 255, 0, 0, 64);
+    brush_set_color(pen, 128, 0, 0, 64);
     return 0;
 }
 
 int brush_init(struct brush *brush, int type) {
-    brush->radius = 5;
+    brush->radius = 16;
     switch (type) {
     case BRUSH_PEN:
         return brush_pen_init(brush);
@@ -446,10 +437,10 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
 
     if (dx > dy) {
         err = dy2 - dx;              /* e = dy / dx - 0.5 */
-        for (x = x0; x != x1; x += xstep) {
+        for (x = x0; xstep > 0 ? x < x1 : x > x1; x += xstep) {
             /* plot(px, py) */
             /*brush->plot(brush, canvas, x, y);*/
-            plot_circle(brush, brush_buf, x, y);
+            plot_circle(canvas, brush, brush_buf, x, y);
 
             if (err > 0) {
                 err -= dx2;          /* e = e - 1 */
@@ -460,9 +451,9 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
         }
     } else {
         err = dx2 - dy;
-        for (y = y0; y != y1; y += ystep) {
+        for (y = y0; ystep > 0 ? y < y1 : y > y1; y += ystep) {
             /*brush->plot(brush, canvas, x, y);*/
-            plot_circle(brush, brush_buf, x, y);
+            plot_circle(canvas, brush, brush_buf, x, y);
 
             if (err >= 0) {
                 err -= dy2;
@@ -484,6 +475,7 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
             x = 0;
         }
     } while (sf_array_iter_next(&iter));
+
 }
 
 void brush_set_color(struct brush *brush,

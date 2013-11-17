@@ -28,6 +28,9 @@ struct canvas_tile {
 
 
 static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
+    /*uint32_t *color;*/
+    /*int i, j;*/
+
     texture_init_2d(&ct->texture, CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
     ct->area.x = x;
     ct->area.y = y;
@@ -39,6 +42,13 @@ static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
     ct->dirty_rect.w = ct->area.w;
     ct->dirty_rect.h = ct->area.h;
     ct->colors = sf_calloc(ct->texture.w * ct->texture.h * sizeof(uint32_t));
+#if 0
+    color = ct->colors;
+    for (j = 0; j < ct->texture.h; ++j)
+    for (i = 0; i < ct->texture.w; ++i) {
+        *color++ = 0x00FFFFFF;
+    }
+#endif
 }
 
 static void canvas_tile_free(void *p) {
