@@ -28,8 +28,8 @@ struct canvas_tile {
 
 
 static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
-    /*uint32_t *color;*/
-    /*int i, j;*/
+    uint32_t *color;
+    int i, j;
 
     texture_init_2d(&ct->texture, CANVAS_TILE_WIDTH, CANVAS_TILE_HEIGHT);
     ct->area.x = x;

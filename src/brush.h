@@ -12,13 +12,15 @@ enum BRUSH_TYPE {
     BRUSH_ERASER,
 };
 
+typedef enum blend_mode {
+    BLEND_NORMAL,
+    BLEND_ERASER,
+} blend_mode_t;
+
 struct brush {
-    uint8_t     color[4];
-    uint32_t    radius;
-    /*
-     * each brush has it's own plot function to generate different shape.
-     */
-    void (*plot)(struct brush *brush, struct canvas *canvas, int x, int y);
+    uint8_t         color[4];
+    uint32_t        radius;
+    blend_mode_t    blend_mode;
 };
 
 
