@@ -311,7 +311,11 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h,
     ui_toolbox_add_button(&upp->brushbox,
                           (struct ui *) &upp->brush_eraser_icon);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->brushbox,
-                 0, upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT);
+                 0, upp->toolbox.ui.area.h - TOOLBOX_HEIGHT);
+
+
+    ui_color_picker_init(&upp->color_picker, w, 256);
+    ui_add_child((struct ui *) upp, (struct ui *) &upp->color_picker, 0, 0);
 
     ui_init(&upp->blank, w, h - 2 * TOOLBOX_HEIGHT);
     UI_CALLBACK(&upp->blank, press, blank_on_press);
