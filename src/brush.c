@@ -2,6 +2,7 @@
 #include <math.h>
 
 #include <sf/array.h>
+#include <sf/log.h>
 #include <sf/utils.h>
 
 #include "sf_rect.h"
@@ -57,9 +58,9 @@ static void blend_normal(struct canvas *canvas, int x, int y,
                          uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     float   src[4];
     float   dst[4];
+    float   out[4];
     uint8_t picked[4];
-    int8_t  color[4];
-    float   tmp;
+    uint8_t plot[4];
 
     if (a == 0) {
         return;
@@ -76,29 +77,64 @@ static void blend_normal(struct canvas *canvas, int x, int y,
     dst[2] = picked[2] / 255.0f;
     dst[3] = picked[3] / 255.0f;
 
-    tmp = dst[3] * (1 - src[3]) + src[3];
-    if (tmp) {
-        dst[0] = (dst[0] * dst[3] * (1 - src[3]) + src[0] * src[3]) / tmp;
-        dst[1] = (dst[1] * dst[3] * (1 - src[3]) + src[1] * src[3]) / tmp;
-        dst[2] = (dst[2] * dst[3] * (1 - src[3]) + src[2] * src[3]) / tmp;
-    } else {
-        dst[0] = 0.0f;
-        dst[1] = 0.0f;
-        dst[2] = 0.0f;
-    }
-    dst[3] = tmp;
+    /* out[3] > 0 */
+    out[3] = dst[3] * (1 - src[3]) + src[3];
+    out[0] = (dst[0] * dst[3] * (1 - src[3]) + src[0] * src[3]) / out[3];
+    out[1] = (dst[1] * dst[3] * (1 - src[3]) + src[1] * src[3]) / out[3];
+    out[2] = (dst[2] * dst[3] * (1 - src[3]) + src[2] * src[3]) / out[3];
 
-    color[0] = dst[0] * 255;
-    color[1] = dst[1] * 255;
-    color[2] = dst[2] * 255;
-    color[3] = dst[3] * 255;
+    plot[0] = out[0] * 255;
+    plot[1] = out[1] * 255;
+    plot[2] = out[2] * 255;
+    plot[3] = out[3] * 255;
     /* no need to plot the same color */
-    if (color[0] == picked[0] && color[1] == picked[1]
-        && color[2] == picked[2] && color[3] == picked[3]) {
+    if (plot[0] == picked[0] && plot[1] == picked[1]
+        && plot[2] == picked[2] && plot[3] == picked[3]) {
         return;
     }
 
-    canvas_plot(canvas, x, y, color[0], color[1], color[2], color[3]);
+    canvas_plot(canvas, x, y, plot[0], plot[1], plot[2], plot[3]);
+}
+
+static void blend_rnormal(struct canvas *canvas, int x, int y,
+                          uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    float   src[4];
+    float   dst[4];
+    float   out[4];
+    uint8_t picked[4];
+    uint8_t plot[4];
+
+    if (a == 0) {
+        return;
+    }
+
+    src[0] = r / 255.0f;
+    src[1] = g / 255.0f;
+    src[2] = b / 255.0f;
+    src[3] = a / 255.0f;
+
+    canvas_pick(canvas, x, y, picked, picked + 1, picked + 2, picked + 3);
+    out[0] = picked[0] / 255.0f;
+    out[1] = picked[1] / 255.0f;
+    out[2] = picked[2] / 255.0f;
+    out[3] = picked[3] / 255.0f;
+
+    dst[3] = (out[3] - src[3]) / (1 - src[3]);
+    dst[0] = (out[0] * out[3] - src[0] * src[3]) / ((1 - src[3]) * dst[3]);
+    dst[1] = (out[1] * out[3] - src[1] * src[3]) / ((1 - src[3]) * dst[3]);
+    dst[2] = (out[2] * out[3] - src[2] * src[3]) / ((1 - src[3]) * dst[3]);
+
+    plot[0] = dst[0] * 255;
+    plot[1] = dst[1] * 255;
+    plot[2] = dst[2] * 255;
+    plot[3] = dst[3] * 255;
+    /* no need to plot the same color */
+    if (plot[0] == picked[0] && plot[1] == picked[1]
+        && plot[2] == picked[2] && plot[3] == picked[3]) {
+        return;
+    }
+
+    canvas_plot(canvas, x, y, plot[0], plot[1], plot[2], plot[3]);
 }
 
 #if 0
@@ -224,10 +260,18 @@ static void eraser_plot(struct brush *brush, struct canvas *canvas,
 }
 #endif
 
-static void plot_circle(struct canvas * canvas, struct brush *brush,
+static void plot_point(struct canvas *canvas, struct brush *brush,
+                       struct sf_rect area, int xc, int yc) {
+    brush->blend(canvas, xc, yc, brush->color[0], brush->color[1],
+          brush->color[2], brush->color[3]);
+}
+
+static void plot_circle(struct canvas *canvas, struct brush *brush,
                         struct sf_rect area, int xc, int yc) {
     int r2 = brush->radius * brush->radius;
     int x, y;
+
+    /*sf_log(SF_LOG_DEBUG, "plot_circle at (%d, %d).", xc, yc);*/
 
     for (x = area.x; x < area.x + area.w; ++x)
     for (y = area.y; y < area.y + area.h; ++y) {
@@ -235,23 +279,12 @@ static void plot_circle(struct canvas * canvas, struct brush *brush,
         int dy = y - yc;
         int d2 = dx * dx + dy * dy;
         if (d2 < r2) {
-            void (*blend)(struct canvas *, int, int,
-                          uint8_t, uint8_t, uint8_t, uint8_t) = NULL;
             float t = 1.0f * d2 / r2;
             uint8_t a;
 
-            switch (brush->blend_mode) {
-            case BLEND_NORMAL:
-                blend = blend_normal;
-                break;
-            case BLEND_ERASER:
-                blend = blend_eraser;
-                break;
-            }
-
             a = brush->color[3];
-            blend(canvas, x, y, brush->color[0], brush->color[1],
-                  brush->color[2], a);
+            brush->blend(canvas, x, y, brush->color[0], brush->color[1],
+                         brush->color[2], a);
         }
     }
 }
@@ -259,21 +292,22 @@ static void plot_circle(struct canvas * canvas, struct brush *brush,
 static int brush_eraser_init(struct brush *eraser) {
     eraser->radius = 4;
     brush_set_color(eraser, 0, 0, 0, 128);
-    eraser->blend_mode = BLEND_ERASER;
+    eraser->blend = blend_eraser;
     return 0;
 }
 
 static int brush_pencil_init(struct brush *pencil) {
     pencil->radius = 2;
     brush_set_color(pencil, 0, 0, 0, 128);
-    pencil->blend_mode = BLEND_NORMAL;
+    pencil->blend = blend_normal;
     return 0;
 }
 
 static int brush_pen_init(struct brush *pen) {
     pen->radius = 4;
-    brush_set_color(pen, 128, 0, 0, 64);
-    pen->blend_mode = BLEND_NORMAL;
+    /* max alpha = 128 */
+    brush_set_color(pen, 255, 0, 0, 64);
+    pen->blend = blend_normal;
     return 0;
 }
 
@@ -307,7 +341,8 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
     dx = x1 - x0;
     dy = y1 - y0;
 
-    step = brush->radius / 4 + 1;
+    /*step = brush->radius / 4 + 1;*/
+    step = 1;
     if (dx > 0) {
         xstep = step;
     } else {
@@ -330,9 +365,8 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
 
     if (dx > dy) {
         err = dy2 - dx;              /* e = dy / dx - 0.5 */
-        for (x = x0; xstep > 0 ? x < x1 : x > x1; x += xstep) {
+        for (x = x0; xstep > 0 ? x <= x1 : x >= x1; x += xstep) {
             /* plot(px, py) */
-            /*brush->plot(brush, canvas, x, y);*/
             plot_circle(canvas, brush, area, x, y);
 
             if (err > 0) {
@@ -344,8 +378,7 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
         }
     } else {
         err = dx2 - dy;
-        for (y = y0; ystep > 0 ? y < y1 : y > y1; y += ystep) {
-            /*brush->plot(brush, canvas, x, y);*/
+        for (y = y0; ystep > 0 ? y <= y1 : y >= y1; y += ystep) {
             plot_circle(canvas, brush, area, x, y);
 
             if (err >= 0) {

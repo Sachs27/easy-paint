@@ -173,15 +173,29 @@ static int canvas_on_press(struct ui *ui, int x, int y) {
     canvas_screen_to_canvas(canvas, x + xscreen, y + yscreen,
                             &canvas_lastx, &canvas_lasty);
     isdrawing = 1;
-    record_begin(&upp->record, canvas);
 
+    /*record_begin(&upp->record, canvas);*/
+#if 0
+    static int flag = 0;
+    if (flag == 0) {
+        flag = 1;
+        upp->cur_brush->blend_mode = BLEND_NORMAL;
+        brush_drawline(upp->cur_brush, canvas,
+                       0, 0, 10, 8);
+    } else {
+        flag = 0;
+        upp->cur_brush->blend_mode = BLEND_RNORMAL;
+        brush_drawline(upp->cur_brush, canvas,
+                       10, 8, 0, 0);
+    }
+#endif
     return 0;
 }
 
 static void canvas_on_release(struct ui *ui) {
     struct canvas *canvas = (struct canvas *) ui;
     isdrawing = 0;
-    record_end(canvas->record);
+    /*record_end(canvas->record);*/
 }
 
 static void canvas_on_update(struct ui *ui, struct input_manager *im,

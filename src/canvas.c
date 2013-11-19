@@ -46,7 +46,7 @@ static void canvas_tile_init(struct canvas_tile *ct, int x, int y) {
     color = ct->colors;
     for (j = 0; j < ct->texture.h; ++j)
     for (i = 0; i < ct->texture.w; ++i) {
-        *color++ = 0x00FFFFFF;
+        *color++ = 0x7FFF0000;
     }
 #endif
 }
@@ -130,7 +130,7 @@ static void canvas_update_tile(struct canvas *canvas, struct canvas_tile *ct) {
 
     /* On some Android device, glTexSubImage2D don't work, why? */
 #ifdef ANDROID
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ct->texture->w, ct->texture->h,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ct->texture.w, ct->texture.h,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, ct->colors);
 #else
     glTexSubImage2D(GL_TEXTURE_2D, 0,

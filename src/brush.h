@@ -14,13 +14,16 @@ enum BRUSH_TYPE {
 
 typedef enum blend_mode {
     BLEND_NORMAL,
+    BLEND_RNORMAL,
     BLEND_ERASER,
 } blend_mode_t;
 
 struct brush {
     uint8_t         color[4];
     uint32_t        radius;
-    blend_mode_t    blend_mode;
+
+    void (*blend)(struct canvas *canvas, int x, int y,
+                  uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 };
 
 
