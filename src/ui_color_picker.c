@@ -89,12 +89,9 @@ static void update_circle(struct ui_color_picker *cp) {
         if (dr > CIRCLE_RADIUS) {
             color[0] = color[1] = color[2] = color[3] = 0;
         } else {
-            hsl[0] = (atan2(dy, dx) / 3.1415926f + 1) / 2.0;
+            hsl[0] = (atan2(dy, dx) / 3.1415926f + 1.0f) / 2.0f;
             hsl[1] = dr / CIRCLE_RADIUS;
-            assert(hsl[0] >= 0.0 && hsl[0] <= 1.0);
-            assert(hsl[1] >= 0.0 && hsl[1] <= 1.0);
-            hsl[0] = (atan2(2, 0) / 3.1415926f + 1) / 2.0;
-            hsl[1] = 1.0f;
+
             hsl2rgb(hsl, rgb);
 
             color[0] = rgb[0] * 0xFF;
@@ -115,6 +112,9 @@ static void update_circle(struct ui_color_picker *cp) {
 static void ui_color_picker_on_render(struct ui *ui, struct renderer2d *r) {
     struct ui_color_picker *cp = (struct ui_color_picker *) ui;
 
+    renderer2d_fill_rect(r, 0, 0, cp->ui.area.w, cp->ui.area.h,
+                         128, 128, 128, 220);
+
     renderer2d_draw_texture(r, cp->lightness_area.x, cp->lightness_area.y,
                             cp->lightness_area.w, cp->lightness_area.h,
                             &cp->lightness, 0, 0, 0, 0);
@@ -122,24 +122,109 @@ static void ui_color_picker_on_render(struct ui *ui, struct renderer2d *r) {
     renderer2d_draw_texture(r, cp->circle_area.x, cp->circle_area.y,
                             cp->circle_area.w, cp->circle_area.h,
                             &cp->circle, 0, 0, 0, 0);
+
+    renderer2d_fill_rect(r, cp->lightness_area.x + cp->lightness_area.w,
+                         cp->lightness_area.y + cp->lightness_area.h,
+                         cp->lightness_area.h / 2, cp->lightness_area.w,
+                         cp->ncolor[0], cp->ncolor[1], cp->ncolor[2], 0xFF);
+
+    renderer2d_fill_rect(r, cp->lightness_area.x + cp->lightness_area.w
+                         + cp->lightness_area.h / 2,
+                         cp->lightness_area.y + cp->lightness_area.h,
+                         cp->lightness_area.h / 2, cp->lightness_area.w,
+                         cp->ocolor[0], cp->ocolor[1], cp->ocolor[2], 0xFF);
 }
 
+static int ui_color_picker_on_press(struct ui *ui, int x, int y) {
+    struct ui_color_picker *cp = (struct ui_color_picker *) ui;
+
+    if (sf_rect_iscontain(&cp->lightness_area, x, y)) {
+        cp->ispress_lightness = 1;
+    } else if (sf_rect_iscontain(&cp->circle_area, x, y)) {
+        cp->ispress_circle = 1;
+    }
+
+    return 0;
+}
+
+static void ui_color_picker_on_release(struct ui *ui) {
+    struct ui_color_picker *cp = (struct ui_color_picker *) ui;
+
+    cp->ispress_lightness = 0;
+    cp->ispress_circle    = 0;
+}
+
+static void ui_color_picker_on_update(struct ui *ui, struct input_manager *im,
+                                      double dt) {
+    struct ui_color_picker *cp = (struct ui_color_picker *) ui;
+    int x, y;
+
+    x = im->mouse.x - cp->ui.area.x;
+    y = im->mouse.y - cp->ui.area.y;
+
+    if (cp->ispress_lightness) {
+        float l = 1.0f
+                  - (y - cp->lightness_area.y) * 1.0f / cp->lightness_area.h;
+        if (l < 0.0f) {
+            l = 0.0f;
+        } else if (l > 1.0f) {
+            l = 1.0f;
+        }
+        if (cp->l != l) {
+            float rgb[3];
+
+            cp->l = l;
+            hsl2rgb(&cp->h, rgb);
+            cp->ncolor[0] = rgb[0] * 0xFF;
+            cp->ncolor[1] = rgb[1] * 0xFF;
+            cp->ncolor[2] = rgb[2] * 0xFF;
+            update_circle(cp);
+        }
+    }
+
+    if (cp->ispress_circle) {
+        int dx, dy;
+        float h, s;
+
+        dx = (x - cp->circle_area.x) - CIRCLE_RADIUS;
+        dy = (y - cp->circle_area.y) - CIRCLE_RADIUS;
+
+        h = (atan2(dy, dx) / 3.1415926f + 1.0f) / 2.0f;
+        s = sqrt(dx * dx + dy * dy) / CIRCLE_RADIUS;
+        if (s < 0.0f) {
+            s = 0.0f;
+        } else if (s > 1.0f) {
+            s = 1.0f;
+        }
+        if (cp->h != h && cp->s != s) {
+            float rgb[3];
+
+            cp->h = h;
+            cp->s = s;
+            hsl2rgb(&cp->h, rgb);
+            cp->ncolor[0] = rgb[0] * 0xFF;
+            cp->ncolor[1] = rgb[1] * 0xFF;
+            cp->ncolor[2] = rgb[2] * 0xFF;
+            update_lightness(cp);
+        }
+    }
+}
 
 int ui_color_picker_init(struct ui_color_picker *cp, int w, int h) {
     ui_init((struct ui *) cp, w, h);
 
     cp->h = 0;
-    cp->s = 1.0;
-    cp->l = 128;
+    cp->s = 1.0f;
+    cp->l = 0.5f;
 
     cp->lightness_area.x = 10;
     cp->lightness_area.y = 0;
-    cp->lightness_area.w = 10;
+    cp->lightness_area.w = 24;
     cp->lightness_area.h = LIGHTNESS_HEIGHT;
     texture_init_2d(&cp->lightness, 1, LIGHTNESS_HEIGHT);
     update_lightness(cp);
 
-    cp->circle_area.x = 30;
+    cp->circle_area.x = cp->lightness_area.x + cp->lightness_area.w + 10;
     cp->circle_area.y = 0;
     cp->circle_area.w = 2 * CIRCLE_RADIUS;
     cp->circle_area.h = 2 * CIRCLE_RADIUS;
@@ -147,6 +232,24 @@ int ui_color_picker_init(struct ui_color_picker *cp, int w, int h) {
     update_circle(cp);
 
     UI_CALLBACK(cp, render, ui_color_picker_on_render);
+    UI_CALLBACK(cp, press, ui_color_picker_on_press);
+    UI_CALLBACK(cp, release, ui_color_picker_on_release);
+    UI_CALLBACK(cp, update, ui_color_picker_on_update);
 
     return 0;
+}
+
+void ui_color_picker_set_color(struct ui_color_picker *cp, uint8_t color[3]) {
+    cp->ocolor[0] = color[0];
+    cp->ocolor[1] = color[1];
+    cp->ocolor[2] = color[2];
+    cp->ncolor[0] = color[0];
+    cp->ncolor[1] = color[1];
+    cp->ncolor[2] = color[2];
+}
+
+void ui_color_picker_get_color(struct ui_color_picker *cp, uint8_t color[3]) {
+    color[0] = cp->ncolor[0];
+    color[1] = cp->ncolor[1];
+    color[2] = cp->ncolor[2];
 }

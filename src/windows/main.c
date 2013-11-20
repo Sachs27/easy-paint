@@ -94,6 +94,7 @@ int main(int argc, char *argv[]) {
 
         app_on_render();
 
+        glfwSwapInterval(0);
         glfwSwapBuffers(g_app.window->handle);
         glfwPollEvents();
     }

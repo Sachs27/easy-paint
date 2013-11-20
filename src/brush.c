@@ -304,9 +304,9 @@ static int brush_pencil_init(struct brush *pencil) {
 }
 
 static int brush_pen_init(struct brush *pen) {
-    pen->radius = 4;
+    pen->radius = 16;
     /* max alpha = 128 */
-    brush_set_color(pen, 255, 0, 0, 64);
+    brush_set_color(pen, 255, 0, 0, 12);
     pen->blend = blend_normal;
     return 0;
 }
@@ -341,8 +341,8 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
     dx = x1 - x0;
     dy = y1 - y0;
 
-    /*step = brush->radius / 4 + 1;*/
-    step = 1;
+    step = brush->radius / 8 + 1;
+    /*step = 1;*/
     if (dx > 0) {
         xstep = step;
     } else {

@@ -37,8 +37,7 @@ static int undo_on_press(struct ui *ui, int x, int y) {
     struct user_paint_panel *upp =
         sf_container_of(undo, struct user_paint_panel, undo);
 
-    if (upp->brushbox.ui.state == UI_STATE_SHOW) {
-        ui_hide((struct ui *) &upp->brushbox);
+    if (upp->blank.state == UI_STATE_SHOW) {
         ui_hide(&upp->blank);
     }
 
@@ -69,8 +68,7 @@ static int redo_on_press(struct ui *ui, int x, int y) {
     struct user_paint_panel *upp =
         sf_container_of(redo, struct user_paint_panel, redo);
 
-    if (upp->brushbox.ui.state == UI_STATE_SHOW) {
-        ui_hide((struct ui *) &upp->brushbox);
+    if (upp->blank.state == UI_STATE_SHOW) {
         ui_hide(&upp->blank);
     }
 
@@ -83,11 +81,9 @@ static int brush_on_press(struct ui *ui, int x, int y) {
     struct user_paint_panel *upp =
         sf_container_of(brush, struct user_paint_panel, brush);
 
-    if (upp->brushbox.ui.state == UI_STATE_SHOW) {
-        ui_hide((struct ui *) &upp->brushbox);
+    if (upp->blank.state == UI_STATE_SHOW) {
         ui_hide(&upp->blank);
     } else {
-        ui_show((struct ui *) &upp->brushbox);
         ui_show(&upp->blank);
     }
     return 0;
@@ -109,7 +105,6 @@ static void brushicon_on_press(struct ui_imagebox *button, int x, int y) {
     upp->cur_brush = SF_ARRAY_NTH(upp->brushes, i);
     ui_imagebox_set_image(&upp->brush, upp->cur_brush->icon);
 
-    ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
 }
 #endif
@@ -121,7 +116,6 @@ static int brush_pen_on_press(struct ui *ui, int x, int y) {
                                                    brush_pen_icon);
     upp->cur_brush = &upp->brush_pen;
     ui_imagebox_set_image(&upp->brush, upp->brush_pen_icon.image);
-    ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
     return 0;
 }
@@ -133,7 +127,6 @@ static int brush_pencil_on_press(struct ui *ui, int x, int y) {
                                                    brush_pencil_icon);
     upp->cur_brush = &upp->brush_pencil;
     ui_imagebox_set_image(&upp->brush, upp->brush_pencil_icon.image);
-    ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
     return 0;
 }
@@ -145,7 +138,6 @@ static int brush_eraser_on_press(struct ui *ui, int x, int y) {
                                                    brush_eraser_icon);
     upp->cur_brush = &upp->brush_eraser;
     ui_imagebox_set_image(&upp->brush, upp->brush_eraser_icon.image);
-    ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
     return 0;
 }
@@ -154,7 +146,6 @@ static int blank_on_press(struct ui *blank, int x, int y) {
     struct user_paint_panel *upp =
         sf_container_of(blank, struct user_paint_panel, blank);
 
-    ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
     return 0;
 }
@@ -168,6 +159,9 @@ static int canvas_on_press(struct ui *ui, int x, int y) {
     struct user_paint_panel *upp =
         sf_container_of(canvas, struct user_paint_panel, canvas);
     int xscreen, yscreen;
+
+    ui_color_picker_set_color(&upp->color_picker,
+                              (uint8_t *) upp->cur_brush->color);
 
     ui_get_screen_pos((struct ui *) canvas, &xscreen, &yscreen);
     canvas_screen_to_canvas(canvas, x + xscreen, y + yscreen,
@@ -227,7 +221,6 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
 
 static void user_paint_panel_on_show(struct ui *ui) {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
-    ui_hide((struct ui *) &upp->brushbox);
     ui_hide(&upp->blank);
 }
 
@@ -242,6 +235,14 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h) {
     ui_resize((struct ui *) &upp->brushbox, w, upp->brushbox.ui.area.h);
     ui_move((struct ui *) &upp->brushbox, 0,
             upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT);
+}
+
+static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
+                                       double dt) {
+    struct user_paint_panel *upp = (struct user_paint_panel *) ui;
+
+    ui_color_picker_get_color(&upp->color_picker,
+                              (uint8_t *) &upp->cur_brush->color);
 }
 
 static void user_paint_panel_on_destroy(struct ui *ui) {
@@ -304,25 +305,29 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h,
     ui_add_child((struct ui *) upp, (struct ui *) &upp->toolbox,
                  0, upp->canvas.ui.area.h - TOOLBOX_HEIGHT);
 
+    ui_init(&upp->blank, w, h - upp->toolbox.ui.area.h);
+    UI_CALLBACK(&upp->blank, press, blank_on_press);
+    ui_add_child((struct ui *) upp, &upp->blank, 0, 0);
+
     ui_toolbox_init(&upp->brushbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 240);
     ui_toolbox_add_button(&upp->brushbox, (struct ui *) &upp->brush_pen_icon);
     ui_toolbox_add_button(&upp->brushbox,
                           (struct ui *) &upp->brush_pencil_icon);
     ui_toolbox_add_button(&upp->brushbox,
                           (struct ui *) &upp->brush_eraser_icon);
-    ui_add_child((struct ui *) upp, (struct ui *) &upp->brushbox,
-                 0, upp->toolbox.ui.area.h - TOOLBOX_HEIGHT);
+    ui_add_child(&upp->blank, (struct ui *) &upp->brushbox,
+                 0, upp->toolbox.ui.area.y - TOOLBOX_HEIGHT);
 
 
-    ui_color_picker_init(&upp->color_picker, w, 256);
-    ui_add_child((struct ui *) upp, (struct ui *) &upp->color_picker, 0, 0);
-
-    ui_init(&upp->blank, w, h - 2 * TOOLBOX_HEIGHT);
-    UI_CALLBACK(&upp->blank, press, blank_on_press);
-    ui_add_child((struct ui *) upp, &upp->blank, 0, 0);
+    ui_color_picker_init(&upp->color_picker, w, 281);
+    ui_color_picker_set_color(&upp->color_picker,
+                              (uint8_t *) &upp->cur_brush->color);
+    ui_add_child(&upp->blank, (struct ui *) &upp->color_picker,
+                 0, upp->brushbox.ui.area.y - upp->color_picker.ui.area.h);
 
     UI_CALLBACK(upp, show, user_paint_panel_on_show);
     UI_CALLBACK(upp, resize, user_paint_panel_on_resize);
+    UI_CALLBACK(upp, update, user_paint_panel_on_update);
     UI_CALLBACK(upp, destroy, user_paint_panel_on_destroy);
 
     return 0;
