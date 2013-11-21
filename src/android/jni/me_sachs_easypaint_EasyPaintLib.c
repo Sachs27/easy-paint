@@ -1,3 +1,11 @@
+#include <android/log.h>
+
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
+#define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "native-activity", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
+
+#include <sf/log.h>
+
 #include "me_sachs_easypaint_EasyPaintLib.h"
 #include "../../app.h"
 #include "../../window.h"
@@ -14,6 +22,18 @@ JNIEXPORT jint JNICALL Java_me_sachs_easypaint_EasyPaintLib_app_1init_1window
     g_app.im = input_manager_create(g_app.window);
 }
 
+static sf_bool_t on_sf_log(sf_log_level_t level, const char *str) {
+    switch (level) {
+    case SF_LOG_INFO:
+        LOGI("%s", str);
+        break;
+    case SF_LOG_WARN:
+        LOGW("%s", str);
+    default:
+        LOGD("%s", str);
+    }
+}
+
 /*
  * Class:     me_sachs_easypaint_EasyPaintLib
  * Method:    app_init_render_context
@@ -21,7 +41,8 @@ JNIEXPORT jint JNICALL Java_me_sachs_easypaint_EasyPaintLib_app_1init_1window
  */
 JNIEXPORT jint JNICALL Java_me_sachs_easypaint_EasyPaintLib_app_1init_1render_1context
   (JNIEnv *env, jclass class) {
-      return app_init();
+    sf_log_set_hook(on_sf_log);
+    return app_init();
 }
 
 /*

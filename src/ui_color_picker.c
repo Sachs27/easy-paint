@@ -157,10 +157,13 @@ static void ui_color_picker_on_release(struct ui *ui) {
 static void ui_color_picker_on_update(struct ui *ui, struct input_manager *im,
                                       double dt) {
     struct ui_color_picker *cp = (struct ui_color_picker *) ui;
+    int xscreen, yscreen;
     int x, y;
 
-    x = im->mouse.x - cp->ui.area.x;
-    y = im->mouse.y - cp->ui.area.y;
+    ui_get_screen_pos(ui, &xscreen, &yscreen);
+
+    x = im->mouse.x - xscreen;
+    y = im->mouse.y - yscreen;
 
     if (cp->ispress_lightness) {
         float l = 1.0f

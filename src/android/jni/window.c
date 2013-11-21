@@ -10,7 +10,7 @@ struct window *window_create(const char *title, int w, int h) {
         window_destroy();
     }
 
-    window = malloc(sizeof(*window));
+    window = sf_alloc(sizeof(*window));
     window->title = strdup(title);
     window->w = w;
     window->h = h;
@@ -27,7 +27,6 @@ void window_destroy(void) {
         return;
     }
 
-    free(window->title);
     free(window);
     window = NULL;
 }

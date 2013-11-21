@@ -105,7 +105,7 @@ static int attach_shader(GLuint program, struct shader_info *info) {
     }
 
     glAttachShader(program, shader);
-    glDeleteShader(shader);
+
     return 0;
 }
 
@@ -134,6 +134,10 @@ GLuint load_shaders(struct shader_info *info) {
             sf_log(SF_LOG_ERR, "Failed to link program: %s\n", log);
         }
         goto load_shaders_fail;
+    }
+
+    for (entry = info; entry->type != GL_NONE; ++entry) {
+        glDeleteShader(entry->shader);
     }
 
     return program;

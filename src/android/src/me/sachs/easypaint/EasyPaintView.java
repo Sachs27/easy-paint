@@ -295,8 +295,7 @@ public class EasyPaintView extends GLSurfaceView {
 				EasyPaintLib.app_input_manager_touch_up();
 			}
 
-			EasyPaintLib
-					.app_on_update((this.currentTick - this.lastTick) / 1000.0);
+			EasyPaintLib.app_on_update((this.currentTick - this.lastTick) / 1000.0);
 			EasyPaintLib.app_on_render();
 		}
 
@@ -316,13 +315,11 @@ public class EasyPaintView extends GLSurfaceView {
 				appInfo = packMgmr.getApplicationInfo("me.sachs.easypaint", 0);
 			} catch (NameNotFoundException e) {
 				e.printStackTrace();
-				throw new RuntimeException(
-						"Unable to locate assets, aborting...");
+				throw new RuntimeException("Unable to locate assets, aborting...");
 			}
 			apkFilePath = appInfo.sourceDir;
 			if (DEBUG) {
-				Log.d(TAG, "invoke native app_load_resource(" + apkFilePath
-						+ ")");
+				Log.d(TAG, "invoke native app_load_resource(" + apkFilePath + ")");
 			}
 			EasyPaintLib.app_load_resource(apkFilePath);
 

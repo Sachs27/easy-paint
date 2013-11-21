@@ -232,9 +232,16 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h) {
     ui_move((struct ui *) &upp->toolbox, 0,
             upp->canvas.ui.area.h - TOOLBOX_HEIGHT);
 
+    ui_resize(&upp->blank, w, h - upp->toolbox.ui.area.h);
+
     ui_resize((struct ui *) &upp->brushbox, w, upp->brushbox.ui.area.h);
     ui_move((struct ui *) &upp->brushbox, 0,
-            upp->canvas.ui.area.h - 2 * TOOLBOX_HEIGHT);
+            upp->toolbox.ui.area.y - TOOLBOX_HEIGHT);
+
+    ui_resize((struct ui *) &upp->color_picker,
+              w, upp->color_picker.ui.area.h);
+    ui_move((struct ui *) &upp->color_picker, 0,
+            upp->brushbox.ui.area.y - upp->color_picker.ui.area.h);
 }
 
 static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
