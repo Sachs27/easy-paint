@@ -42,9 +42,9 @@ static int record_undo_1(struct record *record, struct canvas *canvas) {
      * Make sure that canvas __will_not__ record this plot.
      */
     assert(record->canvas == NULL);
-    canvas_plot(canvas, pixel->x, pixel->y,
-                pixel->ocolor[0], pixel->ocolor[1],
-                pixel->ocolor[2], pixel->ocolor[3]);
+    /*canvas_plot(canvas, pixel->x, pixel->y,*/
+                /*pixel->ocolor[0], pixel->ocolor[1],*/
+                /*pixel->ocolor[2], pixel->ocolor[3]);*/
     --record->nrecords;
 
     if (record->nrecords == 0) {
@@ -86,9 +86,9 @@ static int record_redo_1(struct record *record, struct canvas *canvas) {
      * Make sure that canvas __will_not__ record this plot.
      */
     assert(record->canvas == NULL);
-    canvas_plot(canvas, pixel->x, pixel->y,
-                pixel->ncolor[0], pixel->ncolor[1],
-                pixel->ncolor[2], pixel->ncolor[3]);
+    /*canvas_plot(canvas, pixel->x, pixel->y,*/
+                /*pixel->ncolor[0], pixel->ncolor[1],*/
+                /*pixel->ncolor[2], pixel->ncolor[3]);*/
 
     return 0;
 }
@@ -186,9 +186,9 @@ int record_load_zip(struct record *record, struct zip *archive,
             READ_BYTE(&pixel.x, sizeof(pixel.x));
             READ_BYTE(&pixel.y, sizeof(pixel.y));
             READ_BYTE(pixel.ncolor, sizeof(pixel.ncolor));
-            canvas_plot(canvas, pixel.x, pixel.y,
-                        pixel.ncolor[0], pixel.ncolor[1],
-                        pixel.ncolor[2], pixel.ncolor[3]);
+            /*canvas_plot(canvas, pixel.x, pixel.y,*/
+                        /*pixel.ncolor[0], pixel.ncolor[1],*/
+                        /*pixel.ncolor[2], pixel.ncolor[3]);*/
         }
         record_end(record);
     }

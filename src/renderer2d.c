@@ -61,8 +61,6 @@ static struct shader_info renderer2d_texture_shaders[] = {
     {GL_FRAGMENT_SHADER,
 #ifndef GLES2
         "#version 130                                       \n"
-#else
-        "precision lowp float;                           \n"
 #endif
         "uniform sampler2D texture0;                        \n"
         "uniform bool      iscoloring;                      \n"
@@ -80,6 +78,45 @@ static struct shader_info renderer2d_texture_shaders[] = {
     },
     {GL_NONE, NULL}
 };
+
+static struct shader_info renderer2d_point_shaders[] = {
+    {GL_VERTEX_SHADER,
+#ifndef GLES2
+"#version 130                                                       \n"
+#endif
+"uniform mat4 mprojection;                                          \n"
+"uniform float upoint_size;                                         \n"
+"attribute vec2 vposition;                                          \n"
+"void main(void) {                                                  \n"
+"    gl_Position = mprojection * vec4(vposition, 0, 1);             \n"
+"}"
+    },
+    {GL_FRAGMENT_SHADER,
+#ifndef GLES2
+"#version 130                                   \n"
+#endif
+"uniform sampler2D utarget;                     \n"
+"uniform vec2 utexsize;                         \n"
+"uniform vec4 ucolor;                           \n"
+"void main(void) {                              \n"
+"    vec2 t = gl_PointCoord - vec2(0.5);        \n"
+"    vec2 pixelcoord;                           \n"
+"    vec4 dst, o;                               \n"
+"    float f = dot(t, t);                       \n"
+"    if (f > 0.25) {                            \n"
+"        discard;                               \n"
+"    }                                          \n"
+"    dst = texture2D(utarget, gl_FragCoord.xy / utexsize);                  \n"
+"    o.a = dst.a * (1 - ucolor.a) + ucolor.a;                               \n"
+"    o.r = (dst.r * dst.a * (1 - ucolor.a) + ucolor.r * ucolor.a) / o.a;    \n"
+"    o.g = (dst.g * dst.a * (1 - ucolor.a) + ucolor.g * ucolor.a) / o.a;    \n"
+"    o.b = (dst.b * dst.a * (1 - ucolor.a) + ucolor.b * ucolor.a) / o.a;    \n"
+"    gl_FragColor = o;\n"
+"}"
+    },
+    {GL_NONE, NULL}
+};
+
 
 static int attach_shader(GLuint program, struct shader_info *info) {
     GLint   compile_status;
@@ -152,26 +189,7 @@ load_shaders_fail:
     glDeleteProgram(program);
     return 0;
 }
-#if 0
-static void renderer2d_init(void) {
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_SCISSOR_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_DEPTH_TEST);
 
-    glGenBuffers(1, &renderer2d_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, renderer2d_vbo);
-    glBufferData(GL_ARRAY_BUFFER, renderer2d_vbo_size, NULL, GL_DYNAMIC_DRAW);
-
-    glGenFramebuffers(1, &renderer2d_fbo);
-
-    renderer2d_line_prog = load_shaders(renderer2d_line_shaders);
-    renderer2d_texture_prog = load_shaders(renderer2d_texture_shaders);
-
-    isinited = 1;
-}
-#endif
 
 /**
  * Set the top one of the 'viewports' to the current viewport.
@@ -199,6 +217,9 @@ int renderer2d_init(struct renderer2d *r, int w, int h) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
+#ifndef GLES2
+    glEnable(GL_POINT_SPRITE);
+#endif
 
     r->w = w;
     r->h = h;
@@ -208,6 +229,7 @@ int renderer2d_init(struct renderer2d *r, int w, int h) {
     glGenFramebuffers(1, &r->fbo);
     r->prog_rect = load_shaders(renderer2d_rect_shaders);
     r->prog_texture = load_shaders(renderer2d_texture_shaders);
+    r->prog_point = load_shaders(renderer2d_point_shaders);
 
     sf_memzero(&def, sizeof(def));
     def.size = sizeof(struct sf_rect);
@@ -242,9 +264,51 @@ void renderer2d_resize(struct renderer2d *r, int w, int h) {
 }
 
 void renderer2d_clear(struct renderer2d *renderer,
-                      uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    glClearColor(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
+                      float r, float g, float b, float a) {
+    glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
+                             struct vec2 *points, size_t npoints, float size,
+                             float r, float g, float b, float a) {
+    GLuint loc_proj, loc_pos, loc_color, loc_target, loc_texsize;
+
+    glDisable(GL_BLEND);
+    glPointSize(size);
+
+    renderer2d_set_render_target(renderer, dst);
+
+    glUseProgram(renderer->prog_point);
+
+    loc_proj = glGetUniformLocation(renderer->prog_point, "mprojection");
+    loc_pos = glGetAttribLocation(renderer->prog_point, "vposition");
+    loc_color = glGetUniformLocation(renderer->prog_point, "ucolor");
+    loc_target = glGetUniformLocation(renderer->prog_point, "utarget");
+    loc_texsize = glGetUniformLocation(renderer->prog_point, "utexsize");
+
+    glUniform4f(loc_color, r, g, b, a);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, dst->tid);
+    glUniform1i(loc_target, 0);
+    glUniform2f(loc_texsize, dst->w, dst->h);
+    glUniformMatrix4fv(loc_proj, 1, MATRIX_GL_TRANSPOSE,
+                       (GLfloat *) &renderer->projection);
+
+
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, npoints * sizeof(*points), points);
+    glVertexAttribPointer(loc_pos, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(loc_pos);
+
+    glDrawArrays(GL_POINTS, 0, npoints);
+
+    glDisableVertexAttribArray(loc_pos);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glUseProgram(0);
+
+    renderer2d_set_render_target(renderer, NULL);
+    glEnable(GL_BLEND);
 }
 
 void renderer2d_set_render_target(struct renderer2d *r, struct texture *rt) {

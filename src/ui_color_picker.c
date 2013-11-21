@@ -126,13 +126,15 @@ static void ui_color_picker_on_render(struct ui *ui, struct renderer2d *r) {
     renderer2d_fill_rect(r, cp->lightness_area.x + cp->lightness_area.w,
                          cp->lightness_area.y + cp->lightness_area.h,
                          cp->lightness_area.h / 2, cp->lightness_area.w,
-                         cp->ncolor[0], cp->ncolor[1], cp->ncolor[2], 0xFF);
+                         cp->ncolor[0] * 0xFF, cp->ncolor[1] * 0xFF,
+                         cp->ncolor[2] * 0xFF, 0xFF);
 
     renderer2d_fill_rect(r, cp->lightness_area.x + cp->lightness_area.w
                          + cp->lightness_area.h / 2,
                          cp->lightness_area.y + cp->lightness_area.h,
                          cp->lightness_area.h / 2, cp->lightness_area.w,
-                         cp->ocolor[0], cp->ocolor[1], cp->ocolor[2], 0xFF);
+                         cp->ocolor[0] * 0xFF, cp->ocolor[1] * 0xFF,
+                         cp->ocolor[2] * 0xFF, 0xFF);
 }
 
 static int ui_color_picker_on_press(struct ui *ui, int x, int y) {
@@ -174,13 +176,8 @@ static void ui_color_picker_on_update(struct ui *ui, struct input_manager *im,
             l = 1.0f;
         }
         if (cp->l != l) {
-            float rgb[3];
-
             cp->l = l;
-            hsl2rgb(&cp->h, rgb);
-            cp->ncolor[0] = rgb[0] * 0xFF;
-            cp->ncolor[1] = rgb[1] * 0xFF;
-            cp->ncolor[2] = rgb[2] * 0xFF;
+            hsl2rgb(&cp->h, cp->ncolor);
             update_circle(cp);
         }
     }
@@ -200,14 +197,9 @@ static void ui_color_picker_on_update(struct ui *ui, struct input_manager *im,
             s = 1.0f;
         }
         if (cp->h != h && cp->s != s) {
-            float rgb[3];
-
             cp->h = h;
             cp->s = s;
-            hsl2rgb(&cp->h, rgb);
-            cp->ncolor[0] = rgb[0] * 0xFF;
-            cp->ncolor[1] = rgb[1] * 0xFF;
-            cp->ncolor[2] = rgb[2] * 0xFF;
+            hsl2rgb(&cp->h, cp->ncolor);
             update_lightness(cp);
         }
     }
@@ -242,7 +234,7 @@ int ui_color_picker_init(struct ui_color_picker *cp, int w, int h) {
     return 0;
 }
 
-void ui_color_picker_set_color(struct ui_color_picker *cp, uint8_t color[3]) {
+void ui_color_picker_set_color(struct ui_color_picker *cp, float color[3]) {
     cp->ocolor[0] = color[0];
     cp->ocolor[1] = color[1];
     cp->ocolor[2] = color[2];
@@ -251,7 +243,7 @@ void ui_color_picker_set_color(struct ui_color_picker *cp, uint8_t color[3]) {
     cp->ncolor[2] = color[2];
 }
 
-void ui_color_picker_get_color(struct ui_color_picker *cp, uint8_t color[3]) {
+void ui_color_picker_get_color(struct ui_color_picker *cp, float color[3]) {
     color[0] = cp->ncolor[0];
     color[1] = cp->ncolor[1];
     color[2] = cp->ncolor[2];

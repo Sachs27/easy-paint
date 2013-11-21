@@ -26,7 +26,7 @@ struct renderer2d {
     struct texture     *render_target;
 
     GLuint              vbo, fbo;
-    GLuint              prog_rect, prog_texture;
+    GLuint              prog_rect, prog_texture, prog_point;
 };
 
 
@@ -40,7 +40,11 @@ void renderer2d_destroy(struct renderer2d *r);
 void renderer2d_resize(struct renderer2d *r, int w, int h);
 
 void renderer2d_clear(struct renderer2d *renderer,
-                      uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+                      float r, float g, float b, float a);
+
+void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
+                             struct vec2 *points, size_t npoints, float size,
+                             float r, float g, float b, float a);
 
 /**
  * If rt is NULL, the render target is screen.

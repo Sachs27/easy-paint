@@ -2,12 +2,12 @@
 #define CANVAS_H
 
 
-#include <sf/list.h>
+#include <sf/defs.h>
+#include <sf/array.h>
 
 #include "ui.h"
+#include "texture.h"
 
-
-struct texture;
 struct record;
 
  /**
@@ -25,9 +25,14 @@ struct canvas {
 
     float               dx, dy;         /* the delta of offset */
 
-    sf_list_t           tiles;          /* elt: (struct canvas_tile) */
-
     struct record      *record;
+/* ---------------------------------------------*/
+    sf_bool_t           iscontent_inited;
+    struct texture      content;
+
+    float               plot_color[4];
+    float               plot_size;
+    sf_array_t          plots;          /* elts: (struct vec2) */
 };
 
 
@@ -47,15 +52,11 @@ void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
  * Set the color at (x, y) where the point is in canvas' coordinate,
  * caller can use 'canvas_screen_to_canvas' to convert cooridinate.
  */
-void canvas_plot(struct canvas *canvas, int x, int y,
-                 uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void canvas_plot(struct canvas *canvas, float x, float y);
 
-/**
- * Get the color at (x, y) where the point is in canvas' coordinate,
- * caller can use 'canvas_screen_to_canvas' to convert cooridinate.
- */
-void canvas_pick(struct canvas *canvas, int x, int y,
-                 uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a);
+void canvas_set_plot_color(struct canvas *canvas, float color[4]);
+
+void canvas_set_plot_size(struct canvas *canvas, float size);
 
 void canvas_offset(struct canvas *canvas, int xoff, int yoff);
 

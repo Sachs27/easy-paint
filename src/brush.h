@@ -19,11 +19,8 @@ typedef enum blend_mode {
 } blend_mode_t;
 
 struct brush {
-    uint8_t         color[4];
-    uint32_t        radius;
-
-    void (*blend)(struct canvas *canvas, int x, int y,
-                  uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+    float   color[4];
+    float   radius;
 };
 
 
@@ -36,8 +33,7 @@ int brush_init(struct brush *brush, int type);
 void brush_drawline(struct brush *brush, struct canvas *canvas,
                     int x0, int y0, int x1, int y1);
 
-void brush_set_color(struct brush *brush,
-                     uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void brush_set_color(struct brush *brush, float r, float g, float b, float a);
 
 struct brush *brush_pencil_create(void);
 

@@ -160,8 +160,7 @@ static int canvas_on_press(struct ui *ui, int x, int y) {
         sf_container_of(canvas, struct user_paint_panel, canvas);
     int xscreen, yscreen;
 
-    ui_color_picker_set_color(&upp->color_picker,
-                              (uint8_t *) upp->cur_brush->color);
+    ui_color_picker_set_color(&upp->color_picker, upp->cur_brush->color);
 
     ui_get_screen_pos((struct ui *) canvas, &xscreen, &yscreen);
     canvas_screen_to_canvas(canvas, x + xscreen, y + yscreen,
@@ -248,8 +247,7 @@ static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
                                        double dt) {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
 
-    ui_color_picker_get_color(&upp->color_picker,
-                              (uint8_t *) &upp->cur_brush->color);
+    ui_color_picker_get_color(&upp->color_picker, upp->cur_brush->color);
 }
 
 static void user_paint_panel_on_destroy(struct ui *ui) {
@@ -327,8 +325,7 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h,
 
 
     ui_color_picker_init(&upp->color_picker, w, 281);
-    ui_color_picker_set_color(&upp->color_picker,
-                              (uint8_t *) &upp->cur_brush->color);
+    ui_color_picker_set_color(&upp->color_picker, upp->cur_brush->color);
     ui_add_child(&upp->blank, (struct ui *) &upp->color_picker,
                  0, upp->brushbox.ui.area.y - upp->color_picker.ui.area.h);
 

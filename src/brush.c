@@ -9,7 +9,7 @@
 #include "brush.h"
 #include "canvas.h"
 
-
+#if 0
 static struct sf_rect calc_area(int x0, int y0, int x1, int y1, int r) {
     struct sf_rect area;
 
@@ -136,7 +136,7 @@ static void blend_rnormal(struct canvas *canvas, int x, int y,
 
     canvas_plot(canvas, x, y, plot[0], plot[1], plot[2], plot[3]);
 }
-
+#endif
 #if 0
 static void pencil_plot(struct brush *brush, struct canvas *canvas,
                         int px, int py) {
@@ -259,7 +259,7 @@ static void eraser_plot(struct brush *brush, struct canvas *canvas,
     }
 }
 #endif
-
+#if 0
 static void plot_point(struct canvas *canvas, struct brush *brush,
                        struct sf_rect area, int xc, int yc) {
     brush->blend(canvas, xc, yc, brush->color[0], brush->color[1],
@@ -288,26 +288,23 @@ static void plot_circle(struct canvas *canvas, struct brush *brush,
         }
     }
 }
-
+#endif
 static int brush_eraser_init(struct brush *eraser) {
     eraser->radius = 4;
     brush_set_color(eraser, 0, 0, 0, 128);
-    eraser->blend = blend_eraser;
     return 0;
 }
 
 static int brush_pencil_init(struct brush *pencil) {
     pencil->radius = 2;
     brush_set_color(pencil, 0, 0, 0, 128);
-    pencil->blend = blend_normal;
     return 0;
 }
 
 static int brush_pen_init(struct brush *pen) {
     pen->radius = 16;
     /* max alpha = 128 */
-    brush_set_color(pen, 255, 0, 0, 12);
-    pen->blend = blend_normal;
+    brush_set_color(pen, 1, 0, 0, 0.1);
     return 0;
 }
 
@@ -328,7 +325,6 @@ int brush_init(struct brush *brush, int type) {
  */
 void brush_drawline(struct brush *brush, struct canvas *canvas,
                     int x0, int y0, int x1, int y1) {
-    struct sf_rect area;
     int x, y;
     int dx, dy;
     int dx2, dy2;
@@ -336,13 +332,13 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
     int xstep, ystep;
     int err;
 
-    area = calc_area(x0, y0, x1, y1, brush->radius);
+    canvas_set_plot_color(canvas, brush->color);
+    canvas_set_plot_size(canvas, brush->radius);
 
     dx = x1 - x0;
     dy = y1 - y0;
 
-    step = brush->radius / 8 + 1;
-    /*step = 1;*/
+    step = 1;
     if (dx > 0) {
         xstep = step;
     } else {
@@ -367,7 +363,7 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
         err = dy2 - dx;              /* e = dy / dx - 0.5 */
         for (x = x0; xstep > 0 ? x <= x1 : x >= x1; x += xstep) {
             /* plot(px, py) */
-            plot_circle(canvas, brush, area, x, y);
+            canvas_plot(canvas, x, y);
 
             if (err > 0) {
                 err -= dx2;          /* e = e - 1 */
@@ -379,7 +375,7 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
     } else {
         err = dx2 - dy;
         for (y = y0; ystep > 0 ? y <= y1 : y >= y1; y += ystep) {
-            plot_circle(canvas, brush, area, x, y);
+            canvas_plot(canvas, x, y);
 
             if (err >= 0) {
                 err -= dy2;
@@ -391,8 +387,7 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
     }
 }
 
-void brush_set_color(struct brush *brush,
-                     uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+void brush_set_color(struct brush *brush, float r, float g, float b, float a) {
     brush->color[0] = r;
     brush->color[1] = g;
     brush->color[2] = b;
