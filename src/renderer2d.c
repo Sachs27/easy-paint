@@ -20,7 +20,7 @@ struct shader_info {
 };
 
 
-static GLsizeiptr           renderer2d_vbo_size = 1024;
+static GLsizeiptr           renderer2d_vbo_size = 8192;
 
 static struct shader_info   renderer2d_rect_shaders[] = {
     {GL_VERTEX_SHADER,
@@ -273,6 +273,7 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
                              struct vec2 *points, size_t npoints, float size,
                              float r, float g, float b, float a) {
     GLuint loc_proj, loc_pos, loc_color, loc_target, loc_texsize;
+    size_t ndrawed = 0;
 
     glDisable(GL_BLEND);
     glPointSize(size);
@@ -301,7 +302,10 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
     glVertexAttribPointer(loc_pos, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(loc_pos);
 
-    glDrawArrays(GL_POINTS, 0, npoints);
+    while (ndrawed < npoints) {
+        glDrawArrays(GL_POINTS, ndrawed++, 1);
+        glFlush();
+    }
 
     glDisableVertexAttribArray(loc_pos);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
