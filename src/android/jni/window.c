@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <sf/utils.h>
 #include "../../window.h"
 
 
@@ -11,7 +12,7 @@ struct window *window_create(const char *title, int w, int h) {
     }
 
     window = sf_alloc(sizeof(*window));
-    window->title = strdup(title);
+    window->title = title;
     window->w = w;
     window->h = h;
 

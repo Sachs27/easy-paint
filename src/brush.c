@@ -391,5 +391,9 @@ void brush_set_color(struct brush *brush, float r, float g, float b, float a) {
     brush->color[0] = r;
     brush->color[1] = g;
     brush->color[2] = b;
+#ifndef GLES2
     brush->color[3] = a;
+#else
+    brush->color[3] = 1.0f;
+#endif
 }

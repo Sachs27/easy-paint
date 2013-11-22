@@ -19,14 +19,17 @@ static void canvas_update_content(struct canvas *canvas,
         canvas->iscontent_inited = SF_TRUE;
         renderer2d_set_render_target(r, NULL);
     }
-    renderer2d_blend_points(r, &canvas->content,
-                            sf_array_head(&canvas->plots),
-                            sf_array_cnt(&canvas->plots),
-                            canvas->plot_size,
-                            canvas->plot_color[0], canvas->plot_color[1],
-                            canvas->plot_color[2], canvas->plot_color[3]);
 
-    sf_array_clear(&canvas->plots);
+    if (sf_array_cnt(&canvas->plots)) {
+        renderer2d_blend_points(r, &canvas->content,
+                                sf_array_head(&canvas->plots),
+                                sf_array_cnt(&canvas->plots),
+                                canvas->plot_size,
+                                canvas->plot_color[0], canvas->plot_color[1],
+                                canvas->plot_color[2], canvas->plot_color[3]);
+
+        sf_array_clear(&canvas->plots);
+    }
 }
 
 static void canvas_on_render(struct ui *ui, struct renderer2d *r) {

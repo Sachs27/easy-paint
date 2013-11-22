@@ -89,6 +89,7 @@ static struct shader_info renderer2d_point_shaders[] = {
 "attribute vec2 vposition;                                          \n"
 "void main(void) {                                                  \n"
 "    gl_Position = mprojection * vec4(vposition, 0, 1);             \n"
+"    gl_PointSize = upoint_size;                                    \n"
 "}"
     },
     {GL_FRAGMENT_SHADER,
@@ -107,10 +108,9 @@ static struct shader_info renderer2d_point_shaders[] = {
 "        discard;                               \n"
 "    }                                          \n"
 "    dst = texture2D(utarget, gl_FragCoord.xy / utexsize);                  \n"
-"    o.a = dst.a * (1 - ucolor.a) + ucolor.a;                               \n"
-"    o.r = (dst.r * dst.a * (1 - ucolor.a) + ucolor.r * ucolor.a) / o.a;    \n"
-"    o.g = (dst.g * dst.a * (1 - ucolor.a) + ucolor.g * ucolor.a) / o.a;    \n"
-"    o.b = (dst.b * dst.a * (1 - ucolor.a) + ucolor.b * ucolor.a) / o.a;    \n"
+"    o.a = dst.a * (1.0 - ucolor.a) + ucolor.a;                             \n"
+"    o.rgb = (dst.rgb * dst.a * (1.0 - ucolor.a) + ucolor.rgb * ucolor.a)   \n"
+"            / o.a;                                                         \n"
 "    gl_FragColor = o;\n"
 "}"
     },
@@ -219,6 +219,7 @@ int renderer2d_init(struct renderer2d *r, int w, int h) {
     glDisable(GL_DEPTH_TEST);
 #ifndef GLES2
     glEnable(GL_POINT_SPRITE);
+    glEnable(GL_PROGRAM_POINT_SIZE);
 #endif
 
     r->w = w;
@@ -272,11 +273,10 @@ void renderer2d_clear(struct renderer2d *renderer,
 void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
                              struct vec2 *points, size_t npoints, float size,
                              float r, float g, float b, float a) {
-    GLuint loc_proj, loc_pos, loc_color, loc_target, loc_texsize;
-    size_t ndrawed = 0;
+    GLuint loc_proj, loc_pos, loc_pointsize, loc_color, loc_target,
+           loc_texsize;
 
     glDisable(GL_BLEND);
-    glPointSize(size);
 
     renderer2d_set_render_target(renderer, dst);
 
@@ -284,11 +284,13 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
 
     loc_proj = glGetUniformLocation(renderer->prog_point, "mprojection");
     loc_pos = glGetAttribLocation(renderer->prog_point, "vposition");
+    loc_pointsize = glGetUniformLocation(renderer->prog_point, "upoint_size");
     loc_color = glGetUniformLocation(renderer->prog_point, "ucolor");
     loc_target = glGetUniformLocation(renderer->prog_point, "utarget");
     loc_texsize = glGetUniformLocation(renderer->prog_point, "utexsize");
 
     glUniform4f(loc_color, r, g, b, a);
+    glUniform1f(loc_pointsize, size);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, dst->tid);
     glUniform1i(loc_target, 0);
@@ -301,11 +303,17 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
     glBufferSubData(GL_ARRAY_BUFFER, 0, npoints * sizeof(*points), points);
     glVertexAttribPointer(loc_pos, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(loc_pos);
-
-    while (ndrawed < npoints) {
-        glDrawArrays(GL_POINTS, ndrawed++, 1);
-        glFlush();
+#ifndef GLES2
+    {
+        size_t ndrawed;
+        while (ndrawed < npoints) {
+            glDrawArrays(GL_POINTS, ndrawed++, 1);
+            glFlush();
+        }
     }
+#else
+    glDrawArrays(GL_POINTS, 0, npoints);
+#endif
 
     glDisableVertexAttribArray(loc_pos);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
