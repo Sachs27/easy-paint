@@ -9,6 +9,7 @@ static struct window *window = NULL;
 struct window *window_create(const char *title, int w, int h) {
     if (window) {
         window_destroy();
+        window = NULL;
     }
 
     window = sf_alloc(sizeof(*window));
@@ -28,6 +29,6 @@ void window_destroy(void) {
         return;
     }
 
-    free(window);
+    sf_free(window);
     window = NULL;
 }

@@ -79,9 +79,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    app_load_resource(argv[0]);
-
-    app_init();
+    app_init(argv[0]);
 
     app_on_resize(g_app.window, g_app.window->w, g_app.window->h);
 

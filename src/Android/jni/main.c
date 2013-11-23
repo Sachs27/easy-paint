@@ -1,14 +1,15 @@
 #include <jni.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include <EGL/egl.h>
 #include <GLES/gl.h>
 
-#include <android/sensor.h>
 #include <android/log.h>
 #include <android_native_app_glue.h>
 
 #include <sf/log.h>
+#include <sf/utils.h>
 
 #include "../../app.h"
 #include "../../window.h"
@@ -25,10 +26,6 @@ const char *pkg_path;
  */
 struct engine {
     struct android_app* app;
-
-    ASensorManager* sensorManager;
-    const ASensor* accelerometerSensor;
-    ASensorEventQueue* sensorEventQueue;
 
     int animating;
     EGLDisplay display;
@@ -111,9 +108,7 @@ static int engine_init_display(struct engine* engine) {
     // Initialize GL state.
     /*glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);*/
 
-    app_load_resource(pkg_path);
-
-    app_init();
+    app_init(pkg_path);
 
     app_on_resize(g_app.window, w, h);
 
@@ -124,8 +119,6 @@ static int engine_init_display(struct engine* engine) {
  * Tear down the EGL context currently associated with the display.
  */
 static void engine_term_display(struct engine* engine) {
-    app_destory();
-
     if (engine->display != EGL_NO_DISPLAY) {
         eglMakeCurrent(engine->display, EGL_NO_SURFACE, EGL_NO_SURFACE,
                        EGL_NO_CONTEXT);
@@ -186,21 +179,10 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
             break;
         case APP_CMD_GAINED_FOCUS:
             // When our app gains focus, we start monitoring the accelerometer.
-            if (engine->accelerometerSensor != NULL) {
-                ASensorEventQueue_enableSensor(engine->sensorEventQueue,
-                        engine->accelerometerSensor);
-                // We'd like to get 60 events per second (in us).
-                ASensorEventQueue_setEventRate(engine->sensorEventQueue,
-                        engine->accelerometerSensor, (1000L/60)*1000);
-            }
             break;
         case APP_CMD_LOST_FOCUS:
             // When our app loses focus, we stop monitoring the accelerometer.
             // This is to avoid consuming battery while not being used.
-            if (engine->accelerometerSensor != NULL) {
-                ASensorEventQueue_disableSensor(engine->sensorEventQueue,
-                        engine->accelerometerSensor);
-            }
             break;
     }
 }
@@ -227,13 +209,22 @@ static const char *get_package_path(struct android_app *state) {
     return str;
 }
 
+static uint64_t get_ticks(void) {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (int64_t) now.tv_sec * 1e9 + now.tv_nsec;
+}
+
 /**
  * This is the main entry point of a native application that is using
  * android_native_app_glue.  It runs in its own thread, with its own
  * event loop for receiving input events and doing other things.
  */
 void android_main(struct android_app* state) {
+    uint64_t cur_tick, last_tick;
     struct engine engine;
+
+    atexit((void (*)(void)) sf_memcheck);
 
     sf_log_set_hook(on_sf_log);
 
@@ -248,13 +239,6 @@ void android_main(struct android_app* state) {
     state->onInputEvent = engine_handle_input;
     engine.app = state;
 
-    // Prepare to monitor accelerometer
-    engine.sensorManager = ASensorManager_getInstance();
-    engine.accelerometerSensor = ASensorManager_getDefaultSensor(engine.sensorManager,
-            ASENSOR_TYPE_ACCELEROMETER);
-    engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager,
-            state->looper, LOOPER_ID_USER, NULL, NULL);
-
     if (state->savedState != NULL) {
         // We are starting with a previous saved state; restore from it.
 #if 0
@@ -266,9 +250,8 @@ void android_main(struct android_app* state) {
 
     g_app.im = input_manager_create(g_app.window);
 
-
     // loop waiting for stuff to do.
-
+    cur_tick = get_ticks();
     while (1) {
         // Read all pending events.
         int ident;
@@ -285,30 +268,28 @@ void android_main(struct android_app* state) {
                 source->process(state, source);
             }
 
-            // If a sensor has data, process it now.
-            if (ident == LOOPER_ID_USER) {
-                if (engine.accelerometerSensor != NULL) {
-                    ASensorEvent event;
-                    while (ASensorEventQueue_getEvents(engine.sensorEventQueue,
-                            &event, 1) > 0) {
-                        LOGI("accelerometer: x=%f y=%f z=%f",
-                                event.acceleration.x, event.acceleration.y,
-                                event.acceleration.z);
-                    }
-                }
-            }
-
             // Check if we are exiting.
             if (state->destroyRequested != 0) {
                 engine_term_display(&engine);
-                return;
+                break;
             }
         }
+        if (state->destroyRequested != 0) {
+            break;
+        }
 
-        app_on_update(0);
+        if (!g_app.inited) {
+            continue;
+        }
+
+        last_tick = cur_tick;
+        cur_tick = get_ticks();
+        app_on_update((cur_tick - last_tick) * 1.0 / 1e9);
         if (engine.display != NULL) {
             app_on_render();
             eglSwapBuffers(engine.display, engine.surface);
         }
     }
+
+    app_destory();
 }

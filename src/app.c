@@ -16,6 +16,7 @@
 
 
 struct app g_app;
+
 static int menuicon_on_press(struct ui *ui, int x, int y) {
     ui_show((struct ui *) &g_app.menu);
     return 0;
@@ -56,17 +57,13 @@ static int menu_item_on_press(struct ui *ui, int x, int y) {
     return 0;
 }
 
-void app_load_resource(const char *rootpath) {
-    int i;
+int app_init(const char *rootpath) {
+    if (g_app.inited) {
+        return 0;
+    }
+    g_app.inited = SF_TRUE;
 
     resource_manager_init(&g_app.rm, rootpath);
-
-    for (i = 0; i < RESOURCE_NTEXTURES; ++i) {
-        resource_manager_load(&g_app.rm, RESOURCE_TEXTURE, i);
-    }
-}
-
-int app_init(void) {
     renderer2d_init(&g_app.renderer2d, g_app.window->w, g_app.window->h);
     ui_manager_init(&g_app.uim);
 
@@ -146,6 +143,8 @@ void app_destory(void) {
 
     input_manager_destroy();
     window_destroy();
+
+    g_app.inited = SF_FALSE;
 }
 
 void app_on_resize(struct window *win, int w, int h) {

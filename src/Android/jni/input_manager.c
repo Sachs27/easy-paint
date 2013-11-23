@@ -24,6 +24,7 @@ void input_manager_destroy(void) {
         return;
     }
     sf_free(input_manager);
+    input_manager = NULL;
 }
 
 void input_manager_touch_down(int x, int y) {

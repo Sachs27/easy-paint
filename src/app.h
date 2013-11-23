@@ -23,6 +23,7 @@ enum app_stage {
 };
 
 struct app {
+    sf_bool_t                   inited;
     int                         stage;
 
     struct window              *window;
@@ -46,11 +47,9 @@ struct app {
 };
 
 
-int app_init(void);
+int app_init(const char *rootpath);
 
 void app_destory(void);
-
-void app_load_resource(const char *rootpath);
 
 void app_on_update(double dt);
 
