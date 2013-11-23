@@ -50,7 +50,7 @@ void input_manager_destroy(void);
 void input_manager_update();
 
 #ifdef ANDROID
-void input_manager_touch_down(int n, int x[n], int y[n]);
+void input_manager_touch_down(int x, int y);
 void input_manager_touch_up(void);
 #endif /* ANDROID */
 

@@ -20,7 +20,8 @@ struct shader_info {
 };
 
 
-static GLsizeiptr           renderer2d_vbo_size = 8192;
+static const GLsizeiptr     renderer2d_vbo_size = 8192;
+static GLbyte               renderer2d_vbo_buffer[8192];
 
 static struct shader_info   renderer2d_rect_shaders[] = {
     {GL_VERTEX_SHADER,
@@ -226,7 +227,8 @@ int renderer2d_init(struct renderer2d *r, int w, int h) {
     r->h = h;
     glGenBuffers(1, &r->vbo);
     glBindBuffer(GL_ARRAY_BUFFER, r->vbo);
-    glBufferData(GL_ARRAY_BUFFER, renderer2d_vbo_size, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, renderer2d_vbo_size, renderer2d_vbo_buffer,
+                 GL_DYNAMIC_DRAW);
     glGenFramebuffers(1, &r->fbo);
     r->prog_rect = load_shaders(renderer2d_rect_shaders);
     r->prog_texture = load_shaders(renderer2d_texture_shaders);
@@ -303,17 +305,14 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
     glBufferSubData(GL_ARRAY_BUFFER, 0, npoints * sizeof(*points), points);
     glVertexAttribPointer(loc_pos, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(loc_pos);
-#ifndef GLES2
+
     {
-        size_t ndrawed;
+        size_t ndrawed = 0;
         while (ndrawed < npoints) {
             glDrawArrays(GL_POINTS, ndrawed++, 1);
             glFlush();
         }
     }
-#else
-    glDrawArrays(GL_POINTS, 0, npoints);
-#endif
 
     glDisableVertexAttribArray(loc_pos);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

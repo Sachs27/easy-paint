@@ -9,7 +9,7 @@ static struct input_manager *input_manager = NULL;
 
 struct input_manager *input_manager_create(struct window *win) {
     if (input_manager) {
-        free(input_manager);
+        sf_free(input_manager);
         input_manager = NULL;
     }
 
@@ -20,18 +20,15 @@ struct input_manager *input_manager_create(struct window *win) {
 }
 
 void input_manager_destroy(void) {
-    struct window *win;
-
     if (input_manager == NULL) {
         return;
     }
-
-    win = input_manager->win;
+    sf_free(input_manager);
 }
 
-void input_manager_touch_down(int n, int x[n], int y[n]) {
-    input_manager->mouse.x = x[0];
-    input_manager->mouse.y = y[0];
+void input_manager_touch_down(int x, int y) {
+    input_manager->mouse.x = x;
+    input_manager->mouse.y = y;
     input_manager->keys[KEY_MB_LEFT] = KEY_PRESS;
 }
 
