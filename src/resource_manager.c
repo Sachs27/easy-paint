@@ -92,10 +92,11 @@ void resource_manager_destroy(struct resource_manager *rm) {
             rm->isrecord_loaded[id] = 0;
         }
     }
-
+#if 0
     if (rm->iszip) {
         zip_close(rm->archive);
     }
+#endif
 }
 
 void *resource_manager_load(struct resource_manager *rm, int type, int id) {

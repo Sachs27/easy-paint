@@ -152,7 +152,6 @@ static int blank_on_press(struct ui *blank, int x, int y) {
 
 static int canvas_lastx;
 static int canvas_lasty;
-static int isdrawing = 0;
 
 static int canvas_on_press(struct ui *ui, int x, int y) {
     struct canvas *canvas = (struct canvas *) ui;
@@ -165,8 +164,7 @@ static int canvas_on_press(struct ui *ui, int x, int y) {
     ui_get_screen_pos((struct ui *) canvas, &xscreen, &yscreen);
     canvas_screen_to_canvas(canvas, x + xscreen, y + yscreen,
                             &canvas_lastx, &canvas_lasty);
-    isdrawing = 1;
-
+    canvas_begin_plot(canvas);
     /*record_begin(&upp->record, canvas);*/
 #if 0
     static int flag = 0;
@@ -187,7 +185,7 @@ static int canvas_on_press(struct ui *ui, int x, int y) {
 
 static void canvas_on_release(struct ui *ui) {
     struct canvas *canvas = (struct canvas *) ui;
-    isdrawing = 0;
+    canvas_end_plot(canvas);
     /*record_end(canvas->record);*/
 }
 
@@ -197,19 +195,24 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
     struct user_paint_panel *upp =
         sf_container_of(canvas, struct user_paint_panel, canvas);
 
-    if (isdrawing) {
+    if (canvas->isploting) {
+        sf_list_t *buf = &im->mb_left_buffer;
+        sf_list_iter_t iter;
         int mx, my;
 
-        canvas_screen_to_canvas(canvas, im->mouse.x, im->mouse.y, &mx, &my);
+        if (sf_list_begin(buf, &iter)) do {
+            struct im_mouse_position *pos = sf_list_iter_elt(&iter);
+            canvas_screen_to_canvas(canvas, pos->x, pos->y, &mx, &my);
 
-        if (sf_rect_iscontain(&canvas->viewport, mx, my)
-            && (mx != canvas_lastx || my != canvas_lasty)) {
-            brush_drawline(upp->cur_brush, canvas,
-                           canvas_lastx, canvas_lasty, mx, my);
-        }
+            if (sf_rect_iscontain(&canvas->viewport, mx, my)
+                && (mx != canvas_lastx || my != canvas_lasty)) {
+                brush_drawline(upp->cur_brush, canvas,
+                               canvas_lastx, canvas_lasty, mx, my);
+            }
 
-        canvas_lastx = mx;
-        canvas_lasty = my;
+            canvas_lastx = mx;
+            canvas_lasty = my;
+        } while (sf_list_iter_next(&iter));
     }
 
     if (im->keys[KEY_1] == KEY_PRESS) {

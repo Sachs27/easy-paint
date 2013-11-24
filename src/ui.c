@@ -30,6 +30,7 @@ void ui_destroy(struct ui *ui) {
 
         sf_list_destroy(ui->childen);
         sf_free(ui->childen);
+        ui->childen = NULL;
     }
 
     if (ui->on_destroy) {

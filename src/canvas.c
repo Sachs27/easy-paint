@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <math.h>
 #include <string.h>
 #include <stdint.h>
@@ -21,12 +22,23 @@ static void canvas_update_content(struct canvas *canvas,
     }
 
     if (sf_array_cnt(&canvas->plots)) {
-        renderer2d_blend_points(r, &canvas->content,
+        if (!canvas->isbuffet_inited) {
+            glDisable(GL_BLEND);
+            renderer2d_set_render_target(r, &canvas->buffer);
+            renderer2d_draw_texture(r, 0, 0, 0, 0, &canvas->content,
+                                    0, canvas->content.h,
+                                    0, -canvas->content.h);
+            glEnable(GL_BLEND);
+            canvas->isbuffet_inited = SF_TRUE;
+        }
+        renderer2d_set_render_target(r, &canvas->content);
+        renderer2d_blend_points(r, &canvas->buffer,
                                 sf_array_head(&canvas->plots),
                                 sf_array_cnt(&canvas->plots),
                                 canvas->plot_size,
                                 canvas->plot_color[0], canvas->plot_color[1],
                                 canvas->plot_color[2], canvas->plot_color[3]);
+        renderer2d_set_render_target(r, NULL);
 
         sf_array_clear(&canvas->plots);
     }
@@ -34,7 +46,6 @@ static void canvas_update_content(struct canvas *canvas,
 
 static void canvas_on_render(struct ui *ui, struct renderer2d *r) {
     struct canvas *canvas = (struct canvas *) ui;
-    float scale = canvas->viewport.w * 1.0 / canvas->ui.area.w;
 
     canvas_update_content(canvas, r);
 
@@ -56,14 +67,18 @@ static void canvas_on_resize(struct ui *ui, int w, int h) {
     canvas->viewport.h = canvas->ui.area.h;
 
     texture_destroy(&canvas->content);
+    texture_destroy(&canvas->buffer);
     canvas->iscontent_inited = SF_FALSE;
+    canvas->isbuffet_inited = SF_FALSE;
     texture_init_2d(&canvas->content, w, h);
+    texture_init_2d(&canvas->buffer, w, h);
 }
 
 static void canvas_on_destroy(struct ui *ui) {
     struct canvas *canvas = (struct canvas *) ui;
 
     texture_destroy(&canvas->content);
+    texture_destroy(&canvas->buffer);
     sf_array_destroy(&canvas->plots);
 }
 
@@ -80,8 +95,11 @@ int canvas_init(struct canvas *canvas, int w, int h) {
     canvas->viewport.h = h;
     canvas->dx = canvas->dy = 0.0f;
     canvas->record = NULL;
+    canvas->isploting = SF_FALSE;
     canvas->iscontent_inited = SF_FALSE;
+    canvas->isbuffet_inited = SF_FALSE;
     texture_init_2d(&canvas->content, w, h);
+    texture_init_2d(&canvas->buffer, w, h);
 
     sf_memzero(&def, sizeof(def));
     def.size = sizeof(struct vec2);
@@ -100,6 +118,7 @@ void canvas_destroy(struct canvas *canvas) {
 
 void canvas_clear(struct canvas *canvas) {
     canvas->iscontent_inited = SF_FALSE;
+    canvas->isbuffet_inited = SF_FALSE;
 }
 
 void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
@@ -115,13 +134,24 @@ void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
     *o_y = canvas->viewport.y + y;
 }
 
+void canvas_begin_plot(struct canvas *canvas) {
+    canvas->isploting = SF_TRUE;
+}
+
 void canvas_plot(struct canvas *canvas, float x, float y) {
     struct vec2 plot;
+
+    assert(canvas->isploting);
 
     plot.x = x;
     plot.y = canvas->content.h * 1.0 - y;
 
     sf_array_push(&canvas->plots, &plot);
+}
+
+void canvas_end_plot(struct canvas *canvas) {
+    canvas->isploting = SF_FALSE;
+    canvas->isbuffet_inited = SF_FALSE;
 }
 
 void canvas_set_plot_color(struct canvas *canvas, float color[4]) {
@@ -131,7 +161,7 @@ void canvas_set_plot_color(struct canvas *canvas, float color[4]) {
 void canvas_set_plot_size(struct canvas *canvas, float size) {
     canvas->plot_size = size;
 }
-
+#if 0
 void canvas_offset(struct canvas *canvas, int xoff, int yoff) {
     float scale = canvas->viewport.w * 1.0 / canvas->ui.area.w;
     int dx, dy;
@@ -189,3 +219,4 @@ void canvas_zoom_out(struct canvas *canvas, int cx, int cy) {
     canvas->viewport.w -= canvas->viewport.x;
     canvas->viewport.h -= canvas->viewport.y;
 }
+#endif

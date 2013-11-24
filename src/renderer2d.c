@@ -280,8 +280,6 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
 
     glDisable(GL_BLEND);
 
-    renderer2d_set_render_target(renderer, dst);
-
     glUseProgram(renderer->prog_point);
 
     loc_proj = glGetUniformLocation(renderer->prog_point, "mprojection");
@@ -291,7 +289,6 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
     loc_target = glGetUniformLocation(renderer->prog_point, "utarget");
     loc_texsize = glGetUniformLocation(renderer->prog_point, "utexsize");
 
-    glUniform4f(loc_color, r, g, b, a);
     glUniform1f(loc_pointsize, size);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, dst->tid);
@@ -305,7 +302,9 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
     glBufferSubData(GL_ARRAY_BUFFER, 0, npoints * sizeof(*points), points);
     glVertexAttribPointer(loc_pos, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(loc_pos);
-
+#if 0
+#ifndef GLES2
+    glUniform4f(loc_color, r, g, b, a);
     {
         size_t ndrawed = 0;
         while (ndrawed < npoints) {
@@ -313,12 +312,18 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
             glFlush();
         }
     }
+#else
+    glUniform4f(loc_color, r, g, b, 1.0f);
+    glDrawArrays(GL_POINTS, 0, npoints);
+#endif
+#endif
+    glUniform4f(loc_color, r, g, b, a);
+    glDrawArrays(GL_POINTS, 0, npoints);
 
     glDisableVertexAttribArray(loc_pos);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
 
-    renderer2d_set_render_target(renderer, NULL);
     glEnable(GL_BLEND);
 }
 

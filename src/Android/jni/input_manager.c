@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include <sf/utils.h>
+#include <sf/log.h>
 
 #include "../../input_manager.h"
 
@@ -8,13 +9,18 @@
 static struct input_manager *input_manager = NULL;
 
 struct input_manager *input_manager_create(struct window *win) {
+    sf_list_def_t def;
+
     if (input_manager) {
         sf_free(input_manager);
         input_manager = NULL;
     }
 
     input_manager = sf_calloc(sizeof(*input_manager));
-    input_manager->win = win;
+    sf_memzero(&def, sizeof(def));
+    def.size = sizeof(struct im_mouse_position);
+    sf_list_init(&input_manager->mb_left_buffer, &def);
+    input_manager->win            = win;
 
     return input_manager;
 }
@@ -23,14 +29,26 @@ void input_manager_destroy(void) {
     if (input_manager == NULL) {
         return;
     }
+
+    sf_list_destroy(&input_manager->mb_left_buffer);
     sf_free(input_manager);
     input_manager = NULL;
 }
 
 void input_manager_touch_down(int x, int y) {
-    input_manager->mouse.x = x;
-    input_manager->mouse.y = y;
-    input_manager->keys[KEY_MB_LEFT] = KEY_PRESS;
+    struct input_manager *im = input_manager;
+
+    if (im->keys[KEY_MB_LEFT] != KEY_PRESS) {
+        input_manager->keys[KEY_MB_LEFT] = KEY_PRESS;
+    } else if (im->keys[KEY_MB_LEFT] == KEY_PRESS
+        && (x != im->mouse.x || y != im->mouse.y)) {
+        struct im_mouse_position pos;
+        pos.x = x;
+        pos.y = y;
+        sf_list_push(&im->mb_left_buffer, &pos);
+    }
+    im->mouse.x = x;
+    im->mouse.y = y;
 }
 
 void input_manager_touch_up(void) {
@@ -39,12 +57,11 @@ void input_manager_touch_up(void) {
 
 void input_manager_update(void) {
     struct input_manager *im = input_manager;
-    int k;
 
-    for (k = 0; k < NKEYS; ++k) {
-        if (im->last_keys[k] == KEY_PRESS) {
-            im->keys[k] = KEY_REPEAT;
-        }
-        im->last_keys[k] = im->keys[k];
+    if (sf_list_cnt(&im->mb_left_buffer) > 1) {
+        sf_log(SF_LOG_INFO, "input_manager cached %u positions.",
+               sf_list_cnt(&im->mb_left_buffer));
     }
+
+    sf_list_clear(&im->mb_left_buffer);
 }

@@ -2,6 +2,8 @@
 #define INPUT_MANAGER_H
 
 
+#include <sf/list.h>
+
 #include "window.h"
 
 
@@ -9,6 +11,11 @@ enum key_state {
     KEY_RELEASE,
     KEY_PRESS,
     KEY_REPEAT,
+};
+
+struct im_mouse_position {
+    int x;
+    int y;
 };
 
 enum key {
@@ -32,12 +39,11 @@ enum key {
 
 
 struct input_manager {
-    struct {
-        int x, y;
-    } mouse;
+    sf_list_t mb_left_buffer;   /* elt: struct im_mouse_position */
+
+    struct im_mouse_position mouse;
 
     enum key_state keys[NKEYS];
-    enum key_state last_keys[NKEYS];
 
     struct window *win;
 };

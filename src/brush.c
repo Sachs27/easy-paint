@@ -302,9 +302,9 @@ static int brush_pencil_init(struct brush *pencil) {
 }
 
 static int brush_pen_init(struct brush *pen) {
-    pen->radius = 16;
+    pen->radius = 8;
     /* max alpha = 128 */
-    brush_set_color(pen, 1, 0, 0, 0.1);
+    brush_set_color(pen, 1, 0, 0, 0.5);
     return 0;
 }
 

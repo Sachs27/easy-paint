@@ -133,6 +133,9 @@ static void engine_term_display(struct engine* engine) {
     engine->display = EGL_NO_DISPLAY;
     engine->context = EGL_NO_CONTEXT;
     engine->surface = EGL_NO_SURFACE;
+
+    app_destory();
+    exit(0);
 }
 
 /**
@@ -143,13 +146,13 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) 
     if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
         if (AMotionEvent_getAction(event) == AMOTION_EVENT_ACTION_DOWN
             || AMotionEvent_getAction(event) == AMOTION_EVENT_ACTION_MOVE) {
-            input_manager_touch_down(AMotionEvent_getX(event, 0),
-                                     AMotionEvent_getY(event, 0));
-        } else {
-            input_manager_touch_up();
+            input_manager_touch_down(AMotionEvent_getRawX(event, 0),
+                                     AMotionEvent_getRawY(event, 0));
+            return 1;
         }
-        return 1;
     }
+
+    input_manager_touch_up();
     return 0;
 }
 
@@ -271,15 +274,7 @@ void android_main(struct android_app* state) {
             // Check if we are exiting.
             if (state->destroyRequested != 0) {
                 engine_term_display(&engine);
-                break;
             }
-        }
-        if (state->destroyRequested != 0) {
-            break;
-        }
-
-        if (!g_app.inited) {
-            continue;
         }
 
         last_tick = cur_tick;
@@ -290,6 +285,4 @@ void android_main(struct android_app* state) {
             eglSwapBuffers(engine.display, engine.surface);
         }
     }
-
-    app_destory();
 }

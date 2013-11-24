@@ -136,6 +136,10 @@ int app_init(const char *rootpath) {
 }
 
 void app_destory(void) {
+    if (!g_app.inited) {
+        return;
+    }
+
     ui_destroy(&g_app.root);
     resource_manager_destroy(&g_app.rm);
     ui_manager_destroy(&g_app.uim);
@@ -203,8 +207,8 @@ void app_on_update(double dt) {
         elapse -= 1.0;
     }
 
-    input_manager_update();
     ui_manager_update(&g_app.uim, g_app.im, dt);
+    input_manager_update();
 }
 
 void app_on_render(void) {

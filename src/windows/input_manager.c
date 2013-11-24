@@ -1,6 +1,7 @@
 #include <GLFW/glfw3.h>
 
 #include <sf/utils.h>
+#include <sf/log.h>
 
 #include "../input_manager.h"
 
@@ -9,8 +10,19 @@ static struct input_manager *input_manager = NULL;
 
 static void handle_mouse_pos(struct input_manager *im,
                              double xpos, double ypos) {
-    im->mouse.x = (int) xpos;
-    im->mouse.y = (int) ypos;
+    int x = xpos;
+    int y = ypos;
+
+    if (im->keys[KEY_MB_LEFT] == KEY_PRESS
+        && (x != im->mouse.x || y != im->mouse.y)) {
+        struct im_mouse_position pos;
+        pos.x = x;
+        pos.y = y;
+        sf_list_push(&im->mb_left_buffer, &pos);
+    }
+
+    im->mouse.x = x;
+    im->mouse.y = y;
 }
 
 static void on_mouse_pos(GLFWwindow *handle, double xpos, double ypos) {
@@ -87,13 +99,18 @@ static void on_key(GLFWwindow *handle, int key, int scancode,
 }
 
 struct input_manager *input_manager_create(struct window *win) {
+    sf_list_def_t def;
+
     if (input_manager) {
         sf_free(input_manager);
         input_manager = NULL;
     }
 
     input_manager = sf_calloc(sizeof(*input_manager));
-    input_manager->win = win;
+    sf_memzero(&def, sizeof(def));
+    def.size = sizeof(struct im_mouse_position);
+    sf_list_init(&input_manager->mb_left_buffer, &def);
+    input_manager->win            = win;
 
     glfwSetMouseButtonCallback(win->handle, on_mouse_button);
     glfwSetCursorPosCallback(win->handle, on_mouse_pos);
@@ -109,22 +126,23 @@ void input_manager_destroy(void) {
         return;
     }
 
-    win = input_manager->win;
+    sf_list_destroy(&input_manager->mb_left_buffer);
 
+    win = input_manager->win;
     glfwSetMouseButtonCallback(win->handle, 0);
     glfwSetCursorPosCallback(win->handle, 0);
     glfwSetKeyCallback(win->handle, 0);
     sf_free(input_manager);
+    input_manager = NULL;
 }
 
 void input_manager_update(void) {
     struct input_manager *im = input_manager;
-    int k;
 
-    for (k = 0; k < NKEYS; ++k) {
-        if (im->last_keys[k] == KEY_PRESS) {
-            im->keys[k] = KEY_REPEAT;
-        }
-        im->last_keys[k] = im->keys[k];
+    if (sf_list_cnt(&im->mb_left_buffer) > 1) {
+        sf_log(SF_LOG_INFO, "input_manager cache %u positions.",
+               sf_list_cnt(&im->mb_left_buffer));
     }
+
+    sf_list_clear(&im->mb_left_buffer);
 }
