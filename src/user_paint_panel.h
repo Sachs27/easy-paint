@@ -19,6 +19,7 @@ struct user_paint_panel {
     struct ui           ui;             /* inherit from ui, so this must be
                                          * the first element of the struct  */
     struct canvas           canvas;
+    sf_bool_t               isbrush_changed;
     struct record           record;
 
     struct ui_color_picker  color_picker;

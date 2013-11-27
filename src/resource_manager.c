@@ -120,6 +120,7 @@ void *resource_manager_load(struct resource_manager *rm, int type, int id) {
         }
         assert(rm->istexture_loaded[id]);
         return rm->textures + id;
+#if 0
     case RESOURCE_RECORD:
         if (rm->iszip) {
             if (record_load_zip(rm->records + id, rm->archive,
@@ -133,6 +134,7 @@ void *resource_manager_load(struct resource_manager *rm, int type, int id) {
         }
         assert(rm->isrecord_loaded[id]);
         return rm->records + id;
+#endif
     }
 
     return NULL;

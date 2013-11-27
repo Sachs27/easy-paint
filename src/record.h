@@ -2,76 +2,37 @@
 #define RECORD_H
 
 
-#include <zip.h>
+#include <sf/list.h>
 
-#include <sf/array.h>
-
+struct brush;
 struct canvas;
-
 #define RECORD_VERSION 100
 
-struct record_pixel {
-    int     x, y;
-    uint8_t ncolor[4];
-    uint8_t ocolor[4];
-};
-
 struct record {
-    int                 version;
+    int             version;
+    sf_list_t       records;  /* elt: (struct record_point) */
+    uint32_t        nrecords; /* nrecords <= sf_list_cnt(records) */
 
-    uint32_t            nsegments;
-
-    /*
-     * nrecords > 0 only when nsegments > 0 meaning that current
-     * segment has records.
-     *
-     * nrecords == 0 means that current segment has no records.
-     */
-    uint32_t            nrecords;
-
-    sf_array_t          segments;       /* elt: (sf_array_t)
-                                         * |- elt: (struct record_pixel) */
-
-    struct canvas      *canvas;
+    int             play_pos;
+    struct brush   *brush;
+    float           lastx, lasty;
 };
-
-
-struct record *record_create(void);
 
 int record_init(struct record *record);
 
-int record_load_zip(struct record *record, struct zip *archive,
-                    const char *filename);
-
-int record_load(struct record *record, const char *filename);
-
 void record_destroy(struct record *record);
 
-void record_save(struct record *record, const char *pathname);
+void record_begin_plot(struct record *record);
 
-void record_reset(struct record *record);
+void record_plot(struct record *record, float x, float y);
 
-void record_begin(struct record *record, struct canvas *canvas);
+void record_end_plot(struct record *record);
 
-void record_end(struct record *record);
+void record_set_brush(struct record *record, struct brush *brush);
 
-void record_record(struct record *record, int x, int y,
-                   uint8_t or, uint8_t og, uint8_t ob, uint8_t oa,
-                   uint8_t nr, uint8_t ng, uint8_t nb, uint8_t na);
-
-int record_canundo(struct record *record);
+void record_playback(struct record *record, struct canvas *canvas);
 
 void record_undo(struct record *record, struct canvas *canvas);
-
-void record_undo_n(struct record *record, struct canvas *canvas, uint32_t n);
-
-int record_canredo(struct record *record);
-
-void record_redo(struct record *record, struct canvas *canvas);
-
-void record_redo_n(struct record *record, struct canvas *canvas, uint32_t n);
-
-void record_adjust(struct record *record, int x, int y, int w, int h);
 
 
 #endif /* RECORD_H */

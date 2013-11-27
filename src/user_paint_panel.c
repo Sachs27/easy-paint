@@ -23,6 +23,8 @@ static void undo_on_render(struct ui *ui, struct renderer2d *r) {
     if (undo->image == NULL) {
         return;
     }
+    renderer2d_draw_texture(r, 0, 0, 0, 0, undo->image, 0, 0, 0, 0);
+#if 0
     if (record_canundo(&upp->record)) {
         renderer2d_draw_texture(r, 0, 0, 0, 0, undo->image, 0, 0, 0, 0);
     } else {
@@ -30,6 +32,7 @@ static void undo_on_render(struct ui *ui, struct renderer2d *r) {
                                            undo->image, 0, 0, 0, 0,
                                            128, 128, 128);
     }
+#endif
 }
 
 static int undo_on_press(struct ui *ui, int x, int y) {
@@ -41,6 +44,9 @@ static int undo_on_press(struct ui *ui, int x, int y) {
         ui_hide(&upp->blank);
     }
 
+    if (upp->record.play_pos == 0) {
+        canvas_clear(&upp->canvas);
+    }
     record_undo(&upp->record, &upp->canvas);
     return 0;
 }
@@ -53,7 +59,8 @@ static void redo_on_render(struct ui *ui, struct renderer2d *r) {
     if (redo->image == NULL) {
         return;
     }
-
+    renderer2d_draw_texture(r, 0, 0, 0, 0, redo->image, 0, 0, 0, 0);
+#if 0
     if (record_canredo(&upp->record)) {
         renderer2d_draw_texture(r, 0, 0, 0, 0, redo->image, 0, 0, 0, 0);
     } else {
@@ -61,6 +68,7 @@ static void redo_on_render(struct ui *ui, struct renderer2d *r) {
                                            redo->image, 0, 0, 0, 0,
                                            128, 128, 128);
     }
+#endif
 }
 
 static int redo_on_press(struct ui *ui, int x, int y) {
@@ -72,7 +80,7 @@ static int redo_on_press(struct ui *ui, int x, int y) {
         ui_hide(&upp->blank);
     }
 
-    record_redo(&upp->record, &upp->canvas);
+    /*record_redo(&upp->record, &upp->canvas);*/
     return 0;
 }
 
@@ -88,26 +96,6 @@ static int brush_on_press(struct ui *ui, int x, int y) {
     }
     return 0;
 }
-#if 0
-static void brushicon_on_press(struct ui_imagebox *button, int x, int y) {
-    struct user_paint_panel *upp = g_app.upp;
-    int i = 0;
-
-    SF_ARRAY_BEGIN(upp->brushicons, struct ui_imagebox *, p);
-        if (button == *p) {
-            break;
-        }
-        ++i;
-    SF_ARRAY_END();
-
-    assert(i < upp->brushicons->nelts);
-
-    upp->cur_brush = SF_ARRAY_NTH(upp->brushes, i);
-    ui_imagebox_set_image(&upp->brush, upp->cur_brush->icon);
-
-    ui_hide(&upp->blank);
-}
-#endif
 
 static int brush_pen_on_press(struct ui *ui, int x, int y) {
     struct ui_imagebox *brush_pen_icon = (struct ui_imagebox *) ui;
@@ -117,6 +105,7 @@ static int brush_pen_on_press(struct ui *ui, int x, int y) {
     upp->cur_brush = &upp->brush_pen;
     ui_imagebox_set_image(&upp->brush, upp->brush_pen_icon.image);
     ui_hide(&upp->blank);
+    upp->isbrush_changed = SF_TRUE;
     return 0;
 }
 
@@ -128,6 +117,7 @@ static int brush_pencil_on_press(struct ui *ui, int x, int y) {
     upp->cur_brush = &upp->brush_pencil;
     ui_imagebox_set_image(&upp->brush, upp->brush_pencil_icon.image);
     ui_hide(&upp->blank);
+    upp->isbrush_changed = SF_TRUE;
     return 0;
 }
 
@@ -139,6 +129,7 @@ static int brush_eraser_on_press(struct ui *ui, int x, int y) {
     upp->cur_brush = &upp->brush_eraser;
     ui_imagebox_set_image(&upp->brush, upp->brush_eraser_icon.image);
     ui_hide(&upp->blank);
+    upp->isbrush_changed = SF_TRUE;
     return 0;
 }
 
@@ -150,8 +141,8 @@ static int blank_on_press(struct ui *blank, int x, int y) {
     return 0;
 }
 
-static int canvas_lastx;
-static int canvas_lasty;
+static int canvas_lastx = -1;
+static int canvas_lasty = -1;
 
 static int canvas_on_press(struct ui *ui, int x, int y) {
     struct canvas *canvas = (struct canvas *) ui;
@@ -161,32 +152,29 @@ static int canvas_on_press(struct ui *ui, int x, int y) {
 
     ui_color_picker_set_color(&upp->color_picker, upp->cur_brush->color);
 
-    ui_get_screen_pos((struct ui *) canvas, &xscreen, &yscreen);
+    ui_get_screen_pos(ui, &xscreen, &yscreen);
     canvas_screen_to_canvas(canvas, x + xscreen, y + yscreen,
                             &canvas_lastx, &canvas_lasty);
+
     canvas_begin_plot(canvas);
-    /*record_begin(&upp->record, canvas);*/
-#if 0
-    static int flag = 0;
-    if (flag == 0) {
-        flag = 1;
-        upp->cur_brush->blend_mode = BLEND_NORMAL;
-        brush_drawline(upp->cur_brush, canvas,
-                       0, 0, 10, 8);
-    } else {
-        flag = 0;
-        upp->cur_brush->blend_mode = BLEND_RNORMAL;
-        brush_drawline(upp->cur_brush, canvas,
-                       10, 8, 0, 0);
+
+    if (upp->isbrush_changed) {
+        record_set_brush(&upp->record, upp->cur_brush);
+        upp->isbrush_changed = SF_FALSE;
     }
-#endif
+    record_begin_plot(&upp->record);
+    record_plot(&upp->record, canvas_lastx, canvas_lasty);
+
     return 0;
 }
 
 static void canvas_on_release(struct ui *ui) {
     struct canvas *canvas = (struct canvas *) ui;
+    struct user_paint_panel *upp =
+        sf_container_of(canvas, struct user_paint_panel, canvas);
+
     canvas_end_plot(canvas);
-    /*record_end(canvas->record);*/
+    record_end_plot(&upp->record);
 }
 
 static void canvas_on_update(struct ui *ui, struct input_manager *im,
@@ -206,19 +194,22 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
 
             if (sf_rect_iscontain(&canvas->viewport, mx, my)
                 && (mx != canvas_lastx || my != canvas_lasty)) {
-                brush_drawline(upp->cur_brush, canvas,
-                               canvas_lastx, canvas_lasty, mx, my);
+                if (canvas_lastx >= 0) {
+                    brush_drawline(upp->cur_brush, canvas,
+                                   canvas_lastx, canvas_lasty, mx, my);
+                }
+                canvas_lastx = mx;
+                canvas_lasty = my;
+                record_plot(&upp->record, mx, my);
             }
-
-            canvas_lastx = mx;
-            canvas_lasty = my;
         } while (sf_list_iter_next(&iter));
     }
-
+#if 0
     if (im->keys[KEY_1] == KEY_PRESS) {
         record_save(&upp->record,
                     get_save_file_name("Record File(*.rec)\0*.rec\0"));
     }
+#endif
 }
 
 static void user_paint_panel_on_show(struct ui *ui) {
@@ -249,8 +240,16 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h) {
 static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
                                        double dt) {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
+    float color[3];
 
-    ui_color_picker_get_color(&upp->color_picker, upp->cur_brush->color);
+    ui_color_picker_get_color(&upp->color_picker, color);
+    if (color[0] != upp->cur_brush->color[0]
+        || color[1] != upp->cur_brush->color[1]
+        || color[2] != upp->cur_brush->color[2]) {
+        brush_set_color(upp->cur_brush, color[0], color[1], color[2],
+                        upp->cur_brush->color[3]);
+        upp->isbrush_changed = SF_TRUE;
+    }
 }
 
 static void user_paint_panel_on_destroy(struct ui *ui) {
@@ -282,6 +281,7 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h,
     UI_CALLBACK(&upp->brush_eraser_icon, press, brush_eraser_on_press);
 
     upp->cur_brush = &upp->brush_pen;
+    upp->isbrush_changed = SF_TRUE;
 
     canvas_init(&upp->canvas, w, h);
     UI_CALLBACK(&upp->canvas, update, canvas_on_update);

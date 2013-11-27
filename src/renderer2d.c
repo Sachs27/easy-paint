@@ -20,8 +20,7 @@ struct shader_info {
 };
 
 
-static const GLsizeiptr     renderer2d_vbo_size = 8192;
-static GLbyte               renderer2d_vbo_buffer[8192];
+static GLsizeiptr     renderer2d_vbo_size = 4096;
 
 static struct shader_info   renderer2d_rect_shaders[] = {
     {GL_VERTEX_SHADER,
@@ -227,7 +226,7 @@ int renderer2d_init(struct renderer2d *r, int w, int h) {
     r->h = h;
     glGenBuffers(1, &r->vbo);
     glBindBuffer(GL_ARRAY_BUFFER, r->vbo);
-    glBufferData(GL_ARRAY_BUFFER, renderer2d_vbo_size, renderer2d_vbo_buffer,
+    glBufferData(GL_ARRAY_BUFFER, renderer2d_vbo_size, NULL,
                  GL_DYNAMIC_DRAW);
     glGenFramebuffers(1, &r->fbo);
     r->prog_rect = load_shaders(renderer2d_rect_shaders);
@@ -275,6 +274,7 @@ void renderer2d_clear(struct renderer2d *renderer,
 void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
                              struct vec2 *points, size_t npoints, float size,
                              float r, float g, float b, float a) {
+    size_t bufsiz = npoints * sizeof(*points);
     GLuint loc_proj, loc_pos, loc_pointsize, loc_color, loc_target,
            loc_texsize;
 
@@ -299,6 +299,13 @@ void renderer2d_blend_points(struct renderer2d *renderer, struct texture *dst,
 
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
+    if (renderer2d_vbo_size < bufsiz) {
+        while (renderer2d_vbo_size < bufsiz) {
+            renderer2d_vbo_size <<= 1;
+        }
+        glBufferData(GL_ARRAY_BUFFER, renderer2d_vbo_size, NULL,
+                     GL_DYNAMIC_DRAW);
+    }
     glBufferSubData(GL_ARRAY_BUFFER, 0, npoints * sizeof(*points), points);
     glVertexAttribPointer(loc_pos, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(loc_pos);

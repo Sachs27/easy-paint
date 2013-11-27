@@ -9,7 +9,6 @@
 #include "texture.h"
 #include "3dmath.h"
 #include "canvas.h"
-#include "record.h"
 
 
 static void canvas_update_content(struct canvas *canvas,
@@ -94,7 +93,6 @@ int canvas_init(struct canvas *canvas, int w, int h) {
     canvas->viewport.w = w;
     canvas->viewport.h = h;
     canvas->dx = canvas->dy = 0.0f;
-    canvas->record = NULL;
     canvas->isploting = SF_FALSE;
     canvas->iscontent_inited = SF_FALSE;
     canvas->isbuffet_inited = SF_FALSE;

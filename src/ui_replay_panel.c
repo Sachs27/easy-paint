@@ -19,23 +19,25 @@ static void ui_replay_panel_reset(struct ui_replay_panel *urp) {
     ui_imagebox_set_image(&urp->replay, urp->play_image);
 
     urp->isstop = 1;
+#if 0
     while (record_canredo(urp->record)) {
         record_redo(urp->record, &urp->canvas);
     }
+#endif
 }
 
 static int replay_on_press(struct ui *ui, int x, int y) {
     struct ui_imagebox *replay = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
         sf_container_of(replay, struct ui_replay_panel, replay);
-
+#if 0
     if (urp->isstop) {
         urp->isstop = 0;
         while (record_canundo(urp->record)) {
             record_undo(urp->record, &urp->canvas);
         }
     }
-
+#endif
     if (urp->isreplay) {
         urp->isreplay = 0;
         ui_imagebox_set_image(replay, urp->play_image);
@@ -74,9 +76,11 @@ static int rewind_on_press(struct ui *ui, int x, int y) {
     urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
                                        urp->record_id);
     canvas_clear(&urp->canvas);
+#if 0
     record_adjust(urp->record, 0, 0,
                   urp->canvas.ui.area.w, urp->canvas.ui.area.h);
     record_reset(urp->record);
+#endif
     ui_replay_panel_reset(urp);
 
     return 0;
@@ -96,9 +100,11 @@ static int fastforward_on_press(struct ui *ui, int x, int y) {
     urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
                                        urp->record_id);
     canvas_clear(&urp->canvas);
+#if 0
     record_adjust(urp->record, 0, 0,
                   urp->canvas.ui.area.w, urp->canvas.ui.area.h);
     record_reset(urp->record);
+#endif
     ui_replay_panel_reset(urp);
     return 0;
 }
@@ -115,7 +121,7 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
 
     struct ui_replay_panel *urp =
         sf_container_of(canvas, struct ui_replay_panel, canvas);
-
+#if 0
     if (urp->isreplay) {
         if (record_canredo(urp->record)) {
             int n;
@@ -129,6 +135,7 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
             ui_replay_panel_reset(urp);
         }
     }
+#endif
 }
 
 static void ui_replay_panel_on_resize(struct ui *ui, int w, int h) {
@@ -139,8 +146,10 @@ static void ui_replay_panel_on_resize(struct ui *ui, int w, int h) {
             urp->canvas.ui.area.h - TOOLBOX_HEIGHT);
 
     canvas_clear(&urp->canvas);
+#if 0
     record_adjust(urp->record, 0, 0, w, h);
     record_reset(urp->record);
+#endif
     ui_replay_panel_reset(urp);
 }
 
