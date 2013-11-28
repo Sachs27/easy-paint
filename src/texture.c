@@ -265,5 +265,8 @@ void texture_set_parameteri(struct texture *tex, GLenum pname, GLint param) {
 }
 
 void texture_destroy(struct texture *tex) {
-    glDeleteTextures(1, &tex->tid);
+    if (tex->tid) {
+        glDeleteTextures(1, &tex->tid);
+        tex->tid = 0;
+    }
 }
