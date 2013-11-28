@@ -35,6 +35,8 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
 
 void brush_set_color(struct brush *brush, float r, float g, float b, float a);
 
+int brush_cmp(struct brush *b0, struct brush *b1);
+
 struct brush *brush_pencil_create(void);
 
 struct brush *brush_eraser_create(void);

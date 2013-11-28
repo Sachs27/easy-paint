@@ -393,3 +393,13 @@ void brush_set_color(struct brush *brush, float r, float g, float b, float a) {
     brush->color[2] = b;
     brush->color[3] = a;
 }
+
+int brush_cmp(struct brush *b0, struct brush *b1) {
+    if (b0 == NULL) {
+        return -1;
+    } else if (b1 == NULL) {
+        return 1;
+    }
+    return memcmp(b0, b1, sizeof(*b0));
+}
+

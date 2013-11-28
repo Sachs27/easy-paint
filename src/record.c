@@ -9,7 +9,7 @@
 
 typedef enum {
     RECORD_BEGIN_PLOT,
-    RECORD_KEYPOINT,
+    RECORD_DRAWLINE,
     RECORD_END_PLOT,
     RECORD_SET_BRUSH,
 } record_point_type_t;
@@ -18,10 +18,9 @@ typedef struct {
     record_point_type_t type;
     union {
         struct {
-            int x;
-            int y;
-        } keypoint;
-
+            float x0, y0;
+            float x1, y1;
+        } drawline;
         struct {
             struct brush brush;
         } set_brush;
@@ -38,21 +37,12 @@ static void record_point_do(record_point_t *rp, struct record *record,
     case RECORD_BEGIN_PLOT:
         canvas_begin_plot(canvas);
         break;
-    case RECORD_KEYPOINT:
-        if (record->lastx < 0) {
-            record->lastx = rp->keypoint.x;
-            record->lasty = rp->keypoint.y;
-        } else {
-            brush_drawline(record->brush, canvas, record->lastx,
-                           record->lasty, rp->keypoint.x, rp->keypoint.y);
-            record->lastx = rp->keypoint.x;
-            record->lasty = rp->keypoint.y;
-        }
+    case RECORD_DRAWLINE:
+        brush_drawline(record->brush, canvas, rp->drawline.x0, rp->drawline.y0,
+                       rp->drawline.x1, rp->drawline.y1);
         break;
     case RECORD_END_PLOT:
         canvas_end_plot(canvas);
-        record->lastx = -1;
-        record->lasty = -1;
         break;
     case RECORD_SET_BRUSH:
         record->brush = &rp->set_brush.brush;
@@ -60,14 +50,16 @@ static void record_point_do(record_point_t *rp, struct record *record,
     }
 }
 
-static void record_save(struct record *record, record_point_t *rp) {
+static record_point_t *record_save(struct record *record, record_point_t *rp) {
+    record_point_t *ptr;
     if (record->nrecords == sf_list_cnt(&record->records)) {
-        sf_list_push(&record->records, rp);
+        ptr = sf_list_push(&record->records, rp);
     } else {
-        record_point_t *ptr = sf_list_nth(&record->records, record->nrecords);
+        ptr = sf_list_nth(&record->records, record->nrecords);
         *ptr = *rp;
     }
     ++record->nrecords;
+    return ptr;
 }
 
 
@@ -78,8 +70,6 @@ int record_init(struct record *record) {
     record->brush = NULL;
     record->nrecords = 0;
     record->play_pos = 0;
-    record->lastx = -1;
-    record->lasty = -1;
 
     sf_memzero(&def, sizeof(def));
     def.size = sizeof(record_point_t);
@@ -91,19 +81,29 @@ void record_destroy(struct record *record) {
     sf_list_destroy(&record->records);
 }
 
-void record_begin_plot(struct record *record) {
+void record_begin_plot(struct record *record, struct brush *brush) {
     record_point_t rp;
+
+    if (brush_cmp(record->brush, brush) != 0) {
+        rp.type = RECORD_SET_BRUSH;
+        rp.set_brush.brush = *brush;
+        record->brush = &(((record_point_t *) record_save(record, &rp))
+                         ->set_brush.brush);
+    }
 
     rp.type = RECORD_BEGIN_PLOT;
     record_save(record, &rp);
 }
 
-void record_plot(struct record *record, float x, float y) {
+void record_drawline(struct record *record, float x0, float y0,
+                     float x1, float y1) {
     record_point_t rp;
 
-    rp.type = RECORD_KEYPOINT;
-    rp.keypoint.x = x;
-    rp.keypoint.y = y;
+    rp.type = RECORD_DRAWLINE;
+    rp.drawline.x0 = x0;
+    rp.drawline.y0 = y0;
+    rp.drawline.x1 = x1;
+    rp.drawline.y1 = y1;
     record_save(record, &rp);
 }
 
@@ -111,14 +111,6 @@ void record_end_plot(struct record *record) {
     record_point_t rp;
 
     rp.type = RECORD_END_PLOT;
-    record_save(record, &rp);
-}
-
-void record_set_brush(struct record *record, struct brush *brush) {
-    record_point_t rp;
-
-    rp.type = RECORD_SET_BRUSH;
-    rp.set_brush.brush = *brush;
     record_save(record, &rp);
 }
 
@@ -149,6 +141,7 @@ void record_undo(struct record *record, struct canvas *canvas) {
     sf_list_iter_t iter;
     record_point_t *rp;
 
+    rp = sf_list_head(&record->records);
     if (record->nrecords == 0) {
         return;
     }
@@ -169,18 +162,20 @@ void record_undo(struct record *record, struct canvas *canvas) {
         return;
     }
 
+    /* the records always have a RECORD_SET_BRUSH record at the begining */
+    assert(i > 0);
     record->nrecords = i;
 
     if (record->nrecords) {
-        i = 0;
-        record->lastx = -1;
-        record->lasty = -1;
         sf_list_begin(&record->records, &iter);
 
-        do {
+        while (i--) {
             rp = sf_list_iter_elt(&iter);
             record_point_do(rp, record, canvas);
             sf_list_iter_next(&iter);
-        } while (i++ < record->nrecords);
+        }
     }
+}
+
+void record_redo(struct record *record, struct canvas *canvas) {
 }
