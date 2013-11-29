@@ -243,9 +243,12 @@ static void user_paint_panel_on_show(struct ui *ui)
 static void user_paint_panel_on_resize(struct ui *ui, int w, int h)
 {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
+
     ui_resize((struct ui *) &upp->canvas, w,  h);
     record_undo(&upp->record, &upp->canvas);
     record_redo(&upp->record, &upp->canvas);
+
+    ui_resize((struct ui *) &upp->urp, w,  h);
 
     ui_resize((struct ui *) &upp->toolbox, w, upp->toolbox.ui.area.h);
     ui_move((struct ui *) &upp->toolbox, 0,

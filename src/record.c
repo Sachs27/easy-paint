@@ -147,7 +147,7 @@ int record_replay(struct record *record, struct canvas *canvas, int step)
     }
 
     if (record->nrecords <= 0 || record->play_pos >= record->nrecords) {
-        return 0 ;
+        return 0;
     }
 
     i = 0;
@@ -169,7 +169,8 @@ int record_replay(struct record *record, struct canvas *canvas, int step)
         }
         record_point_do(rp, record, canvas);
         ++record->play_pos;
-    } while (step && sf_list_iter_next(&iter));
+    } while (step && record->play_pos < record->nrecords
+             && sf_list_iter_next(&iter));
 
     return nreplayed;
 }
