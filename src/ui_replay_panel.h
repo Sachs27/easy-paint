@@ -23,7 +23,7 @@ struct ui_replay_panel {
 
     int                 isreplay;
     int                 isstop;
-    int                 replay_speed;
+    double              dt;
 
     struct ui_toolbox   toolbox;
 
@@ -44,6 +44,12 @@ struct ui_replay_panel {
 
 int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
                          struct resource_manager *rm);
+
+void ui_replay_panel_set_record(struct ui_replay_panel *urp, struct record *r);
+
+void ui_replay_panel_play(struct ui_replay_panel *urp);
+
+void ui_replay_panel_pause(struct ui_replay_panel *urp);
 
 
 #endif /* UI_REPLAY_PANEL_H */

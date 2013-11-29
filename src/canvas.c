@@ -128,6 +128,7 @@ void canvas_destroy(struct canvas *canvas) {
 void canvas_clear(struct canvas *canvas) {
     canvas->iscontent_inited = SF_FALSE;
     canvas->isbuffet_inited = SF_FALSE;
+    canvas->isploting = SF_FALSE;
 }
 
 void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,

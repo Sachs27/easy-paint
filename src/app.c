@@ -34,8 +34,10 @@ static void app_change_stage(int stage) {
         ui_show((struct ui *) &g_app.upp);
         break;
     case APP_STAGE_TEACHING:
+#if 0
         ui_hide((struct ui *) &g_app.upp);
         ui_show((struct ui *) &g_app.ulp);
+#endif
         break;
     }
 }

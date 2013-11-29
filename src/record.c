@@ -27,11 +27,13 @@ struct record_point {
     };
 };
 
-static void record_point_destroy(void *elt) {
+static void record_point_destroy(void *elt)
+{
 }
 
 static void record_point_do(struct record_point *rp, struct record *record,
-                            struct canvas *canvas) {
+                            struct canvas *canvas)
+{
     switch (rp->type) {
     case RECORD_BEGIN_PLOT:
         canvas_begin_plot(canvas);
@@ -50,7 +52,8 @@ static void record_point_do(struct record_point *rp, struct record *record,
 }
 
 static struct record_point *record_save(struct record *record,
-                                        struct record_point *rp) {
+                                        struct record_point *rp)
+{
     struct record_point *ptr;
     if (record->nrecords == sf_list_cnt(&record->records)) {
         ptr = sf_list_push(&record->records, rp);
@@ -62,14 +65,16 @@ static struct record_point *record_save(struct record *record,
     return ptr;
 }
 
-static void clean_cache(struct record *record) {
+static void clean_cache(struct record *record)
+{
     while (record->nrecords < sf_list_cnt(&record->records)) {
         sf_list_pop(&record->records);
     }
 }
 
 
-int record_init(struct record *record) {
+int record_init(struct record *record)
+{
     sf_list_def_t def;
 
     record->version = RECORD_VERSION;
@@ -83,11 +88,13 @@ int record_init(struct record *record) {
     return sf_list_init(&record->records, &def);
 }
 
-void record_destroy(struct record *record) {
+void record_destroy(struct record *record)
+{
     sf_list_destroy(&record->records);
 }
 
-void record_begin_plot(struct record *record, struct brush *brush) {
+void record_begin_plot(struct record *record, struct brush *brush)
+{
     struct record_point rp;
 
     clean_cache(record);
@@ -104,7 +111,8 @@ void record_begin_plot(struct record *record, struct brush *brush) {
 }
 
 void record_drawline(struct record *record, float x0, float y0,
-                     float x1, float y1) {
+                     float x1, float y1)
+{
     struct record_point rp;
 
     clean_cache(record);
@@ -117,7 +125,8 @@ void record_drawline(struct record *record, float x0, float y0,
     record_save(record, &rp);
 }
 
-void record_end_plot(struct record *record) {
+void record_end_plot(struct record *record)
+{
     struct record_point rp;
 
     clean_cache(record);
@@ -126,29 +135,68 @@ void record_end_plot(struct record *record) {
     record_save(record, &rp);
 }
 
-void record_playback(struct record *record, struct canvas *canvas) {
+int record_replay(struct record *record, struct canvas *canvas, int step)
+{
+    int nreplayed = 0;
+    int i = record->play_pos;
     sf_list_iter_t  iter;
     struct record_point *rp;
-    int i = record->play_pos;
 
-    if (record->nrecords <= 0 || i >= record->nrecords) {
-        return;
+    if (step == 0) {
+        step = -1;
     }
 
+    if (record->nrecords <= 0 || record->play_pos >= record->nrecords) {
+        return 0 ;
+    }
+
+    i = 0;
     sf_list_begin(&record->records, &iter);
 
-    while (i-- && sf_list_iter_next(&iter)) /* void */;
+    while (i < record->play_pos && sf_list_iter_next(&iter)) {
+        ++i;
+    }
 
-    assert(i == -1);
+    if (i == 0) {
+        canvas_clear(canvas);
+    }
 
     do {
         rp = sf_list_iter_elt(&iter);
+        if (rp->type == RECORD_DRAWLINE) {
+            --step;
+            ++nreplayed;
+        }
         record_point_do(rp, record, canvas);
         ++record->play_pos;
-    } while (sf_list_iter_next(&iter));
+    } while (step && sf_list_iter_next(&iter));
+
+    return nreplayed;
 }
 
-void record_undo(struct record *record, struct canvas *canvas) {
+int record_canundo(struct record *record)
+{
+    int i = 0;
+    sf_list_iter_t iter;
+    struct record_point *rp;
+
+    if (record->nrecords == 0) {
+        return 0;
+    }
+
+    sf_list_begin(&record->records, &iter);
+    do {
+        rp = sf_list_iter_elt(&iter);
+        if (rp->type == RECORD_BEGIN_PLOT) {
+            return 1;
+        }
+    } while (++i < record->nrecords && sf_list_iter_next(&iter));
+
+    return 0;
+}
+
+void record_undo(struct record *record, struct canvas *canvas)
+{
     int i;
     sf_list_iter_t iter;
     struct record_point *rp;
@@ -164,6 +212,7 @@ void record_undo(struct record *record, struct canvas *canvas) {
         --i;
     }
 
+    /* search for the last RECORD_BEGIN_PLOT */
     do {
         rp = sf_list_iter_elt(&iter);
         --i;
@@ -177,6 +226,8 @@ void record_undo(struct record *record, struct canvas *canvas) {
     assert(i > 0);
     record->nrecords = i;
 
+    canvas_clear(canvas);
+
     sf_list_begin(&record->records, &iter);
 
     do {
@@ -186,7 +237,31 @@ void record_undo(struct record *record, struct canvas *canvas) {
     } while (--i);
 }
 
-void record_redo(struct record *record, struct canvas *canvas) {
+int record_canredo(struct record *record)
+{
+    int i;
+    sf_list_iter_t iter;
+    struct record_point *rp;
+
+    i = sf_list_cnt(&record->records);
+    if (i == 0 || i <= record->nrecords) {
+        return 0;
+    }
+
+    sf_list_rbegin(&record->records, &iter);
+    --i;
+    do {
+        rp = sf_list_iter_elt(&iter);
+        if (rp->type == RECORD_END_PLOT) {
+            return 1;
+        }
+    } while (--i >= record->nrecords && sf_list_iter_next(&iter));
+
+    return 0;
+}
+
+void record_redo(struct record *record, struct canvas *canvas)
+{
     uint32_t i;
     sf_list_iter_t iter;
     sf_list_iter_t tmp;
@@ -221,4 +296,9 @@ void record_redo(struct record *record, struct canvas *canvas) {
         sf_list_iter_next(&iter);
         ++record->nrecords;
     }
+}
+
+void record_reset(struct record *record)
+{
+    record->play_pos = 0;
 }

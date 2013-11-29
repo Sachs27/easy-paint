@@ -11,6 +11,7 @@
 #include "ui_toolbox.h"
 #include "ui_imagebox.h"
 #include "ui_color_picker.h"
+#include "ui_replay_panel.h"
 
 struct resource_manager;
 
@@ -20,6 +21,8 @@ struct user_paint_panel {
                                          * the first element of the struct  */
     struct canvas           canvas;
     struct record           record;
+    int                     isplaying;
+    struct ui_replay_panel  urp;
 
     struct ui_color_picker  color_picker;
     struct ui_toolbox       toolbox;
@@ -31,6 +34,9 @@ struct user_paint_panel {
     struct ui_imagebox      redo;
 
     struct ui_imagebox      brush;
+
+    struct texture         *replay_image;
+    struct ui_imagebox      replay;
 
     struct ui_toolbox       brushbox;
 
