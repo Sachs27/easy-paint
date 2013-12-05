@@ -4,6 +4,7 @@
 
 #include <sf/list.h>
 
+#include "vector.h"
 #include "window.h"
 
 
@@ -11,11 +12,6 @@ enum key_state {
     KEY_RELEASE,
     KEY_PRESS,
     KEY_REPEAT,
-};
-
-struct im_mouse_position {
-    int x;
-    int y;
 };
 
 enum key {
@@ -39,9 +35,9 @@ enum key {
 
 
 struct input_manager {
-    sf_list_t mb_left_buffer;   /* elt: struct im_mouse_position */
+    sf_list_t mb_left_buffer;   /* elt: struct ivec2 */
 
-    struct im_mouse_position mouse;
+    struct ivec2 mouse;
 
     enum key_state keys[NKEYS];
 

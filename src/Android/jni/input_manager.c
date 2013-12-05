@@ -18,7 +18,7 @@ struct input_manager *input_manager_create(struct window *win) {
 
     input_manager = sf_calloc(sizeof(*input_manager));
     sf_memzero(&def, sizeof(def));
-    def.size = sizeof(struct im_mouse_position);
+    def.size = sizeof(struct ivec2);
     sf_list_init(&input_manager->mb_left_buffer, &def);
     input_manager->win            = win;
 
@@ -42,7 +42,7 @@ void input_manager_touch_down(int x, int y) {
         input_manager->keys[KEY_MB_LEFT] = KEY_PRESS;
     } else if (im->keys[KEY_MB_LEFT] == KEY_PRESS
         && (x != im->mouse.x || y != im->mouse.y)) {
-        struct im_mouse_position pos;
+        struct ivec2 pos;
         pos.x = x;
         pos.y = y;
         sf_list_push(&im->mb_left_buffer, &pos);

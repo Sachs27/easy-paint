@@ -191,17 +191,14 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
         int mx, my;
 
         if (sf_list_begin(buf, &iter)) do {
-            struct im_mouse_position *pos = sf_list_iter_elt(&iter);
+            struct ivec2 *pos = sf_list_iter_elt(&iter);
             canvas_screen_to_canvas(canvas, pos->x, pos->y, &mx, &my);
 
-            if (sf_rect_iscontain(&canvas->viewport, mx, my)
-                && (mx != canvas_lastx || my != canvas_lasty)) {
-                if (canvas_lastx >= 0) {
-                    brush_drawline(upp->cur_brush, canvas,
-                                   canvas_lastx, canvas_lasty, mx, my);
-                    record_drawline(&upp->record, canvas_lastx, canvas_lasty,
-                                    mx, my);
-                }
+            if (mx != canvas_lastx || my != canvas_lasty) {
+                brush_drawline(upp->cur_brush, canvas,
+                               canvas_lastx, canvas_lasty, mx, my);
+                record_drawline(&upp->record, canvas_lastx, canvas_lasty,
+                                mx, my);
                 canvas_lastx = mx;
                 canvas_lasty = my;
             }
