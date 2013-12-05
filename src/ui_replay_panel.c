@@ -2,7 +2,7 @@
 
 #include "ui_replay_panel.h"
 #include "system.h"
-#include "resource_manager.h"
+#include "resmgr.h"
 
 
 #define TOOLBOX_HEIGHT 48
@@ -21,8 +21,10 @@ static void ui_replay_panel_reset(struct ui_replay_panel *urp) {
 
     if (urp->isstop == 0) {
         urp->isstop = 1;
-        record_reset(urp->record);
-        while (record_replay(urp->record, &urp->canvas, 0)) /* void */;
+        if (urp->record) {
+            record_reset(urp->record);
+            while (record_replay(urp->record, &urp->canvas, 0)) /* void */;
+        }
     }
 }
 
@@ -64,8 +66,7 @@ static int rewind_on_press(struct ui *ui, int x, int y) {
     if (urp->record_id < 0) {
         urp->record_id += RESOURCE_NRECORDS;
     }
-    urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
-                                       urp->record_id);
+    urp->record = rm_load_record(NULL);
     canvas_clear(&urp->canvas);
 #if 0
     record_adjust(urp->record, 0, 0,
@@ -88,8 +89,7 @@ static int fastforward_on_press(struct ui *ui, int x, int y) {
     }
 #endif
     urp->record_id = (urp->record_id + 1) % RESOURCE_NRECORDS;
-    urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
-                                       urp->record_id);
+    urp->record = rm_load_record(NULL);
     canvas_clear(&urp->canvas);
 #if 0
     record_adjust(urp->record, 0, 0,
@@ -134,17 +134,17 @@ static void ui_replay_panel_on_resize(struct ui *ui, int w, int h) {
 #if 0
     record_adjust(urp->record, 0, 0, w, h);
 #endif
-    record_reset(urp->record);
+    if (urp->record) {
+        record_reset(urp->record);
+    }
 
     ui_replay_panel_reset(urp);
 }
 
 
-int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
-                         struct resource_manager *rm) {
+int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
+{
     ui_init((struct ui *) urp, w, h);
-
-    urp->rm = rm;
 
     urp->isreplay = 0;
     urp->isstop = 1;
@@ -156,28 +156,22 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
     ui_add_child((struct ui *) urp, (struct ui *) &urp->canvas, 0, 0);
 
     urp->record_id = 0;
-    urp->record = resource_manager_get(urp->rm, RESOURCE_RECORD,
-                                       urp->record_id);
+    urp->record = rm_load_record(NULL);
 
-    urp->stop_image = resource_manager_get(rm, RESOURCE_TEXTURE,
-                                           RESOURCE_TEXTURE_ICON_STOP);
+    urp->stop_image = rm_load_texture(RES_TEXTURE_ICON_STOP);
     ui_imagebox_init(&urp->stop, 0, 0, urp->stop_image);
     UI_CALLBACK(&urp->stop, press, stop_on_press);
 
-    urp->pause_image = resource_manager_get(rm, RESOURCE_TEXTURE,
-                                            RESOURCE_TEXTURE_ICON_PAUSE);
-    urp->play_image = resource_manager_get(rm, RESOURCE_TEXTURE,
-                                           RESOURCE_TEXTURE_ICON_PLAY);
+    urp->pause_image = rm_load_texture(RES_TEXTURE_ICON_PAUSE);
+    urp->play_image = rm_load_texture(RES_TEXTURE_ICON_PLAY);
     ui_imagebox_init(&urp->replay, 0, 0, urp->play_image);
     UI_CALLBACK(&urp->replay, press, replay_on_press);
 
-    urp->fastforward_image = resource_manager_get(
-        rm, RESOURCE_TEXTURE, RESOURCE_TEXTURE_ICON_FASTFORWARD);
+    urp->fastforward_image = rm_load_texture(RES_TEXTURE_ICON_FASTFORWARD);
     ui_imagebox_init(&urp->fastforward, 0, 0, urp->fastforward_image);
     UI_CALLBACK(&urp->fastforward, press, fastforward_on_press);
 
-    urp->rewind_image = resource_manager_get(rm, RESOURCE_TEXTURE,
-                                             RESOURCE_TEXTURE_ICON_REWIND);
+    urp->rewind_image = rm_load_texture(RES_TEXTURE_ICON_REWIND);
     ui_imagebox_init(&urp->rewind, 0, 0, urp->rewind_image);
     UI_CALLBACK(&urp->rewind, press, rewind_on_press);
 

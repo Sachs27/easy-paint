@@ -7,8 +7,8 @@ add_definitions(-g -Wall -DGLEW_STATIC)
 include_directories(external/sf/include)
 add_subdirectory(external/sf)
 
-include_directories(external/libzip)
-add_subdirectory(external/libzip)
+include_directories(external/libzip-0.11.1/lib)
+add_subdirectory(external/libzip-0.11.1/lib)
 
 include_directories(external/libpng)
 add_subdirectory(external/libpng)

@@ -12,7 +12,7 @@
 #include "ui_imagebox.h"
 #include "ui_menu.h"
 #include "texture.h"
-#include "resource_manager.h"
+#include "resmgr.h"
 
 
 struct app g_app;
@@ -65,42 +65,36 @@ int app_init(const char *rootpath) {
     }
     g_app.inited = SF_TRUE;
 
-    resource_manager_init(&g_app.rm, rootpath);
+    rm_init(rootpath, rootpath);
+
     renderer2d_init(&g_app.renderer2d, g_app.window->w, g_app.window->h);
     ui_manager_init(&g_app.uim);
 
     ui_init(&g_app.root, g_app.window->w, g_app.window->h);
 
-    user_paint_panel_init(&g_app.upp, g_app.window->w, g_app.window->h,
-                          &g_app.rm);
+    user_paint_panel_init(&g_app.upp, g_app.window->w, g_app.window->h);
     ui_add_child(&g_app.root, (struct ui *) &g_app.upp, 0, 0);
 
-    user_learn_panel_init(&g_app.ulp, g_app.window->w, g_app.window->h,
-                          &g_app.rm);
+    user_learn_panel_init(&g_app.ulp, g_app.window->w, g_app.window->h);
     ui_add_child(&g_app.root, (struct ui *) &g_app.ulp, 0, 0);
 
     ui_imagebox_init(&g_app.menuicon, 0, 0,
-                     resource_manager_get(&g_app.rm, RESOURCE_TEXTURE,
-                     RESOURCE_TEXTURE_ICON_PARENT));
+                     rm_load_texture(RES_TEXTURE_ICON_PARENT));
     UI_CALLBACK(&g_app.menuicon, press, menuicon_on_press);
     ui_add_child(&g_app.root, (struct ui *) &g_app.menuicon,
                  0, g_app.window->h - g_app.menuicon.ui.area.h);
 
     ui_imagebox_init(&g_app.logo, 0, 0,
-                     resource_manager_get(&g_app.rm, RESOURCE_TEXTURE,
-                     RESOURCE_TEXTURE_ICON_LOGO));
+                     rm_load_texture(RES_TEXTURE_ICON_LOGO));
 
     ui_imagebox_init(&g_app.label1, 0, 0,
-                     resource_manager_get(&g_app.rm, RESOURCE_TEXTURE,
-                     RESOURCE_TEXTURE_ICON_LABEL1));
+                     rm_load_texture(RES_TEXTURE_ICON_LABEL1));
 
     ui_imagebox_init(&g_app.label2, 0, 0,
-                     resource_manager_get(&g_app.rm, RESOURCE_TEXTURE,
-                     RESOURCE_TEXTURE_ICON_LABEL2));
+                     rm_load_texture(RES_TEXTURE_ICON_LABEL2));
 
     ui_imagebox_init(&g_app.label3, 0, 0,
-                     resource_manager_get(&g_app.rm, RESOURCE_TEXTURE,
-                     RESOURCE_TEXTURE_ICON_LABEL3));
+                     rm_load_texture(RES_TEXTURE_ICON_LABEL3));
 
     ui_menu_init(&g_app.menu, 256, g_app.window->h);
     UI_CALLBACK(&g_app.menu, press, menu_on_press);
@@ -143,10 +137,10 @@ void app_destory(void) {
     }
 
     ui_destroy(&g_app.root);
-    resource_manager_destroy(&g_app.rm);
     ui_manager_destroy(&g_app.uim);
     renderer2d_destroy(&g_app.renderer2d);
 
+    rm_term();
     input_manager_destroy();
     window_destroy();
 

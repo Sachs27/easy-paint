@@ -18,8 +18,7 @@ struct user_learn_panel {
 };
 
 
-int user_learn_panel_init(struct user_learn_panel *ulp, int w, int h,
-                          struct resource_manager *rm);
+int user_learn_panel_init(struct user_learn_panel *ulp, int w, int h);
 
 
 #endif /* USER_LEARN_PANEL_H */

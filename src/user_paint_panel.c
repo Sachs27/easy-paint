@@ -5,7 +5,7 @@
 
 #include "user_paint_panel.h"
 #include "system.h"
-#include "resource_manager.h"
+#include "resmgr.h"
 
 
 #define TOOLBOX_HEIGHT 48
@@ -290,26 +290,22 @@ static void user_paint_panel_on_destroy(struct ui *ui)
     record_destroy(&upp->record);
 }
 
-int user_paint_panel_init(struct user_paint_panel *upp, int w, int h,
-                          struct resource_manager *rm)
+int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
 {
     ui_init(&upp->ui, w, h);
 
     brush_init(&upp->brush_pen, BRUSH_PEN);
-    upp->brush_pen_image = resource_manager_get(rm, RESOURCE_TEXTURE,
-                                                RESOURCE_TEXTURE_ICON_PEN);
+    upp->brush_pen_image = rm_load_texture(RES_TEXTURE_ICON_PEN);
     ui_imagebox_init(&upp->brush_pen_icon, 0, 0, upp->brush_pen_image);
     UI_CALLBACK(&upp->brush_pen_icon, press, brush_pen_on_press);
 
     brush_init(&upp->brush_pencil, BRUSH_PENCIL);
-    upp->brush_pencil_image = resource_manager_get(
-        rm, RESOURCE_TEXTURE, RESOURCE_TEXTURE_ICON_PENCIL);
+    upp->brush_pencil_image = rm_load_texture(RES_TEXTURE_ICON_PENCIL);
     ui_imagebox_init(&upp->brush_pencil_icon, 0, 0, upp->brush_pencil_image);
     UI_CALLBACK(&upp->brush_pencil_icon, press, brush_pencil_on_press);
 
     brush_init(&upp->brush_eraser, BRUSH_ERASER);
-    upp->brush_eraser_image = resource_manager_get(
-        rm, RESOURCE_TEXTURE, RESOURCE_TEXTURE_ICON_ERASER);
+    upp->brush_eraser_image = rm_load_texture(RES_TEXTURE_ICON_ERASER);
     ui_imagebox_init(&upp->brush_eraser_icon, 0, 0, upp->brush_eraser_image);
     UI_CALLBACK(&upp->brush_eraser_icon, press, brush_eraser_on_press);
 
@@ -323,17 +319,15 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h,
 
     record_init(&upp->record);
 
-    ui_replay_panel_init(&upp->urp, w, h, rm);
+    ui_replay_panel_init(&upp->urp, w, h);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->urp, 0, 0);
 
-    upp->undo_image = resource_manager_get(rm, RESOURCE_TEXTURE,
-                                           RESOURCE_TEXTURE_ICON_UNDO);
+    upp->undo_image = rm_load_texture(RES_TEXTURE_ICON_UNDO);
     ui_imagebox_init(&upp->undo, 0, 0, upp->undo_image);
     UI_CALLBACK(&upp->undo, press, undo_on_press);
     UI_CALLBACK(&upp->undo, render, undo_on_render);
 
-    upp->redo_image = resource_manager_get(rm, RESOURCE_TEXTURE,
-                                           RESOURCE_TEXTURE_ICON_REDO);
+    upp->redo_image = rm_load_texture(RES_TEXTURE_ICON_REDO);
     ui_imagebox_init(&upp->redo, 0, 0, upp->redo_image);
     UI_CALLBACK(&upp->redo, press, redo_on_press);
     UI_CALLBACK(&upp->redo, render, redo_on_render);
@@ -341,8 +335,7 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h,
     ui_imagebox_init(&upp->brush, 0, 0, upp->brush_pen_image);
     UI_CALLBACK(&upp->brush, press, brush_on_press);
 
-    upp->replay_image = resource_manager_get(rm, RESOURCE_TEXTURE,
-                                             RESOURCE_TEXTURE_ICON_PLAY);
+    upp->replay_image = rm_load_texture(RES_TEXTURE_ICON_PLAY);
     ui_imagebox_init(&upp->replay, 0, 0, upp->replay_image);
     UI_CALLBACK(&upp->replay, press, replay_on_press);
 

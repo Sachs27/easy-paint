@@ -58,8 +58,7 @@ struct user_paint_panel {
 };
 
 
-int user_paint_panel_init(struct user_paint_panel *upp, int w, int h,
-                          struct resource_manager *rm);
+int user_paint_panel_init(struct user_paint_panel *upp, int w, int h);
 
 
 #endif /* USER_PAINT_PANEL_H */

@@ -14,7 +14,6 @@ struct resource_manager;
 struct ui_replay_panel {
     struct ui           ui;             /* inherit from ui, so this must be
                                          * the first element of the struct  */
-    struct resource_manager    *rm;
 
     struct canvas       canvas;
 
@@ -42,8 +41,7 @@ struct ui_replay_panel {
 };
 
 
-int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h,
-                         struct resource_manager *rm);
+int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h);
 
 void ui_replay_panel_set_record(struct ui_replay_panel *urp, struct record *r);
 

@@ -11,8 +11,10 @@
 #include <zip.h>
 
 #include <sf/utils.h>
+#include <sf/log.h>
 
 #include "texture.h"
+#include "filesystem.h"
 
 
 struct texture_inner {
@@ -23,17 +25,14 @@ struct texture_inner {
     GLvoid *pixels;
 };
 
-static struct zip_file *png_zip_read_file = NULL;
+static struct fs_file *png_read_file = NULL;
 
-static void png_zip_read(png_structp png_ptr, png_bytep data,
-                         png_size_t length) {
-    zip_fread(png_zip_read_file, data, length);
+static void png_read_func(png_structp png_ptr, png_bytep data,
+                          png_size_t length) {
+    fs_file_read(png_read_file, data, length);
 }
 
-static int readpng(struct texture_inner *tex_inner, struct zip *archive,
-                   const char *filename) {
-    FILE               *raw_file;
-    struct zip_file    *zip_file;
+static int readpng(struct texture_inner *tex_inner, const char *filename) {
     unsigned char       sig[8];
     png_structp         png;
     png_infop           info;
@@ -42,68 +41,40 @@ static int readpng(struct texture_inner *tex_inner, struct zip *archive,
     int                 rowbytes;
     png_bytep          *row_pointers;
     int                 i;
+    struct fs_file      file;
 
-    if (archive) {
-        zip_file = zip_fopen(archive, filename, 0);
-        if (!zip_file) {
-            return -1;
-        }
-        png_zip_read_file = zip_file;
-    } else {
-        raw_file = fopen(filename, "rb");
-        if (!raw_file) {
-            return -1;
-        }
+    if (fs_file_open(&file, filename, "r") != SF_OK) {
+        return -1;
     }
+    png_read_file = &file;
 
-#define READ_BYTE(buf, n) do {          \
-    if (archive) {                      \
-        zip_fread(zip_file, buf, n);    \
-    } else {                            \
-        fread(buf, 1, n, raw_file);     \
-    }                                   \
-} while (0)
-
-#define CLOSE() do {                \
-    if (archive) {                  \
-        zip_fclose(zip_file);       \
-        png_zip_read_file = NULL;   \
-    } else {                        \
-        fclose(raw_file);           \
-    }                               \
-} while (0)
-
-    READ_BYTE(sig, 8);
+    fs_file_read(&file, sig, 8);
 
     if (png_sig_cmp(sig, 0, 8)) {
-        CLOSE();
+        fs_file_close(&file);
         return -1;
     }
 
     png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png) {
-        CLOSE();
+        fs_file_close(&file);
         return -1;
     }
 
     info = png_create_info_struct(png);
     if (!info) {
         png_destroy_read_struct(&png, NULL, NULL);
-        CLOSE();
+        fs_file_close(&file);
         return -1;
     }
 
     if (setjmp(png_jmpbuf(png))) {
         png_destroy_read_struct(&png, &info, NULL);
-        CLOSE();
+        fs_file_close(&file);
         return -1;
     }
 
-    if (archive) {
-        png_set_read_fn(png, NULL, png_zip_read);
-    } else {
-        png_init_io(png, raw_file);
-    }
+    png_set_read_fn(png, NULL, png_read_func);
 
     png_set_sig_bytes(png, 8);
     png_read_info(png, info);
@@ -112,7 +83,7 @@ static int readpng(struct texture_inner *tex_inner, struct zip *archive,
 
     if (color_type != PNG_COLOR_TYPE_RGBA) {
         png_destroy_read_struct(&png, &info, NULL);
-        CLOSE();
+        fs_file_close(&file);
         return -1;
     }
 
@@ -122,13 +93,13 @@ static int readpng(struct texture_inner *tex_inner, struct zip *archive,
     tex_inner->pixels = sf_alloc(rowbytes * tex_inner->height);
     if (!tex_inner->pixels) {
         png_destroy_read_struct(&png, &info, NULL);
-        CLOSE();
+        fs_file_close(&file);
         return -1;
     }
     row_pointers = sf_calloc(tex_inner->height * sizeof(png_bytep));
     if (!row_pointers) {
         png_destroy_read_struct(&png, &info, NULL);
-        CLOSE();
+        fs_file_close(&file);
         sf_free(tex_inner->pixels);
         return -1;
     }
@@ -140,8 +111,9 @@ static int readpng(struct texture_inner *tex_inner, struct zip *archive,
     tex_inner->format = GL_RGBA;
     tex_inner->type = GL_UNSIGNED_BYTE;
 
+    png_destroy_read_struct(&png, &info, NULL);
     sf_free(row_pointers);
-    CLOSE();
+    fs_file_close(&file);
     return 0;
 }
 #if 0
@@ -202,15 +174,14 @@ static void texture_inner_uninit(struct texture_inner *tex_inner) {
 }
 #endif
 
-int texture_load_2d_zip(struct texture *tex, struct zip *archive,
-                        const char *pathname) {
+int texture_load_2d(struct texture *tex, const char *pathname) {
     GLenum err;
     struct texture_inner tex_inner;
 
     tex->type = GL_TEXTURE_2D;
     glGenTextures(1, &tex->tid);
 
-    if (readpng(&tex_inner, archive, pathname) != 0) {
+    if (readpng(&tex_inner, pathname) != 0) {
         goto texture_load_failed;
     }
 
@@ -234,13 +205,9 @@ int texture_load_2d_zip(struct texture *tex, struct zip *archive,
     return 0;
 
 texture_load_failed:
-    fprintf(stderr, "Failed to load texture: %s.\n", pathname);
+    sf_log(SF_LOG_ERR, "failed to load texture: %s\n", pathname);
     texture_destroy(tex);
     return -1;
-}
-
-int texture_load_2d(struct texture *tex, const char *pathname) {
-    return texture_load_2d_zip(tex, NULL, pathname);
 }
 
 int texture_init_2d(struct texture *tex, int w, int h) {

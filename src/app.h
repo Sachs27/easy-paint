@@ -2,7 +2,6 @@
 #define APP_H
 
 
-#include "resource_manager.h"
 #include "user_paint_panel.h"
 #include "user_learn_panel.h"
 #include "ui_menu.h"
@@ -29,7 +28,6 @@ struct app {
     struct window              *window;
     struct input_manager       *im;
     struct renderer2d           renderer2d;
-    struct resource_manager     rm;
     struct ui_manager           uim;
 
 
