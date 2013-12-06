@@ -54,6 +54,10 @@ int rm_init(const char *res_path, const char *save_path)
 
     fs_cwd(origin_path, PATH_MAX);
 
+    if (!fs_is_file_exist(res_path)) {
+        fs_mkdir(res_path);
+    }
+
     if ((ret = fs_cd(res_path)) != SF_OK) {
         return ret;
     }
@@ -65,6 +69,9 @@ int rm_init(const char *res_path, const char *save_path)
     strcpy(rm.res_path, buf);
 
     fs_cd(origin_path);
+    if (!fs_is_file_exist(save_path)) {
+        fs_mkdir(save_path);
+    }
     if ((ret = fs_cd(save_path)) != SF_OK) {
         return ret;
     }

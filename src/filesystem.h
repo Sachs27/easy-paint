@@ -49,6 +49,10 @@ int fs_cd(const char *pathname);
 
 int fs_cwd(char *buf, size_t count);
 
+int fs_mkdir(const char *pathname);
+
+int fs_is_file_exist(const char *pathname);
+
 int fs_file_walker(int (*func)(int type, const char *filename, void *arg),
                    void *arg);
 

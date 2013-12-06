@@ -201,6 +201,38 @@ int fs_cwd(char *buf, size_t count)
                                   buf, count - 1);
 }
 
+static int is_cwd_zip(void)
+{
+    if (sf_list_cnt(&fs.directories)) {
+        struct directory *d;
+
+        d = sf_list_tail(&fs.directories);
+        if (d->iszip) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int fs_mkdir(const char *pathname)
+{
+    if (is_cwd_zip()) {
+        assert(0);
+    }
+
+    return mkdir(pathname, S_IRWXU);
+}
+
+int fs_is_file_exist(const char *pathname)
+{
+    if (is_cwd_zip()) {
+        assert(0);
+    }
+
+    return !access(pathname, F_OK);
+}
+
 static int get_zip_cwd(char *buf, size_t count)
 {
     sf_list_iter_t iter;
@@ -264,20 +296,6 @@ static int fs_cd_file_zip(struct directory *parent, const char *filename)
         sf_log(SF_LOG_ERR, "not a directory: %s", filename);
         return SF_ERR;
     }
-}
-
-static int is_cwd_zip(void)
-{
-    if (sf_list_cnt(&fs.directories)) {
-        struct directory *d;
-
-        d = sf_list_tail(&fs.directories);
-        if (d->iszip) {
-            return 1;
-        }
-    }
-
-    return 0;
 }
 
 static int fs_cd_file(const char *filename)
