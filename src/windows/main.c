@@ -13,6 +13,7 @@
 #include "../input_manager.h"
 #include "../renderer2d.h"
 #include "../ui.h"
+#include "../filesystem.h"
 
 static void on_glfw_error(int error, const char *desc) {
     return (void) fputs(desc, stderr);
@@ -70,7 +71,8 @@ static uint64_t sf_get_ticks(void) {
     return t.tv_sec * 1e9 + t.tv_nsec;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     uint64_t cur_tick, last_tick;
 
     atexit((void (*)(void)) sf_memcheck);
@@ -79,7 +81,11 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    app_init(argv[0]);
+    if (fs_init(argc, argv) != SF_OK) {
+        return -1;
+    }
+
+    app_init(".", "saves");
 
     app_on_resize(g_app.window, g_app.window->w, g_app.window->h);
 

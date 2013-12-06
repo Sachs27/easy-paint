@@ -59,13 +59,14 @@ static int menu_item_on_press(struct ui *ui, int x, int y) {
     return 0;
 }
 
-int app_init(const char *rootpath) {
+int app_init(const char *res_path, const char *save_path)
+{
     if (g_app.inited) {
         return 0;
     }
     g_app.inited = SF_TRUE;
 
-    rm_init(rootpath, rootpath);
+    rm_init(res_path, save_path);
 
     renderer2d_init(&g_app.renderer2d, g_app.window->w, g_app.window->h);
     ui_manager_init(&g_app.uim);

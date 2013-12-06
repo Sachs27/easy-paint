@@ -47,11 +47,14 @@ static struct resmgr {
 
 int rm_init(const char *res_path, const char *save_path)
 {
+    char origin_path[PATH_MAX];
     char buf[PATH_MAX];
     int ret = SF_OK;
     sf_list_def_t def;
 
-    if ((ret = fs_init(1, (char **) &res_path)) != SF_OK) {
+    fs_cwd(origin_path, PATH_MAX);
+
+    if ((ret = fs_cd(res_path)) != SF_OK) {
         return ret;
     }
 
@@ -60,11 +63,12 @@ int rm_init(const char *res_path, const char *save_path)
     fs_cwd(buf, PATH_MAX);
     rm.res_path = sf_pool_alloc(&rm.str_pool, strlen(buf) + 1);
     strcpy(rm.res_path, buf);
-#if 0
+
+    fs_cd(origin_path);
     if ((ret = fs_cd(save_path)) != SF_OK) {
         return ret;
     }
-#endif
+
     fs_cwd(buf, PATH_MAX);
     rm.save_path = sf_pool_alloc(&rm.str_pool, strlen(buf) + 1);
     strcpy(rm.save_path, buf);

@@ -45,7 +45,7 @@ struct app {
 };
 
 
-int app_init(const char *rootpath);
+int app_init(const char *res_path, const char *save_path);
 
 void app_destory(void);
 
