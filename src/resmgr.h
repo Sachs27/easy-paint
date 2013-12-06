@@ -37,7 +37,11 @@ struct texture *rm_load_texture(const char *filename);
 
 struct record *rm_load_record(const char *filename);
 
+struct record *rm_load_last_record(void);
+
 struct record *rm_load_user_define_record(const char *filename);
+
+int rm_save_last_record(void);
 
 int rm_save_user_define_record(const char *filename, struct record *r);
 

@@ -1,11 +1,16 @@
 #include <assert.h>
 
 #include <sf/utils.h>
+#include <sf/log.h>
 
 #include "record.h"
 #include "canvas.h"
 #include "brush.h"
+#include "filesystem.h"
 
+
+#define RECORD_SIG "EASYPAINTRECORD"
+#define RECORD_SIG_LEN 16
 
 enum record_point_type {
     RECORD_BEGIN_PLOT,
@@ -51,7 +56,7 @@ static void record_point_do(struct record_point *rp, struct record *record,
     }
 }
 
-static struct record_point *record_save(struct record *record,
+static struct record_point *record_push(struct record *record,
                                         struct record_point *rp)
 {
     struct record_point *ptr;
@@ -102,12 +107,12 @@ void record_begin_plot(struct record *record, struct brush *brush)
     if (brush_cmp(record->brush, brush) != 0) {
         rp.type = RECORD_SET_BRUSH;
         rp.set_brush.brush = *brush;
-        record->brush = &(((struct record_point *) record_save(record, &rp))
+        record->brush = &(((struct record_point *) record_push(record, &rp))
                          ->set_brush.brush);
     }
 
     rp.type = RECORD_BEGIN_PLOT;
-    record_save(record, &rp);
+    record_push(record, &rp);
 }
 
 void record_drawline(struct record *record, float x0, float y0,
@@ -122,7 +127,7 @@ void record_drawline(struct record *record, float x0, float y0,
     rp.drawline.y0 = y0;
     rp.drawline.x1 = x1;
     rp.drawline.y1 = y1;
-    record_save(record, &rp);
+    record_push(record, &rp);
 }
 
 void record_end_plot(struct record *record)
@@ -132,7 +137,7 @@ void record_end_plot(struct record *record)
     clean_cache(record);
 
     rp.type = RECORD_END_PLOT;
-    record_save(record, &rp);
+    record_push(record, &rp);
 }
 
 int record_replay(struct record *record, struct canvas *canvas, int step)
@@ -302,4 +307,123 @@ void record_redo(struct record *record, struct canvas *canvas)
 void record_reset(struct record *record)
 {
     record->play_pos = 0;
+}
+
+/*
+ * record file format:
+ *
+ * ---------------------
+ * |   0|   1|   2|   3|   (32 bit)
+ * ---------------------
+ * |  E |  A |  S |  Y |
+ * |  P |  A |  I |  N |
+ * |  T |  R |  E |  C |
+ * |  O |  R |  D | \0 |
+ * | version |type|.....
+ *
+ */
+int record_load(struct record *record, const char *filename)
+{
+    char sig[RECORD_SIG_LEN];
+    uint8_t type;
+    uint16_t version;
+    int ret;
+    struct fs_file fin;
+    struct brush brush;
+
+    if ((ret = fs_file_open(&fin, filename, "rb")) != SF_OK) {
+        return ret;
+    }
+
+    record_init(record);
+
+    fs_file_read(&fin, sig, RECORD_SIG_LEN);
+
+    if (strncmp(sig, RECORD_SIG, RECORD_SIG_LEN)) {
+        sf_log(SF_LOG_ERR, "failed to load record %s: not a record",
+               filename);
+        fs_file_close(&fin);
+        return SF_ERR;
+    }
+
+    fs_file_read(&fin, &version, sizeof(version));
+    if (version != RECORD_VERSION) {
+        sf_log(SF_LOG_ERR, "failed to load record %s: unknown version",
+               filename);
+        fs_file_close(&fin);
+        return SF_ERR;
+    }
+
+    while (fs_file_read(&fin, &type, sizeof(type))) {
+        float pos[4];
+
+        switch (type) {
+        case RECORD_BEGIN_PLOT:
+            /* correct record file must have set brush before begining plot */
+            record_begin_plot(record, &brush);
+            break;
+        case RECORD_DRAWLINE:
+            fs_file_read(&fin, pos, sizeof(pos));
+            record_drawline(record, pos[0], pos[1], pos[2], pos[3]);
+            break;
+        case RECORD_END_PLOT:
+            record_end_plot(record);
+            break;
+        case RECORD_SET_BRUSH:
+            fs_file_read(&fin, &brush, sizeof(brush));
+            break;
+        }
+    }
+
+    fs_file_close(&fin);
+    return SF_OK;
+}
+
+int record_save(struct record *record, const char *filename)
+{
+    int ret;
+    uint16_t version = RECORD_VERSION;
+    sf_list_iter_t iter;
+    uint32_t i = 0;
+    struct fs_file fout;
+
+    if (!sf_list_begin(&record->records, &iter)) {
+        return SF_OK;
+    }
+
+    if ((ret = fs_file_open(&fout, filename, "wb+")) != SF_OK) {
+        return ret;
+    }
+
+    /* sig */
+    fs_file_write(&fout, RECORD_SIG, RECORD_SIG_LEN);
+
+    /* version */
+    fs_file_write(&fout, &version, sizeof(version));
+
+    /* <type, data> pairs */
+    do {
+        uint8_t type;
+        float pos[4];
+        struct record_point *rp = sf_list_iter_elt(&iter);
+
+        type = rp->type;
+        fs_file_write(&fout, &type, sizeof(type));
+        switch (type) {
+        case RECORD_DRAWLINE:
+            pos[0] = rp->drawline.x0;
+            pos[1] = rp->drawline.y0;
+            pos[2] = rp->drawline.x1;
+            pos[3] = rp->drawline.y1;
+            fs_file_write(&fout, pos, sizeof(pos));
+            break;
+        case RECORD_SET_BRUSH:
+            fs_file_write(&fout, &rp->set_brush.brush, sizeof(struct brush));
+            break;
+        }
+    } while (++i < record->nrecords && sf_list_iter_next(&iter));
+
+    fs_file_close(&fout);
+
+    return SF_OK;
 }

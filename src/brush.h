@@ -19,8 +19,9 @@ typedef enum blend_mode {
 } blend_mode_t;
 
 struct brush {
-    float   color[4];
-    float   radius;
+    int   blend_mode;
+    float color[4];
+    float radius;
 };
 
 

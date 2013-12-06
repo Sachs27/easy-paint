@@ -20,8 +20,10 @@ struct user_paint_panel {
     struct ui           ui;             /* inherit from ui, so this must be
                                          * the first element of the struct  */
     struct canvas           canvas;
-    struct record           record;
+    struct record          *record;
     int                     isplaying;
+    int                     isresizing;
+    int                     isfirstframe;
     struct ui_replay_panel  urp;
 
     struct ui_color_picker  color_picker;

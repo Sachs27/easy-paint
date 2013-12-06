@@ -21,12 +21,24 @@ static void texture_slot_free(void *elt)
     texture_destroy(&ts->texture);
 }
 
+struct record_slot {
+    char *name;
+    struct record record;
+};
+
+static void record_slot_free(void *elt)
+{
+    struct record_slot *rs = elt;
+
+    record_destroy(&rs->record);
+}
+
 static struct resmgr {
     char *res_path;
     char *save_path;
 
-    sf_list_t textures;
-    sf_list_t records;
+    sf_list_t textures;     /* elt: struct texture_slot */
+    sf_list_t records;      /* elt: struct record_slot */
 
     sf_list_t user_define_records;
 
@@ -48,10 +60,11 @@ int rm_init(const char *res_path, const char *save_path)
     fs_cwd(buf, PATH_MAX);
     rm.res_path = sf_pool_alloc(&rm.str_pool, strlen(buf) + 1);
     strcpy(rm.res_path, buf);
-
+#if 0
     if ((ret = fs_cd(save_path)) != SF_OK) {
         return ret;
     }
+#endif
     fs_cwd(buf, PATH_MAX);
     rm.save_path = sf_pool_alloc(&rm.str_pool, strlen(buf) + 1);
     strcpy(rm.save_path, buf);
@@ -61,8 +74,8 @@ int rm_init(const char *res_path, const char *save_path)
     def.free = texture_slot_free;
     sf_list_init(&rm.textures, &def);
 
-    def.size = sizeof(struct record);
-    def.free = (void (*)(void *)) record_destroy;
+    def.size = sizeof(struct record_slot);
+    def.free = record_slot_free;
     sf_list_init(&rm.records, &def);
     sf_list_init(&rm.user_define_records, &def);
 
@@ -123,7 +136,60 @@ struct texture *rm_load_texture(const char *filename)
     return &ptr->texture;
 }
 
+static struct record_slot *find_record(const char *filename)
+{
+    sf_list_iter_t iter;
+
+    if (sf_list_begin(&rm.records, &iter)) do {
+        struct record_slot *rs = sf_list_iter_elt(&iter);
+
+        if (strcmp(rs->name, filename) == 0) {
+            return rs;
+        }
+    } while (sf_list_iter_next(&iter));
+
+    return NULL;
+}
+
 struct record *rm_load_record(const char *filename)
 {
     return NULL;
+}
+
+#define RM_LAST_RECORD_FILENAME "LastRecord.epr"
+
+struct record *rm_load_last_record(void)
+{
+    struct record_slot *ptr;
+    struct record_slot rs;
+
+    if ((ptr = find_record(RM_LAST_RECORD_FILENAME))) {
+        return &ptr->record;
+    }
+
+    ptr = sf_list_push(&rm.records, &rs);
+
+    ptr->name = sf_pool_alloc(&rm.str_pool, strlen(RM_LAST_RECORD_FILENAME) + 1);
+    strcpy(ptr->name, RM_LAST_RECORD_FILENAME);
+
+    fs_cd(rm.save_path);
+    if (record_load(&ptr->record, RM_LAST_RECORD_FILENAME) != SF_OK) {
+        record_init(&ptr->record);
+    }
+
+    assert(find_record(RM_LAST_RECORD_FILENAME) != NULL);
+
+    return &ptr->record;
+}
+
+int rm_save_last_record(void)
+{
+    struct record_slot *ptr;
+
+    ptr = find_record(RM_LAST_RECORD_FILENAME);
+    assert(ptr != NULL);
+
+    fs_cd(rm.save_path);
+
+    return record_save(&ptr->record, RM_LAST_RECORD_FILENAME);
 }

@@ -40,5 +40,9 @@ int record_canredo(struct record *record);
 
 void record_redo(struct record *record, struct canvas *canvas);
 
+int record_load(struct record *record, const char *filename);
+
+int record_save(struct record *record, const char *filename);
+
 
 #endif /* RECORD_H */

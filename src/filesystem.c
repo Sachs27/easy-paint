@@ -520,7 +520,7 @@ ssize_t fs_file_read(const struct fs_file *f, void *buf, size_t count)
     if (f->isinzip) {
         return zip_fread(f->zip_file, buf, count);
     } else {
-        return fread(buf, count, 1, f->file);
+        return fread(buf, 1, count, f->file);
     }
 }
 

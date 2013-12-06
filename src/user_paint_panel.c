@@ -25,7 +25,7 @@ static void undo_on_render(struct ui *ui, struct renderer2d *r)
         return;
     }
 
-    if (record_canundo(&upp->record)) {
+    if (record_canundo(upp->record)) {
         renderer2d_draw_texture(r, 0, 0, 0, 0, undo->image, 0, 0, 0, 0);
     } else {
         renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
@@ -44,8 +44,8 @@ static int undo_on_press(struct ui *ui, int x, int y)
         ui_hide(&upp->blank);
     }
 
-    if (record_canundo(&upp->record)) {
-        record_undo(&upp->record, &upp->canvas);
+    if (record_canundo(upp->record)) {
+        record_undo(upp->record, &upp->canvas);
     }
     return 0;
 }
@@ -60,7 +60,7 @@ static void redo_on_render(struct ui *ui, struct renderer2d *r)
         return;
     }
 
-    if (record_canredo(&upp->record)) {
+    if (record_canredo(upp->record)) {
         renderer2d_draw_texture(r, 0, 0, 0, 0, redo->image, 0, 0, 0, 0);
     } else {
         renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
@@ -79,8 +79,8 @@ static int redo_on_press(struct ui *ui, int x, int y)
         ui_hide(&upp->blank);
     }
 
-    if (record_canredo(&upp->record)) {
-        record_redo(&upp->record, &upp->canvas);
+    if (record_canredo(upp->record)) {
+        record_redo(upp->record, &upp->canvas);
     }
 
     return 0;
@@ -163,7 +163,7 @@ static int canvas_on_press(struct ui *ui, int x, int y)
 
     canvas_begin_plot(canvas);
 
-    record_begin_plot(&upp->record, upp->cur_brush);
+    record_begin_plot(upp->record, upp->cur_brush);
 
     return 0;
 }
@@ -175,7 +175,7 @@ static void canvas_on_release(struct ui *ui)
         sf_container_of(canvas, struct user_paint_panel, canvas);
 
     canvas_end_plot(canvas);
-    record_end_plot(&upp->record);
+    record_end_plot(upp->record);
 }
 
 static void canvas_on_update(struct ui *ui, struct input_manager *im,
@@ -197,7 +197,7 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
             if (mx != canvas_lastx || my != canvas_lasty) {
                 brush_drawline(upp->cur_brush, canvas,
                                canvas_lastx, canvas_lasty, mx, my);
-                record_drawline(&upp->record, canvas_lastx, canvas_lasty,
+                record_drawline(upp->record, canvas_lastx, canvas_lasty,
                                 mx, my);
                 canvas_lastx = mx;
                 canvas_lasty = my;
@@ -224,7 +224,7 @@ static int replay_on_press(struct ui *ui, int x, int y)
     ui_hide((struct ui *) &upp->blank);
 
     ui_show((struct ui *) &upp->urp);
-    ui_replay_panel_set_record(&upp->urp, &upp->record);
+    ui_replay_panel_set_record(&upp->urp, upp->record);
     ui_replay_panel_play(&upp->urp);
 
     return 0;
@@ -242,8 +242,7 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h)
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
 
     ui_resize((struct ui *) &upp->canvas, w,  h);
-    record_undo(&upp->record, &upp->canvas);
-    record_redo(&upp->record, &upp->canvas);
+    upp->isresizing = 1;
 
     ui_resize((struct ui *) &upp->urp, w,  h);
 
@@ -280,11 +279,28 @@ static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
     }
 }
 
-static void user_paint_panel_on_destroy(struct ui *ui)
+static void user_paint_panel_on_render(struct ui *ui, struct renderer2d *r)
 {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
 
-    record_destroy(&upp->record);
+    /*
+     * we can't undo at first frame because canvas need a frame to save
+     * current renderer
+     */
+    if (!upp->isfirstframe && upp->isresizing) {
+        record_undo(upp->record, &upp->canvas);
+        record_redo(upp->record, &upp->canvas);
+        upp->isresizing = 0;
+    }
+
+    upp->isfirstframe = 0;
+}
+
+static void user_paint_panel_on_destroy(struct ui *ui)
+{
+    /*struct user_paint_panel *upp = (struct user_paint_panel *) ui;*/
+
+    rm_save_last_record();
 }
 
 int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
@@ -314,7 +330,10 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     UI_CALLBACK(&upp->canvas, release, canvas_on_release);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->canvas, 0, 0);
 
-    record_init(&upp->record);
+    upp->record = rm_load_last_record();
+    upp->isplaying = 0;
+    upp->isresizing = 0;
+    upp->isfirstframe = 1;
 
     ui_replay_panel_init(&upp->urp, w, h);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->urp, 0, 0);
@@ -366,6 +385,7 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     UI_CALLBACK(upp, show, user_paint_panel_on_show);
     UI_CALLBACK(upp, resize, user_paint_panel_on_resize);
     UI_CALLBACK(upp, update, user_paint_panel_on_update);
+    UI_CALLBACK(upp, render, user_paint_panel_on_render);
     UI_CALLBACK(upp, destroy, user_paint_panel_on_destroy);
 
     return 0;
