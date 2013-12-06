@@ -1,6 +1,7 @@
 LOCAL_PATH := $(call my-dir)
 MY_SRC_PATH := ../..
 MY_ROOT_PATH := ../..
+MY_JNI_PATH := $(LOCAL_PATH)
 
 include $(CLEAR_VARS)
 
@@ -9,9 +10,9 @@ LOCAL_MODULE := easy-paint
 LOCAL_CFLAGS := -DANDROID -DGLES2
 
 LOCAL_C_INCLUDES :=						\
-	$(MY_ROOT_PATH)/external/sf/include	\
-	$(MY_ROOT_PATH)/external/libzip		\
-	$(MY_ROOT_PATH)/external/libpng
+	$(MY_JNI_PATH)/extern/sf/include	\
+	$(MY_JNI_PATH)/extern/libzip-0.11.1	\
+	$(MY_JNI_PATH)/extern/libpng
 
 LOCAL_SRC_FILES :=						\
 	input_manager.c						\
@@ -21,10 +22,11 @@ LOCAL_SRC_FILES :=						\
 	$(MY_SRC_PATH)/app.c				\
 	$(MY_SRC_PATH)/brush.c				\
 	$(MY_SRC_PATH)/canvas.c				\
+	$(MY_SRC_PATH)/filesystem.c			\
 	$(MY_SRC_PATH)/matrix.c				\
 	$(MY_SRC_PATH)/record.c				\
 	$(MY_SRC_PATH)/renderer2d.c			\
-	$(MY_SRC_PATH)/resource_manager.c	\
+	$(MY_SRC_PATH)/resmgr.c				\
 	$(MY_SRC_PATH)/sf_rect.c			\
 	$(MY_SRC_PATH)/system.c				\
 	$(MY_SRC_PATH)/texture.c			\
@@ -44,8 +46,8 @@ LOCAL_LDLIBS := -landroid -lEGL -lGLESv2 -llog -lz
 
 include $(BUILD_SHARED_LIBRARY)
 
-include $(MY_ROOT_PATH)/external/sf/Android.mk
-include $(MY_ROOT_PATH)/external/libzip/Android.mk
-include $(MY_ROOT_PATH)/external/libpng/Android.mk
+include $(MY_JNI_PATH)/extern/sf/Android.mk
+include $(MY_JNI_PATH)/extern/libzip-0.11.1/Android.mk
+include $(MY_JNI_PATH)/extern/libpng/Android.mk
 
 $(call import-module,android/native_app_glue)
