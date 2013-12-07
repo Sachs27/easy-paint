@@ -215,13 +215,44 @@ static int is_cwd_zip(void)
     return 0;
 }
 
+static int mkdir_rc(const char *pathname)
+{
+    int ret;
+    char buf[PATH_MAX];
+    char *ptr = NULL;
+    size_t len;
+
+    strncpy(buf, pathname, PATH_MAX);
+    len = strlen(buf);
+    if(buf[len - 1] == '/') {
+        buf[len - 1] = 0;
+    }
+
+    /*
+     * if pathname is absolutely, then pass the root.
+     * or pathname[0] must exist;
+     */
+    ptr = buf + 1;
+
+    while ((ptr = strchr(ptr, '/'))) {
+        *ptr = '\0';
+        if (!fs_is_file_exist(buf) && (ret = mkdir(buf, S_IRWXU))) {
+            return ret;
+        }
+        *ptr = '/';
+        ++ptr;
+    }
+
+    return mkdir(buf, S_IRWXU);
+}
+
 int fs_mkdir(const char *pathname)
 {
     if (is_cwd_zip()) {
         assert(0);
     }
 
-    return mkdir(pathname, S_IRWXU);
+    return mkdir_rc(pathname);
 }
 
 int fs_is_file_exist(const char *pathname)
@@ -344,7 +375,7 @@ int fs_cd(const char *pathname)
             sf_list_push(&fs.directories, &d);
             chdir("/");
             if (pathname[1] != '\0') {
-                fs_cd(pathname + 1);
+                return fs_cd(pathname + 1);
             }
         }
 #ifdef __WIN32__

@@ -57,10 +57,7 @@ int rm_init(const char *res_path, const char *save_path)
     if (!fs_is_file_exist(res_path)) {
         fs_mkdir(res_path);
     }
-
-    if ((ret = fs_cd(res_path)) != SF_OK) {
-        return ret;
-    }
+    fs_cd(res_path);
 
     sf_pool_init(&rm.str_pool, 0);
 
@@ -69,12 +66,11 @@ int rm_init(const char *res_path, const char *save_path)
     strcpy(rm.res_path, buf);
 
     fs_cd(origin_path);
+
     if (!fs_is_file_exist(save_path)) {
         fs_mkdir(save_path);
     }
-    if ((ret = fs_cd(save_path)) != SF_OK) {
-        return ret;
-    }
+    fs_cd(save_path);
 
     fs_cwd(buf, PATH_MAX);
     rm.save_path = sf_pool_alloc(&rm.str_pool, strlen(buf) + 1);

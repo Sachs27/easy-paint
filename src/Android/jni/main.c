@@ -109,6 +109,8 @@ static int engine_init_display(struct engine* engine) {
     // Initialize GL state.
     /*glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);*/
 
+    fs_init(1, &pkg_path);
+
     app_init(pkg_path, extern_path);
 
     app_on_resize(g_app.window, w, h);
@@ -233,7 +235,7 @@ void android_main(struct android_app* state) {
     sf_log_set_hook(on_sf_log);
 
     pkg_path = get_package_path(state);
-    extern_path = "/sdcard/saves";
+    extern_path = "/sdcard/EasyPaint/saves";
 
     // Make sure glue isn't stripped.
     app_dummy();
