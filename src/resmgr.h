@@ -15,6 +15,7 @@ struct record;
 #define RES_TEXTURE_ICON_ERASER "assets/icons/eraser.png"
 #define RES_TEXTURE_ICON_UNDO "assets/icons/undo.png"
 #define RES_TEXTURE_ICON_REDO "assets/icons/redo.png"
+#define RES_TEXTURE_ICON_SAVE "assets/icons/refresh.png"
 #define RES_TEXTURE_ICON_STOP "assets/icons/stop.png"
 #define RES_TEXTURE_ICON_PAUSE "assets/icons/pause.png"
 #define RES_TEXTURE_ICON_PLAY "assets/icons/play.png"
@@ -25,7 +26,7 @@ struct record;
 #define RES_TEXTURE_ICON_LABEL1 "assets/icons/label1.png"
 #define RES_TEXTURE_ICON_LABEL2 "assets/icons/label2.png"
 #define RES_TEXTURE_ICON_LABEL3 "assets/icons/label3.png"
-#define RESOURCE_NTEXTURES 15
+#define RESOURCE_NTEXTURES 16
 #define RESOURCE_NRECORDS 0
 
 
@@ -37,13 +38,30 @@ struct texture *rm_load_texture(const char *filename);
 
 struct record *rm_load_record(const char *filename);
 
+/*
+ * save the LastRecord.epr, if there is no one then will
+ * create a empty record
+ */
+int rm_save_last_record(void);
+
 struct record *rm_load_last_record(void);
+
+/*
+ * save the record r to the previous opened file
+ */
+int rm_save_user_define_record(struct record *r);
+
+/*
+ * save the record to another file
+ */
+int rm_save_as_user_define_record(struct record *r, const char *filename);
 
 struct record *rm_load_user_define_record(const char *filename);
 
-int rm_save_last_record(void);
+size_t rm_get_user_define_record_count(void);
 
-int rm_save_user_define_record(const char *filename, struct record *r);
+/* there are at least one record (LastRecord.epr) */
+size_t rm_get_all_user_define_records(struct record **records, size_t len);
 
 
 #endif /* RESMGR_H */

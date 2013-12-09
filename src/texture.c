@@ -78,7 +78,8 @@ static int readpng(struct texture_inner *tex_inner, const char *filename) {
 
     png_set_sig_bytes(png, 8);
     png_read_info(png, info);
-    png_get_IHDR(png, info, &tex_inner->width, &tex_inner->height,
+    png_get_IHDR(png, info, (png_uint_32 *) &tex_inner->width,
+                 (png_uint_32 *) &tex_inner->height,
                  &bit_depth, &color_type, NULL, NULL, NULL);
 
     if (color_type != PNG_COLOR_TYPE_RGBA) {

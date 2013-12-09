@@ -40,6 +40,9 @@ struct user_paint_panel {
     struct texture         *replay_image;
     struct ui_imagebox      replay;
 
+    struct texture         *save_image;
+    struct ui_imagebox      save;
+
     struct ui_toolbox       brushbox;
 
     struct brush            brush_pen;

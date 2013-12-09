@@ -2,6 +2,8 @@
 #define UI_REPLAY_PANEL_H
 
 
+#include <sf/array.h>
+
 #include "ui.h"
 #include "canvas.h"
 #include "record.h"
@@ -17,6 +19,7 @@ struct ui_replay_panel {
 
     struct canvas       canvas;
 
+    sf_array_t          records;
     struct record      *record;
     int                 record_id;
 

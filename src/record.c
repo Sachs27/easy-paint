@@ -387,10 +387,6 @@ int record_save(struct record *record, const char *filename)
     uint32_t i = 0;
     struct fs_file fout;
 
-    if (!sf_list_begin(&record->records, &iter)) {
-        return SF_OK;
-    }
-
     if ((ret = fs_file_open(&fout, filename, "wb+")) != SF_OK) {
         return ret;
     }
@@ -402,7 +398,7 @@ int record_save(struct record *record, const char *filename)
     fs_file_write(&fout, &version, sizeof(version));
 
     /* <type, data> pairs */
-    do {
+    if (sf_list_begin(&record->records, &iter)) do {
         uint8_t type;
         float pos[4];
         struct record_point *rp = sf_list_iter_elt(&iter);

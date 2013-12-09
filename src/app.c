@@ -34,10 +34,8 @@ static void app_change_stage(int stage) {
         ui_show((struct ui *) &g_app.upp);
         break;
     case APP_STAGE_TEACHING:
-#if 0
         ui_hide((struct ui *) &g_app.upp);
         ui_show((struct ui *) &g_app.ulp);
-#endif
         break;
     }
 }
@@ -136,6 +134,8 @@ void app_destory(void) {
     if (!g_app.inited) {
         return;
     }
+
+    rm_save_last_record();
 
     ui_destroy(&g_app.root);
     ui_manager_destroy(&g_app.uim);

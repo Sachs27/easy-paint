@@ -49,7 +49,6 @@ int rm_init(const char *res_path, const char *save_path)
 {
     char origin_path[PATH_MAX];
     char buf[PATH_MAX];
-    int ret = SF_OK;
     sf_list_def_t def;
 
     fs_cwd(origin_path, PATH_MAX);
@@ -158,6 +157,21 @@ static struct record_slot *find_record(const char *filename)
     return NULL;
 }
 
+static struct record_slot *find_record_by_ref(struct record *r)
+{
+    sf_list_iter_t iter;
+
+    if (sf_list_begin(&rm.records, &iter)) do {
+        struct record_slot *rs = sf_list_iter_elt(&iter);
+
+        if (&rs->record == r) {
+            return rs;
+        }
+    } while (sf_list_iter_next(&iter));
+
+    return NULL;
+}
+
 struct record *rm_load_record(const char *filename)
 {
     return NULL;
@@ -167,11 +181,12 @@ struct record *rm_load_record(const char *filename)
 
 struct record *rm_load_last_record(void)
 {
+    struct record *r;
     struct record_slot *ptr;
     struct record_slot rs;
 
-    if ((ptr = find_record(RM_LAST_RECORD_FILENAME))) {
-        return &ptr->record;
+    if ((r = rm_load_user_define_record(RM_LAST_RECORD_FILENAME))) {
+        return r;
     }
 
     ptr = sf_list_push(&rm.records, &rs);
@@ -180,9 +195,7 @@ struct record *rm_load_last_record(void)
     strcpy(ptr->name, RM_LAST_RECORD_FILENAME);
 
     fs_cd(rm.save_path);
-    if (record_load(&ptr->record, RM_LAST_RECORD_FILENAME) != SF_OK) {
-        record_init(&ptr->record);
-    }
+    record_init(&ptr->record);
 
     assert(find_record(RM_LAST_RECORD_FILENAME) != NULL);
 
@@ -191,12 +204,152 @@ struct record *rm_load_last_record(void)
 
 int rm_save_last_record(void)
 {
-    struct record_slot *ptr;
+    struct record_slot *ptr = find_record(RM_LAST_RECORD_FILENAME);
 
-    ptr = find_record(RM_LAST_RECORD_FILENAME);
+    if (ptr == NULL) {
+        struct record_slot rs;
+
+        ptr = sf_list_push(&rm.records, &rs);
+
+        ptr->name = sf_pool_alloc(&rm.str_pool,
+                                  strlen(RM_LAST_RECORD_FILENAME) + 1);
+        strcpy(ptr->name, RM_LAST_RECORD_FILENAME);
+
+        record_init(&ptr->record);
+    }
+
+    return rm_save_user_define_record(&ptr->record);
+}
+
+int rm_save_user_define_record(struct record *r)
+{
+    struct record_slot *ptr = find_record_by_ref(r);
+
     assert(ptr != NULL);
 
     fs_cd(rm.save_path);
 
-    return record_save(&ptr->record, RM_LAST_RECORD_FILENAME);
+    return record_save(r, ptr->name);
+}
+
+int rm_save_as_user_define_record(struct record *r, const char *filename)
+{
+    struct record_slot *ptr = find_record_by_ref(r);
+
+    assert(ptr != NULL);
+
+    ptr->name = sf_pool_alloc(&rm.str_pool, strlen(filename) + 1);
+    strcpy(ptr->name, filename);
+
+    fs_cd(rm.save_path);
+
+    return record_save(r, filename);
+}
+
+struct record *rm_load_user_define_record(const char *filename)
+{
+    struct record_slot *ptr;
+    struct record_slot rs;
+
+    if ((ptr = find_record(filename))) {
+        return &ptr->record;
+    }
+
+    ptr = sf_list_push(&rm.records, &rs);
+
+    ptr->name = sf_pool_alloc(&rm.str_pool, strlen(filename) + 1);
+    strcpy(ptr->name, filename);
+
+    fs_cd(rm.save_path);
+
+    if (record_load(&ptr->record, filename) == SF_OK) {
+        return &ptr->record;
+    } else {
+        assert(0);
+        sf_list_pop(&rm.records);
+        return NULL;
+    }
+}
+
+#define GATHER_NFILENAMES 1024
+struct gather_filename_arg {
+    char *filenames[GATHER_NFILENAMES];
+    size_t n;
+    sf_pool_t str_pool;
+};
+
+static int filename_cmp(const void *a, const void *b)
+{
+    char *s1 = *(char **) a;
+    char *s2 = *(char **) b;
+
+    return -strcmp(s1, s2);
+}
+
+static int gather_filename(int type, const char *filename, void *arg)
+{
+    struct gather_filename_arg *names = arg;
+
+    if (type == FS_FILE && strcmp(filename, RM_LAST_RECORD_FILENAME)) {
+        names->filenames[names->n] = sf_pool_alloc(&names->str_pool,
+                                                   strlen(filename) + 1);
+        strcpy(names->filenames[names->n], filename);
+        ++names->n;
+
+        if (names->n >= GATHER_NFILENAMES) {
+            return -1;
+        }
+    }
+
+    return SF_OK;
+}
+
+size_t rm_get_all_user_define_records(struct record **records, size_t len)
+{
+    int i;
+    struct gather_filename_arg names = {{0}, 0};
+    names.n = 0;
+
+    if (len == 0) {
+        return 0;
+    }
+
+    sf_pool_init(&names.str_pool, 0);
+
+    fs_cd(rm.save_path);
+
+    records[0] = rm_load_last_record();
+
+    fs_file_walker(gather_filename, &names);
+    qsort(names.filenames, names.n, sizeof(char *), filename_cmp);
+
+    for (i = 0; i < names.n; ++i) {
+        if (i + 1 >= len) {
+            break;
+        }
+        records[i + 1] = rm_load_user_define_record(names.filenames[i]);
+    }
+
+    sf_pool_destroy(&names.str_pool);
+    return i + 1;
+}
+
+static int count_filename(int type, const char *filename, void *arg)
+{
+    int *count = arg;
+
+    if (type == FS_FILE && strcmp(filename, RM_LAST_RECORD_FILENAME)) {
+        ++*count;
+    }
+
+    return SF_OK;
+}
+
+size_t rm_get_user_define_record_count(void)
+{
+    int count = 1;  /* for LastReocrd.epr */
+
+    fs_file_walker(count_filename, &count);
+
+    return count;
 }

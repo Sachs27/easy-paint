@@ -176,6 +176,12 @@ void canvas_set_plot_color(struct canvas *canvas, float color[4]) {
 void canvas_set_plot_size(struct canvas *canvas, float size) {
     canvas->plot_size = size;
 }
+
+int canvas_can_plot(struct canvas *canvas)
+{
+    return canvas->renderer != NULL;
+}
+
 #if 0
 void canvas_offset(struct canvas *canvas, int xoff, int yoff) {
     float scale = canvas->viewport.w * 1.0 / canvas->ui.area.w;

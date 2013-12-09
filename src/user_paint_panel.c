@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stddef.h>
+#include <time.h>
 
 #include <sf/utils.h>
 
@@ -230,6 +231,26 @@ static int replay_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
+static int save_on_press(struct ui *ui, int x, int y)
+{
+    struct ui_imagebox *save = (struct ui_imagebox *) ui;
+    struct user_paint_panel *upp =
+        sf_container_of(save, struct user_paint_panel, save);
+
+    if (upp->record == rm_load_last_record()) {
+        time_t rawtime = time(0);
+        char buf[64];
+
+        strftime(buf, 64, "%F-%H-%M-%S.epr", localtime(&rawtime));
+
+        rm_save_as_user_define_record(upp->record, buf);
+    } else {
+        rm_save_user_define_record(upp->record);
+    }
+
+    return 0;
+}
+
 static void user_paint_panel_on_show(struct ui *ui)
 {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
@@ -277,6 +298,7 @@ static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
     } else {
         ui_color_picker_get_color(&upp->color_picker, upp->cur_brush->color);
     }
+
 }
 
 static void user_paint_panel_on_render(struct ui *ui, struct renderer2d *r)
@@ -298,9 +320,11 @@ static void user_paint_panel_on_render(struct ui *ui, struct renderer2d *r)
 
 static void user_paint_panel_on_destroy(struct ui *ui)
 {
-    /*struct user_paint_panel *upp = (struct user_paint_panel *) ui;*/
+    struct user_paint_panel *upp = (struct user_paint_panel *) ui;
 
-    rm_save_last_record();
+    if (upp->record) {
+        rm_save_user_define_record(upp->record);
+    }
 }
 
 int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
@@ -355,10 +379,15 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     ui_imagebox_init(&upp->replay, 0, 0, upp->replay_image);
     UI_CALLBACK(&upp->replay, press, replay_on_press);
 
+    upp->save_image = rm_load_texture(RES_TEXTURE_ICON_SAVE);
+    ui_imagebox_init(&upp->save, 0, 0, upp->save_image);
+    UI_CALLBACK(&upp->save, press, save_on_press);
+
     ui_toolbox_init(&upp->toolbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 240);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->brush);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->undo);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->redo);
+    ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->save);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->replay);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->toolbox,
                  0, upp->canvas.ui.area.h - TOOLBOX_HEIGHT);

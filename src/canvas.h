@@ -64,4 +64,7 @@ void canvas_set_plot_color(struct canvas *canvas, float color[4]);
 
 void canvas_set_plot_size(struct canvas *canvas, float size);
 
+int canvas_can_plot(struct canvas *canvas);
+
+
 #endif /* CANVAS_H */

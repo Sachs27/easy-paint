@@ -15,16 +15,12 @@
 
 
 static void ui_replay_panel_reset(struct ui_replay_panel *urp) {
-    if (urp->isreplay) {
-        ui_replay_panel_pause(urp);
-    }
+    ui_replay_panel_pause(urp);
 
-    if (urp->isstop == 0) {
-        urp->isstop = 1;
-        if (urp->record) {
-            record_reset(urp->record);
-            while (record_replay(urp->record, &urp->canvas, 0)) /* void */;
-        }
+    urp->isstop = 1;
+    if (urp->record && canvas_can_plot(&urp->canvas)) {
+        record_reset(urp->record);
+        while (record_replay(urp->record, &urp->canvas, 0)) /* void */;
     }
 }
 
@@ -64,9 +60,10 @@ static int rewind_on_press(struct ui *ui, int x, int y) {
 #endif
     urp->record_id -= 1;
     if (urp->record_id < 0) {
-        urp->record_id += RESOURCE_NRECORDS;
+        urp->record_id += sf_array_cnt(&urp->records);
     }
-    urp->record = rm_load_record(NULL);
+    urp->record = *(struct record **)
+                   sf_array_nth(&urp->records, urp->record_id);
     canvas_clear(&urp->canvas);
 #if 0
     record_adjust(urp->record, 0, 0,
@@ -88,8 +85,9 @@ static int fastforward_on_press(struct ui *ui, int x, int y) {
         urp->replay_speed = REPLAY_SPEED_MAX;
     }
 #endif
-    urp->record_id = (urp->record_id + 1) % RESOURCE_NRECORDS;
-    urp->record = rm_load_record(NULL);
+    urp->record_id = (urp->record_id + 1) % sf_array_cnt(&urp->records);
+    urp->record = *(struct record **)
+                   sf_array_nth(&urp->records, urp->record_id);
     canvas_clear(&urp->canvas);
 #if 0
     record_adjust(urp->record, 0, 0,
@@ -155,8 +153,18 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
     UI_CALLBACK(&urp->canvas, press, canvas_on_press);
     ui_add_child((struct ui *) urp, (struct ui *) &urp->canvas, 0, 0);
 
+    sf_array_def_t def;
+    sf_memzero(&def, sizeof(def));
+    def.size = sizeof(struct record *);
+    def.nalloc = rm_get_user_define_record_count();
+    sf_array_init(&urp->records, &def);
+    urp->records.nelts = rm_get_all_user_define_records(
+                             sf_array_head(&urp->records),
+                             urp->records.def.nalloc
+                         );
     urp->record_id = 0;
-    urp->record = rm_load_record(NULL);
+    urp->record = *(struct record **)
+                   sf_array_nth(&urp->records, urp->record_id);
 
     urp->stop_image = rm_load_texture(RES_TEXTURE_ICON_STOP);
     ui_imagebox_init(&urp->stop, 0, 0, urp->stop_image);
