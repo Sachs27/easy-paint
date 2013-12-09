@@ -59,11 +59,19 @@ static int rewind_on_press(struct ui *ui, int x, int y) {
     }
 #endif
     urp->record_id -= 1;
-    if (urp->record_id < 0) {
-        urp->record_id += sf_array_cnt(&urp->records);
+
+    /* skip 0 */
+    if (urp->record_id <= 0) {
+        urp->record_id = sf_array_cnt(&urp->records) - 1;
     }
-    urp->record = *(struct record **)
-                   sf_array_nth(&urp->records, urp->record_id);
+
+    if (urp->record_id) {
+        urp->record = *(struct record **)
+                       sf_array_nth(&urp->records, urp->record_id);
+    } else {
+        urp->record = NULL;
+    }
+
     canvas_clear(&urp->canvas);
 #if 0
     record_adjust(urp->record, 0, 0,
@@ -86,8 +94,16 @@ static int fastforward_on_press(struct ui *ui, int x, int y) {
     }
 #endif
     urp->record_id = (urp->record_id + 1) % sf_array_cnt(&urp->records);
-    urp->record = *(struct record **)
-                   sf_array_nth(&urp->records, urp->record_id);
+    /* skip 0 */
+    if (urp->record_id == 0) {
+        urp->record_id = (urp->record_id + 1) % sf_array_cnt(&urp->records);
+    }
+    if (urp->record_id) {
+        urp->record = *(struct record **)
+                       sf_array_nth(&urp->records, urp->record_id);
+    } else {
+        urp->record = NULL;
+    }
     canvas_clear(&urp->canvas);
 #if 0
     record_adjust(urp->record, 0, 0,
@@ -163,8 +179,7 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
                              urp->records.def.nalloc
                          );
     urp->record_id = 0;
-    urp->record = *(struct record **)
-                   sf_array_nth(&urp->records, urp->record_id);
+    urp->record = NULL;
 
     urp->stop_image = rm_load_texture(RES_TEXTURE_ICON_STOP);
     ui_imagebox_init(&urp->stop, 0, 0, urp->stop_image);
@@ -204,6 +219,10 @@ void ui_replay_panel_set_record(struct ui_replay_panel *urp, struct record *r)
 
 void ui_replay_panel_play(struct ui_replay_panel *urp)
 {
+    if (urp->record == NULL) {
+        return;
+    }
+
     if (urp->isstop) {
         urp->isstop = 0;
         canvas_clear(&urp->canvas);

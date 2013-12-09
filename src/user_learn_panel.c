@@ -8,10 +8,16 @@
 static void user_learn_panel_on_resize(struct ui *ui, int w, int h)
 {
     struct user_learn_panel *ulp = (struct user_learn_panel *) ui;
-    ulp->urp_h = h / 2;
-    ui_resize((struct ui *) &ulp->urp, w, ulp->urp_h);
-    ui_resize((struct ui *) &ulp->upp, w, h - ulp->urp_h);
-    ui_move((struct ui *) &ulp->upp, 0, h - ulp->urp_h);
+
+    if (w > h) {
+        ui_resize((struct ui *) &ulp->urp, w / 2, h);
+        ui_resize((struct ui *) &ulp->upp, w - w / 2, h);
+        ui_move((struct ui *) &ulp->upp, w / 2, 0);
+    } else {
+        ui_resize((struct ui *) &ulp->urp, w, h / 2);
+        ui_resize((struct ui *) &ulp->upp, w, h - h / 2);
+        ui_move((struct ui *) &ulp->upp, 0, h / 2);
+    }
 }
 
 
@@ -19,12 +25,11 @@ int user_learn_panel_init(struct user_learn_panel *ulp, int w, int h)
 {
     ui_init((struct ui *) ulp, w, h);
 
-    ulp->urp_h = h / 2;
-    ui_replay_panel_init(&ulp->urp, w, ulp->urp_h);
+    ui_replay_panel_init(&ulp->urp, w, h / 2);
     ui_add_child((struct ui *) ulp, (struct ui *) &ulp->urp, 0, 0);
 
-    user_paint_panel_init(&ulp->upp, w, h - ulp->urp_h);
-    ui_add_child((struct ui *) ulp, (struct ui *) &ulp->upp, 0, ulp->urp_h);
+    user_paint_panel_init(&ulp->upp, w, h - h / 2);
+    ui_add_child((struct ui *) ulp, (struct ui *) &ulp->upp, 0, h / 2);
 
     UI_CALLBACK(ulp, resize, user_learn_panel_on_resize);
 

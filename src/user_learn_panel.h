@@ -12,7 +12,6 @@ struct user_learn_panel {
     struct ui           ui;             /* inherit from ui, so this must be
                                          * the first element of the struct  */
 
-    int                      urp_h;
     struct ui_replay_panel   urp;
     struct user_paint_panel  upp;
 };
