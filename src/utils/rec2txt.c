@@ -19,7 +19,8 @@ int main(int argc, char *argv[])
 {
     FILE *f;
     char sig[RECORD_SIG_LEN];
-    uint16_t version;
+    uint32_t version;
+    int w, h;
     uint8_t type;
     struct brush brush;
     float pos[4];
@@ -35,7 +36,13 @@ int main(int argc, char *argv[])
     fprintf(stdout, "%s\n", sig);
 
     fread(&version, 1, sizeof(version), f);
-    fprintf(stdout, "%u\n", (uint32_t) version);
+    fprintf(stdout, "%u\n", version);
+
+    fread(&w, 1, sizeof(w), f);
+    fprintf(stdout, "%d\n", w);
+
+    fread(&h, 1, sizeof(h), f);
+    fprintf(stdout, "%d\n", h);
 
     while (fread(&type, 1, sizeof(type), f)) {
         switch (type) {

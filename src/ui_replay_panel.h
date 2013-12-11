@@ -23,6 +23,10 @@ struct ui_replay_panel {
     struct record      *record;
     int                 record_id;
 
+    int                 nreplayed;
+    int                 isresizing;
+    int                 isfirstframe;
+    int                 isadjust;
     int                 isreplay;
     int                 isstop;
     double              dt;
@@ -51,6 +55,8 @@ void ui_replay_panel_set_record(struct ui_replay_panel *urp, struct record *r);
 void ui_replay_panel_play(struct ui_replay_panel *urp);
 
 void ui_replay_panel_pause(struct ui_replay_panel *urp);
+
+void ui_replay_panel_stop(struct ui_replay_panel *urp);
 
 
 #endif /* UI_REPLAY_PANEL_H */

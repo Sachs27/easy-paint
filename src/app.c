@@ -17,17 +17,20 @@
 
 struct app g_app;
 
-static int menuicon_on_press(struct ui *ui, int x, int y) {
+static int menuicon_on_press(struct ui *ui, int x, int y)
+{
     ui_show((struct ui *) &g_app.menu);
     return 0;
 }
 
-static int menu_on_press(struct ui *ui, int x, int y) {
+static int menu_on_press(struct ui *ui, int x, int y)
+{
     ui_hide((struct ui *) &g_app.menu);
     return 0;
 }
 
-static void app_change_stage(int stage) {
+static void app_change_stage(int stage)
+{
     switch (stage) {
     case APP_STAGE_DOODLE:
         ui_hide((struct ui *) &g_app.ulp);
@@ -40,7 +43,8 @@ static void app_change_stage(int stage) {
     }
 }
 
-static int menu_item_on_press(struct ui *ui, int x, int y) {
+static int menu_item_on_press(struct ui *ui, int x, int y)
+{
     int i = 0;
     sf_list_iter_t iter;
 
@@ -65,6 +69,8 @@ int app_init(const char *res_path, const char *save_path)
     g_app.inited = SF_TRUE;
 
     rm_init(res_path, save_path);
+
+    rm_set_record_size(g_app.window->w, g_app.window->h);
 
     renderer2d_init(&g_app.renderer2d, g_app.window->w, g_app.window->h);
     ui_manager_init(&g_app.uim);
@@ -130,7 +136,8 @@ int app_init(const char *res_path, const char *save_path)
     return 0;
 }
 
-void app_destory(void) {
+void app_destory(void)
+{
     if (!g_app.inited) {
         return;
     }
@@ -148,8 +155,11 @@ void app_destory(void) {
     g_app.inited = SF_FALSE;
 }
 
-void app_on_resize(struct window *win, int w, int h) {
+void app_on_resize(struct window *win, int w, int h)
+{
     renderer2d_resize(&g_app.renderer2d, w, h);
+
+    rm_set_record_size(w, h);
 
     ui_resize((struct ui *) &g_app.upp, w, h);
     ui_resize((struct ui *) &g_app.ulp, w, h);

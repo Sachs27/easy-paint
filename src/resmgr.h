@@ -38,6 +38,8 @@ struct texture *rm_load_texture(const char *filename);
 
 struct record *rm_load_record(const char *filename);
 
+int rm_set_record_size(int w, int h);
+
 /*
  * save the LastRecord.epr, if there is no one then will
  * create a empty record

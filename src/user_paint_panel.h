@@ -24,6 +24,7 @@ struct user_paint_panel {
     int                     isplaying;
     int                     isresizing;
     int                     isfirstframe;
+    int                     isadject;
     struct ui_replay_panel  urp;
 
     struct ui_color_picker  color_picker;

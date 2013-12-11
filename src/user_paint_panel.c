@@ -256,20 +256,32 @@ static void user_paint_panel_on_show(struct ui *ui)
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
     ui_hide(&upp->blank);
     ui_hide((struct ui *) &upp->urp);
+
+    upp->record = rm_load_last_record();
+
+    upp->isadject = 1;
+}
+
+static void user_paint_panel_on_hide(struct ui *ui)
+{
+    struct user_paint_panel *upp = (struct user_paint_panel *) ui;
+
+    upp->record = NULL;
 }
 
 static void user_paint_panel_on_resize(struct ui *ui, int w, int h)
 {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
 
-    ui_resize((struct ui *) &upp->canvas, w,  h);
+    ui_resize((struct ui *) &upp->canvas, w,  h - TOOLBOX_HEIGHT);
+
+    upp->isadject = 1;
     upp->isresizing = 1;
 
     ui_resize((struct ui *) &upp->urp, w,  h);
 
     ui_resize((struct ui *) &upp->toolbox, w, upp->toolbox.ui.area.h);
-    ui_move((struct ui *) &upp->toolbox, 0,
-            upp->canvas.ui.area.h - TOOLBOX_HEIGHT);
+    ui_move((struct ui *) &upp->toolbox, 0, upp->canvas.ui.area.h);
 
     ui_resize(&upp->blank, w, h - upp->toolbox.ui.area.h);
 
@@ -305,17 +317,22 @@ static void user_paint_panel_on_render(struct ui *ui, struct renderer2d *r)
 {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
 
-    /*
-     * we can't undo at first frame because canvas need a frame to save
-     * current renderer
-     */
-    if (!upp->isfirstframe && upp->isresizing) {
-        record_undo(upp->record, &upp->canvas);
-        record_redo(upp->record, &upp->canvas);
-        upp->isresizing = 0;
+    if (canvas_can_plot(&upp->canvas) && upp->record) {
+        int needredraw = 0;
+        if (upp->isadject) {
+            record_adjust(upp->record, upp->canvas.ui.area.w, upp->canvas.ui.area.h);
+            upp->isadject = 0;
+            needredraw = 1;
+        }
+        if (upp->isresizing) {
+            upp->isresizing = 0;
+            needredraw = 1;
+        }
+        if (needredraw) {
+            record_undo(upp->record, &upp->canvas);
+            record_redo(upp->record, &upp->canvas);
+        }
     }
-
-    upp->isfirstframe = 0;
 }
 
 static void user_paint_panel_on_destroy(struct ui *ui)
@@ -348,16 +365,16 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
 
     upp->cur_brush = &upp->brush_pen;
 
-    canvas_init(&upp->canvas, w, h);
+    canvas_init(&upp->canvas, w, h - TOOLBOX_HEIGHT);
     UI_CALLBACK(&upp->canvas, update, canvas_on_update);
     UI_CALLBACK(&upp->canvas, press, canvas_on_press);
     UI_CALLBACK(&upp->canvas, release, canvas_on_release);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->canvas, 0, 0);
 
-    upp->record = rm_load_last_record();
+    upp->record = NULL;
+    upp->isadject = 0;
     upp->isplaying = 0;
     upp->isresizing = 0;
-    upp->isfirstframe = 1;
 
     ui_replay_panel_init(&upp->urp, w, h);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->urp, 0, 0);
@@ -390,7 +407,7 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->save);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->replay);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->toolbox,
-                 0, upp->canvas.ui.area.h - TOOLBOX_HEIGHT);
+                 0, upp->canvas.ui.area.h);
 
     ui_init(&upp->blank, w, h - upp->toolbox.ui.area.h);
     UI_CALLBACK(&upp->blank, press, blank_on_press);
@@ -412,6 +429,7 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
                  0, upp->brushbox.ui.area.y - upp->color_picker.ui.area.h);
 
     UI_CALLBACK(upp, show, user_paint_panel_on_show);
+    UI_CALLBACK(upp, hide, user_paint_panel_on_hide);
     UI_CALLBACK(upp, resize, user_paint_panel_on_resize);
     UI_CALLBACK(upp, update, user_paint_panel_on_update);
     UI_CALLBACK(upp, render, user_paint_panel_on_render);

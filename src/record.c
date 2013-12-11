@@ -78,11 +78,13 @@ static void clean_cache(struct record *record)
 }
 
 
-int record_init(struct record *record)
+int record_init(struct record *record, int w, int h)
 {
     sf_list_def_t def;
 
     record->version = RECORD_VERSION;
+    record->w = w;
+    record->h = h;
     record->brush = NULL;
     record->nrecords = 0;
     record->play_pos = 0;
@@ -319,23 +321,24 @@ void record_reset(struct record *record)
  * |  P |  A |  I |  N |
  * |  T |  R |  E |  C |
  * |  O |  R |  D | \0 |
- * | version |type|.....
- *
+ * |     version       |
+ * |      width        |
+ * |      height       |
+ * |type|    ....      |
  */
 int record_load(struct record *record, const char *filename)
 {
     char sig[RECORD_SIG_LEN];
     uint8_t type;
-    uint16_t version;
+    uint32_t version;
     int ret;
+    int w, h;
     struct fs_file fin;
     struct brush brush;
 
     if ((ret = fs_file_open(&fin, filename, "rb")) != SF_OK) {
         return ret;
     }
-
-    record_init(record);
 
     fs_file_read(&fin, sig, RECORD_SIG_LEN);
 
@@ -347,12 +350,18 @@ int record_load(struct record *record, const char *filename)
     }
 
     fs_file_read(&fin, &version, sizeof(version));
+
     if (version != RECORD_VERSION) {
         sf_log(SF_LOG_ERR, "failed to load record %s: unknown version",
                filename);
         fs_file_close(&fin);
         return SF_ERR;
     }
+
+    fs_file_read(&fin, &w, sizeof(w));
+    fs_file_read(&fin, &h, sizeof(h));
+
+    record_init(record, w, h);
 
     while (fs_file_read(&fin, &type, sizeof(type))) {
         float pos[4];
@@ -382,7 +391,7 @@ int record_load(struct record *record, const char *filename)
 int record_save(struct record *record, const char *filename)
 {
     int ret;
-    uint16_t version = RECORD_VERSION;
+    uint32_t version = RECORD_VERSION;
     sf_list_iter_t iter;
     uint32_t i = 0;
     struct fs_file fout;
@@ -396,6 +405,9 @@ int record_save(struct record *record, const char *filename)
 
     /* version */
     fs_file_write(&fout, &version, sizeof(version));
+
+    fs_file_write(&fout, &record->w, sizeof(record->w));
+    fs_file_write(&fout, &record->h, sizeof(record->h));
 
     /* <type, data> pairs */
     if (sf_list_begin(&record->records, &iter)) do {
@@ -420,6 +432,64 @@ int record_save(struct record *record, const char *filename)
     } while (++i < record->nrecords && sf_list_iter_next(&iter));
 
     fs_file_close(&fout);
+
+    return SF_OK;
+}
+
+int record_to_texture(struct record *record, struct texture *texture)
+{
+    struct canvas canvas;
+
+    canvas_init(&canvas, record->w, record->h);
+
+    return SF_OK;
+}
+
+int record_adjust(struct record *record, int w, int h)
+{
+    sf_list_iter_t iter;
+    float oradio = record->w * 1.0 / record->h;
+    float nradio = w * 1.0 / h;
+    float xradio;
+    float yradio;
+    int nw, nh;
+
+    if (nradio == oradio) {
+        if (w == record->w || h == record->h) {
+            return SF_OK;
+        }
+        nw = w;
+        nh = h;
+    } else if (nradio > oradio) {
+        if (h == record->h) {
+            return SF_OK;
+        }
+        nh = h;
+        nw = nh * oradio;
+    } else /* nradio < oradio */ {
+        if (w == record->h) {
+            return SF_OK;
+        }
+        nw = w;
+        nh = nw / oradio;
+    }
+
+    xradio = nw * 1.0 / record->w;
+    yradio = nh * 1.0 / record->h;
+
+    if (sf_list_begin(&record->records, &iter)) do {
+        struct record_point *rp = sf_list_iter_elt(&iter);
+        if (rp->type == RECORD_DRAWLINE) {
+            rp->drawline.x0 = rp->drawline.x0 * xradio;
+            rp->drawline.x1 = rp->drawline.x1 * xradio;
+
+            rp->drawline.y0 = rp->drawline.y0 * yradio;
+            rp->drawline.y1 = rp->drawline.y1 * yradio;
+        }
+    } while (sf_list_iter_next(&iter));
+
+    record->w = nw;
+    record->h = nh;
 
     return SF_OK;
 }

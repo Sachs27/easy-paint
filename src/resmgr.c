@@ -23,6 +23,7 @@ static void texture_slot_free(void *elt)
 
 struct record_slot {
     char *name;
+    int   isinited;
     struct record record;
 };
 
@@ -30,7 +31,9 @@ static void record_slot_free(void *elt)
 {
     struct record_slot *rs = elt;
 
-    record_destroy(&rs->record);
+    if (rs->isinited) {
+        record_destroy(&rs->record);
+    }
 }
 
 static struct resmgr {
@@ -38,6 +41,8 @@ static struct resmgr {
     char *save_path;
 
     sf_list_t textures;     /* elt: struct texture_slot */
+
+    int       w, h;
     sf_list_t records;      /* elt: struct record_slot */
 
     sf_list_t user_define_records;
@@ -84,6 +89,9 @@ int rm_init(const char *res_path, const char *save_path)
     def.free = record_slot_free;
     sf_list_init(&rm.records, &def);
     sf_list_init(&rm.user_define_records, &def);
+
+    rm.w = 0;
+    rm.h = 0;
 
     return SF_OK;
 }
@@ -157,6 +165,13 @@ static struct record_slot *find_record(const char *filename)
     return NULL;
 }
 
+int rm_set_record_size(int w, int h)
+{
+    rm.w = w;
+    rm.h = h;
+    return SF_OK;
+}
+
 static struct record_slot *find_record_by_ref(struct record *r)
 {
     sf_list_iter_t iter;
@@ -195,7 +210,8 @@ struct record *rm_load_last_record(void)
     strcpy(ptr->name, RM_LAST_RECORD_FILENAME);
 
     fs_cd(rm.save_path);
-    record_init(&ptr->record);
+    record_init(&ptr->record, rm.w, rm.h);
+    ptr->isinited = 1;
 
     assert(find_record(RM_LAST_RECORD_FILENAME) != NULL);
 
@@ -215,7 +231,8 @@ int rm_save_last_record(void)
                                   strlen(RM_LAST_RECORD_FILENAME) + 1);
         strcpy(ptr->name, RM_LAST_RECORD_FILENAME);
 
-        record_init(&ptr->record);
+        record_init(&ptr->record, rm.w, rm.h);
+        ptr->isinited = 1;
     }
 
     return rm_save_user_define_record(&ptr->record);
@@ -263,9 +280,10 @@ struct record *rm_load_user_define_record(const char *filename)
     fs_cd(rm.save_path);
 
     if (record_load(&ptr->record, filename) == SF_OK) {
+        ptr->isinited = 1;
         return &ptr->record;
     } else {
-        assert(0);
+        ptr->isinited = 0;
         sf_list_pop(&rm.records);
         return NULL;
     }

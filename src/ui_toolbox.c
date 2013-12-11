@@ -30,13 +30,13 @@ static void ui_toolbox_on_render(struct ui *ui, struct renderer2d *r) {
                          tb->background_color[0],
                          tb->background_color[1],
                          tb->background_color[2],
-                         tb->background_color[3]);
+                         255);
 
     renderer2d_draw_line(r, 2, 0, 0, tb->ui.area.w, 0,
                          tb->background_color[0] / 2,
                          tb->background_color[1] / 2,
                          tb->background_color[2] / 2,
-                         tb->background_color[3]);
+                         255);
 }
 
 static int ui_toolbox_on_press(struct ui *ui, int x, int y) {
