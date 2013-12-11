@@ -8,8 +8,8 @@
 
 
 #define WINDOW_TITLE "Easy Paint"
-#define WINDOW_WIDTH 480
-#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 640
+#define WINDOW_HEIGHT 480
 
 struct window;
 struct renderer2d;
@@ -27,7 +27,6 @@ struct app {
 
     struct window              *window;
     struct input_manager       *im;
-    struct renderer2d           renderer2d;
     struct ui_manager           uim;
 
 

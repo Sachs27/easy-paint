@@ -3,6 +3,7 @@
 
 
 #include "ui.h"
+#include "texture.h"
 
 
 struct ui_color_picker {

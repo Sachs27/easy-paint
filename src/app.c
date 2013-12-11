@@ -13,6 +13,7 @@
 #include "ui_menu.h"
 #include "texture.h"
 #include "resmgr.h"
+#include "renderer2d.h"
 
 
 struct app g_app;
@@ -72,7 +73,7 @@ int app_init(const char *res_path, const char *save_path)
 
     rm_set_record_size(g_app.window->w, g_app.window->h);
 
-    renderer2d_init(&g_app.renderer2d, g_app.window->w, g_app.window->h);
+    renderer2d_init(g_app.window->w, g_app.window->h);
     ui_manager_init(&g_app.uim);
 
     ui_init(&g_app.root, g_app.window->w, g_app.window->h);
@@ -146,8 +147,8 @@ void app_destory(void)
 
     ui_destroy(&g_app.root);
     ui_manager_destroy(&g_app.uim);
-    renderer2d_destroy(&g_app.renderer2d);
 
+    renderer2d_destroy();
     rm_term();
     input_manager_destroy();
     window_destroy();
@@ -157,7 +158,7 @@ void app_destory(void)
 
 void app_on_resize(struct window *win, int w, int h)
 {
-    renderer2d_resize(&g_app.renderer2d, w, h);
+    renderer2d_resize(w, h);
 
     rm_set_record_size(w, h);
 
@@ -219,5 +220,5 @@ void app_on_update(double dt) {
 }
 
 void app_on_render(void) {
-    ui_manager_render(&g_app.uim, &g_app.renderer2d);
+    ui_manager_render(&g_app.uim);
 }

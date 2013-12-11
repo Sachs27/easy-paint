@@ -7,6 +7,7 @@
 #include "user_paint_panel.h"
 #include "system.h"
 #include "resmgr.h"
+#include "renderer2d.h"
 
 
 #define TOOLBOX_HEIGHT 48
@@ -16,7 +17,7 @@
 /*
  * The following callback function use global variable g_app.
  */
-static void undo_on_render(struct ui *ui, struct renderer2d *r)
+static void undo_on_render(struct ui *ui)
 {
     struct ui_imagebox *undo = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
@@ -27,9 +28,9 @@ static void undo_on_render(struct ui *ui, struct renderer2d *r)
     }
 
     if (record_canundo(upp->record)) {
-        renderer2d_draw_texture(r, 0, 0, 0, 0, undo->image, 0, 0, 0, 0);
+        renderer2d_draw_texture(0, 0, 0, 0, undo->image, 0, 0, 0, 0);
     } else {
-        renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
+        renderer2d_draw_texture_with_color(0, 0, 0, 0,
                                            undo->image, 0, 0, 0, 0,
                                            128, 128, 128);
     }
@@ -46,12 +47,13 @@ static int undo_on_press(struct ui *ui, int x, int y)
     }
 
     if (record_canundo(upp->record)) {
+        upp->cansave = 1;
         record_undo(upp->record, &upp->canvas);
     }
     return 0;
 }
 
-static void redo_on_render(struct ui *ui, struct renderer2d *r)
+static void redo_on_render(struct ui *ui)
 {
     struct ui_imagebox *redo = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
@@ -62,9 +64,9 @@ static void redo_on_render(struct ui *ui, struct renderer2d *r)
     }
 
     if (record_canredo(upp->record)) {
-        renderer2d_draw_texture(r, 0, 0, 0, 0, redo->image, 0, 0, 0, 0);
+        renderer2d_draw_texture(0, 0, 0, 0, redo->image, 0, 0, 0, 0);
     } else {
-        renderer2d_draw_texture_with_color(r, 0, 0, 0, 0,
+        renderer2d_draw_texture_with_color(0, 0, 0, 0,
                                            redo->image, 0, 0, 0, 0,
                                            128, 128, 128);
     }
@@ -81,6 +83,7 @@ static int redo_on_press(struct ui *ui, int x, int y)
     }
 
     if (record_canredo(upp->record)) {
+        upp->cansave = 1;
         record_redo(upp->record, &upp->canvas);
     }
 
@@ -196,6 +199,7 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
             canvas_screen_to_canvas(canvas, pos->x, pos->y, &mx, &my);
 
             if (mx != canvas_lastx || my != canvas_lasty) {
+                upp->cansave = 1;
                 brush_drawline(upp->cur_brush, canvas,
                                canvas_lastx, canvas_lasty, mx, my);
                 record_drawline(upp->record, canvas_lastx, canvas_lasty,
@@ -219,6 +223,10 @@ static int replay_on_press(struct ui *ui, int x, int y)
     struct user_paint_panel *upp =
         sf_container_of(replay, struct user_paint_panel, replay);
 
+    if (!record_canundo(upp->record)) {
+        return 0;
+    }
+
     upp->isplaying = 1;
     ui_hide((struct ui *) &upp->canvas);
     ui_hide((struct ui *) &upp->toolbox);
@@ -231,11 +239,32 @@ static int replay_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
+static void save_on_render(struct ui *ui)
+{
+    struct ui_imagebox *save = (struct ui_imagebox *) ui;
+    struct user_paint_panel *upp =
+        sf_container_of(save, struct user_paint_panel, save);
+
+    if (upp->cansave) {
+        renderer2d_draw_texture(0, 0, 0, 0, save->image, 0, 0, 0, 0);
+    } else {
+        renderer2d_draw_texture_with_color(0, 0, 0, 0,
+                                           save->image, 0, 0, 0, 0,
+                                           128, 128, 128);
+    }
+}
+
 static int save_on_press(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *save = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
         sf_container_of(save, struct user_paint_panel, save);
+
+    if (!upp->cansave) {
+        return 0;
+    }
+
+    upp->cansave = 0;
 
     if (upp->record == rm_load_last_record()) {
         time_t rawtime = time(0);
@@ -313,11 +342,11 @@ static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
 
 }
 
-static void user_paint_panel_on_render(struct ui *ui, struct renderer2d *r)
+static void user_paint_panel_on_render(struct ui *ui)
 {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
 
-    if (canvas_can_plot(&upp->canvas) && upp->record) {
+    if (upp->record) {
         int needredraw = 0;
         if (upp->isadject) {
             record_adjust(upp->record, upp->canvas.ui.area.w, upp->canvas.ui.area.h);
@@ -328,7 +357,7 @@ static void user_paint_panel_on_render(struct ui *ui, struct renderer2d *r)
             upp->isresizing = 0;
             needredraw = 1;
         }
-        if (needredraw) {
+        if (needredraw && record_canundo(upp->record)) {
             record_undo(upp->record, &upp->canvas);
             record_redo(upp->record, &upp->canvas);
         }
@@ -375,6 +404,7 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     upp->isadject = 0;
     upp->isplaying = 0;
     upp->isresizing = 0;
+    upp->cansave = 0;
 
     ui_replay_panel_init(&upp->urp, w, h);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->urp, 0, 0);
@@ -399,8 +429,9 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     upp->save_image = rm_load_texture(RES_TEXTURE_ICON_SAVE);
     ui_imagebox_init(&upp->save, 0, 0, upp->save_image);
     UI_CALLBACK(&upp->save, press, save_on_press);
+    UI_CALLBACK(&upp->save, render, save_on_render);
 
-    ui_toolbox_init(&upp->toolbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 240);
+    ui_toolbox_init(&upp->toolbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 255);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->brush);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->undo);
     ui_toolbox_add_button(&upp->toolbox, (struct ui *) &upp->redo);

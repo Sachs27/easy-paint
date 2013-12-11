@@ -16,7 +16,7 @@
 
 static void ui_replay_panel_reset(struct ui_replay_panel *urp)
 {
-    if (urp->record && canvas_can_plot(&urp->canvas)) {
+    if (urp->record) {
         if (urp->nreplayed) {
             record_reset(urp->record);
             urp->nreplayed = record_replay(urp->record, &urp->canvas,
@@ -131,7 +131,17 @@ static int fastforward_on_press(struct ui *ui, int x, int y)
 
 static int canvas_on_press(struct ui *ui, int x, int y)
 {
-    /* Just empty */
+    struct canvas *canvas = (struct canvas *) ui;
+    struct ui_replay_panel *urp = sf_container_of(canvas,
+                                                  struct ui_replay_panel,
+                                                  canvas);
+
+    if (urp->isreplay) {
+        ui_replay_panel_pause(urp);
+    } else {
+        ui_replay_panel_play(urp);
+    }
+
     return 0;
 }
 
@@ -158,11 +168,11 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
     }
 }
 
-static void ui_replay_panel_on_render(struct ui *ui, struct renderer2d *r)
+static void ui_replay_panel_on_render(struct ui *ui)
 {
     struct ui_replay_panel *urp = (struct ui_replay_panel *) ui;
 
-    if (canvas_can_plot(&urp->canvas) && urp->record) {
+    if (urp->record) {
         int needredraw = 0;
 
         if (urp->isadjust) {
@@ -266,7 +276,7 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
     ui_imagebox_init(&urp->rewind, 0, 0, urp->rewind_image);
     UI_CALLBACK(&urp->rewind, press, rewind_on_press);
 
-    ui_toolbox_init(&urp->toolbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 240);
+    ui_toolbox_init(&urp->toolbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 255);
     ui_toolbox_add_button(&urp->toolbox, (struct ui *) &urp->rewind);
     ui_toolbox_add_button(&urp->toolbox, (struct ui *) &urp->fastforward);
     ui_toolbox_add_button(&urp->toolbox, (struct ui *) &urp->replay);

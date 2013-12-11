@@ -9,15 +9,9 @@ static void user_learn_panel_on_resize(struct ui *ui, int w, int h)
 {
     struct user_learn_panel *ulp = (struct user_learn_panel *) ui;
 
-    if (w > h) {
-        ui_resize((struct ui *) &ulp->urp, w / 2, h);
-        ui_resize((struct ui *) &ulp->upp, w - w / 2, h);
-        ui_move((struct ui *) &ulp->upp, w / 2, 0);
-    } else {
-        ui_resize((struct ui *) &ulp->urp, w, h / 2);
-        ui_resize((struct ui *) &ulp->upp, w, h - h / 2);
-        ui_move((struct ui *) &ulp->upp, 0, h / 2);
-    }
+    ui_resize((struct ui *) &ulp->urp, w, h / 2);
+    ui_resize((struct ui *) &ulp->upp, w, h - h / 2);
+    ui_move((struct ui *) &ulp->upp, 0, h / 2);
 }
 
 

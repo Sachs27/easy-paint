@@ -26,6 +26,7 @@ struct user_paint_panel {
     int                     isfirstframe;
     int                     isadject;
     struct ui_replay_panel  urp;
+    int                     cansave;
 
     struct ui_color_picker  color_picker;
     struct ui_toolbox       toolbox;

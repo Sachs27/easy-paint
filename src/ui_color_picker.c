@@ -2,6 +2,7 @@
 #include <math.h>
 
 #include "ui_color_picker.h"
+#include "renderer2d.h"
 
 
 #define LIGHTNESS_HEIGHT 256
@@ -109,27 +110,28 @@ static void update_circle(struct ui_color_picker *cp) {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static void ui_color_picker_on_render(struct ui *ui, struct renderer2d *r) {
+static void ui_color_picker_on_render(struct ui *ui)
+{
     struct ui_color_picker *cp = (struct ui_color_picker *) ui;
 
-    renderer2d_fill_rect(r, 0, 0, cp->ui.area.w, cp->ui.area.h,
+    renderer2d_fill_rect(0, 0, cp->ui.area.w, cp->ui.area.h,
                          128, 128, 128, 220);
 
-    renderer2d_draw_texture(r, cp->lightness_area.x, cp->lightness_area.y,
+    renderer2d_draw_texture(cp->lightness_area.x, cp->lightness_area.y,
                             cp->lightness_area.w, cp->lightness_area.h,
                             &cp->lightness, 0, 0, 0, 0);
 
-    renderer2d_draw_texture(r, cp->circle_area.x, cp->circle_area.y,
+    renderer2d_draw_texture(cp->circle_area.x, cp->circle_area.y,
                             cp->circle_area.w, cp->circle_area.h,
                             &cp->circle, 0, 0, 0, 0);
 
-    renderer2d_fill_rect(r, cp->lightness_area.x + cp->lightness_area.w,
+    renderer2d_fill_rect(cp->lightness_area.x + cp->lightness_area.w,
                          cp->lightness_area.y + cp->lightness_area.h,
                          cp->lightness_area.h / 2, cp->lightness_area.w,
                          cp->ncolor[0] * 0xFF, cp->ncolor[1] * 0xFF,
                          cp->ncolor[2] * 0xFF, 0xFF);
 
-    renderer2d_fill_rect(r, cp->lightness_area.x + cp->lightness_area.w
+    renderer2d_fill_rect(cp->lightness_area.x + cp->lightness_area.w
                          + cp->lightness_area.h / 2,
                          cp->lightness_area.y + cp->lightness_area.h,
                          cp->lightness_area.h / 2, cp->lightness_area.w,

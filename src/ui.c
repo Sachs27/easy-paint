@@ -4,6 +4,7 @@
 #include <sf/utils.h>
 
 #include "ui.h"
+#include "renderer2d.h"
 
 
 int ui_init(struct ui *ui, int w, int h) {
@@ -214,7 +215,8 @@ void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
     }
 }
 
-static void render_ui(struct ui *ui, struct renderer2d *r) {
+static void render_ui(struct ui *ui)
+{
     int             x, y;
     sf_list_iter_t  iter;
 
@@ -222,24 +224,25 @@ static void render_ui(struct ui *ui, struct renderer2d *r) {
         return;
     }
 
-    renderer2d_get_viewport(r, &x, &y, NULL, NULL);
+    renderer2d_get_viewport(&x, &y, NULL, NULL);
     x += ui->area.x;
     y += ui->area.y;
-    renderer2d_push_viewport(r, x, y, ui->area.w, ui->area.h);
+    renderer2d_push_viewport(x, y, ui->area.w, ui->area.h);
     if (ui->on_render) {
-        ui->on_render(ui, r);
+        ui->on_render(ui);
     }
 
     if (ui->childen && sf_list_begin(ui->childen, &iter)) do {
-        render_ui(*(struct ui **) sf_list_iter_elt(&iter), r);
+        render_ui(*(struct ui **) sf_list_iter_elt(&iter));
     } while (sf_list_iter_next(&iter));
 
-    renderer2d_pop_viewport(r);
+    renderer2d_pop_viewport();
 }
 
-void ui_manager_render(struct ui_manager *uim, struct renderer2d *r) {
+void ui_manager_render(struct ui_manager *uim)
+{
     if (uim->root && uim->root->state != UI_STATE_HIDE) {
-        render_ui(uim->root, r);
+        render_ui(uim->root);
     }
 }
 

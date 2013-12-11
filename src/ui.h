@@ -6,7 +6,6 @@
 #include "sf_rect.h"
 
 #include "input_manager.h"
-#include "renderer2d.h"
 
 struct ui;
 struct ui_manager;
@@ -19,7 +18,7 @@ typedef void (ui_on_update_t)(struct ui *, struct input_manager *, double);
  *
  * NOTE: the OpenGL's viewport has set to the ui's area.
  */
-typedef void (ui_on_render_t)(struct ui *, struct renderer2d *);
+typedef void (ui_on_render_t)(struct ui *);
 
 /**
  * Callback function called when user press in the ui's area.
@@ -118,7 +117,7 @@ void ui_manager_destroy(struct ui_manager *uim);
 void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
                        double dt);
 
-void ui_manager_render(struct ui_manager *uim, struct renderer2d *r);
+void ui_manager_render(struct ui_manager *uim);
 
 
 void ui_manager_set_root(struct ui_manager *uim, struct ui *root);

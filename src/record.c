@@ -7,6 +7,7 @@
 #include "canvas.h"
 #include "brush.h"
 #include "filesystem.h"
+#include "renderer2d.h"
 
 
 #define RECORD_SIG "EASYPAINTRECORD"
@@ -436,11 +437,19 @@ int record_save(struct record *record, const char *filename)
     return SF_OK;
 }
 
-int record_to_texture(struct record *record, struct texture *texture)
+int record_to_texture(struct record *record, struct texture *texture,
+                      int w, int h)
 {
     struct canvas canvas;
+    int ow, oh;
 
-    canvas_init(&canvas, record->w, record->h);
+    ow = record->w;
+    oh = record->h;
+    record_adjust(record, w, h);
+
+
+
+    record_adjust(record, ow, oh);
 
     return SF_OK;
 }

@@ -9,60 +9,61 @@
 #include "texture.h"
 #include "3dmath.h"
 #include "canvas.h"
+#include "renderer2d.h"
 
 
-static void canvas_update_content(struct canvas *canvas,
-                                  struct renderer2d *r) {
+static void canvas_update_content(struct canvas *canvas)
+{
     if (!canvas->iscontent_inited) {
-        renderer2d_set_render_target(r, &canvas->content);
-        renderer2d_push_viewport(r, 0, 0, canvas->content.w,
+        renderer2d_set_render_target(&canvas->content);
+        renderer2d_push_viewport(0, 0, canvas->content.w,
                                  canvas->content.h);
-        renderer2d_clear(r, 0.0f, 0.0f, 0.0f, 0.0f);
-        renderer2d_set_render_target(r, NULL);
-        renderer2d_pop_viewport(r);
+        renderer2d_clear(0.0f, 0.0f, 0.0f, 0.0f);
+        renderer2d_set_render_target(NULL);
+        renderer2d_pop_viewport();
         canvas->iscontent_inited = SF_TRUE;
     }
 
     if (sf_array_cnt(&canvas->plots)) {
         if (!canvas->isbuffet_inited) {
             glDisable(GL_BLEND);
-            renderer2d_set_render_target(r, &canvas->buffer);
-            renderer2d_push_viewport(r, 0, 0, canvas->buffer.w,
+            renderer2d_set_render_target(&canvas->buffer);
+            renderer2d_push_viewport(0, 0, canvas->buffer.w,
                                      canvas->buffer.h);
-            renderer2d_draw_texture(r, 0, 0, 0, 0, &canvas->content,
+            renderer2d_draw_texture(0, 0, 0, 0, &canvas->content,
                                     0, canvas->content.h,
                                     0, -canvas->content.h);
-            renderer2d_pop_viewport(r);
+            renderer2d_pop_viewport();
             glEnable(GL_BLEND);
             canvas->isbuffet_inited = SF_TRUE;
         }
-        renderer2d_set_render_target(r, &canvas->content);
-        renderer2d_push_viewport(r, 0, 0, canvas->content.w,
+        renderer2d_set_render_target(&canvas->content);
+        renderer2d_push_viewport(0, 0, canvas->content.w,
                                  canvas->content.h);
-        renderer2d_blend_points(r, &canvas->buffer,
+        renderer2d_blend_points(&canvas->buffer,
                                 sf_array_head(&canvas->plots),
                                 sf_array_cnt(&canvas->plots),
                                 canvas->plot_size,
                                 canvas->plot_color[0], canvas->plot_color[1],
                                 canvas->plot_color[2], canvas->plot_color[3]);
-        renderer2d_set_render_target(r, NULL);
-        renderer2d_pop_viewport(r);
+        renderer2d_set_render_target(NULL);
+        renderer2d_pop_viewport();
 
         sf_array_clear(&canvas->plots);
     }
 }
 
-static void canvas_on_render(struct ui *ui, struct renderer2d *r) {
+static void canvas_on_render(struct ui *ui)
+{
     struct canvas *canvas = (struct canvas *) ui;
 
-    canvas->renderer = r;
-    canvas_update_content(canvas, canvas->renderer);
+    canvas_update_content(canvas);
 
     /* draw background */
-    renderer2d_clear(r, 1.0f, 1.0f, 1.0f, 0);
+    renderer2d_clear(1.0f, 1.0f, 1.0f, 0);
 
     /* draw content */
-    renderer2d_draw_texture(r, 0, 0, 0, 0, &canvas->content, 0, 0, 0, 0);
+    renderer2d_draw_texture(0, 0, 0, 0, &canvas->content, 0, 0, 0, 0);
 }
 
 static void canvas_on_resize(struct ui *ui, int w, int h) {
@@ -103,7 +104,6 @@ int canvas_init(struct canvas *canvas, int w, int h) {
     canvas->viewport.w = w;
     canvas->viewport.h = h;
     canvas->dx = canvas->dy = 0.0f;
-    canvas->renderer = NULL;
     canvas->isploting = SF_FALSE;
     canvas->iscontent_inited = SF_FALSE;
     canvas->isbuffet_inited = SF_FALSE;
@@ -165,8 +165,7 @@ void canvas_end_plot(struct canvas *canvas) {
     canvas->isploting = SF_FALSE;
     canvas->isbuffet_inited = SF_FALSE;
 
-    assert(canvas->renderer);
-    canvas_update_content(canvas, canvas->renderer);
+    canvas_update_content(canvas);
 }
 
 void canvas_set_plot_color(struct canvas *canvas, float color[4]) {
@@ -175,11 +174,6 @@ void canvas_set_plot_color(struct canvas *canvas, float color[4]) {
 
 void canvas_set_plot_size(struct canvas *canvas, float size) {
     canvas->plot_size = size;
-}
-
-int canvas_can_plot(struct canvas *canvas)
-{
-    return canvas->renderer != NULL;
 }
 
 #if 0

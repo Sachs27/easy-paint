@@ -48,7 +48,8 @@ int record_load(struct record *record, const char *filename);
 
 int record_save(struct record *record, const char *filename);
 
-int record_to_texture(struct record *record, struct texture *texture);
+int record_to_texture(struct record *record, struct texture *texture,
+                      int w, int h);
 
 int record_adjust(struct record *record, int w, int h);
 

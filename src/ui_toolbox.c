@@ -1,5 +1,6 @@
 #include <sf/utils.h>
 
+#include "renderer2d.h"
 #include "ui_toolbox.h"
 
 
@@ -23,20 +24,21 @@ static void ui_toolbox_update_buttons(struct ui_toolbox *tb) {
     } while (sf_list_iter_next(&iter));
 }
 
-static void ui_toolbox_on_render(struct ui *ui, struct renderer2d *r) {
+static void ui_toolbox_on_render(struct ui *ui)
+{
     struct ui_toolbox *tb = (struct ui_toolbox *) ui;
     /* draw background */
-    renderer2d_fill_rect(r, 0, 0, tb->ui.area.w, tb->ui.area.h,
+    renderer2d_fill_rect(0, 0, tb->ui.area.w, tb->ui.area.h,
                          tb->background_color[0],
                          tb->background_color[1],
                          tb->background_color[2],
-                         255);
+                         tb->background_color[3]);
 
-    renderer2d_draw_line(r, 2, 0, 0, tb->ui.area.w, 0,
+    renderer2d_draw_line(2, 0, 0, tb->ui.area.w, 0,
                          tb->background_color[0] / 2,
                          tb->background_color[1] / 2,
                          tb->background_color[2] / 2,
-                         255);
+                         tb->background_color[3]);
 }
 
 static int ui_toolbox_on_press(struct ui *ui, int x, int y) {

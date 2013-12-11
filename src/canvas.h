@@ -8,8 +8,6 @@
 #include "ui.h"
 #include "texture.h"
 
-struct renderer2d;
-
 /**
   * The default origin of canvas' coordinate locate at upper left of the
   * viewport, and from left to right, top to bottom.
@@ -25,7 +23,6 @@ struct canvas {
 
     float               dx, dy;         /* the delta of offset */
 /* ---------------------------------------------*/
-    struct renderer2d  *renderer;
     sf_bool_t           isploting;
     sf_bool_t           iscontent_inited;
     struct texture      content;
@@ -63,8 +60,6 @@ void canvas_end_plot(struct canvas *canvas);
 void canvas_set_plot_color(struct canvas *canvas, float color[4]);
 
 void canvas_set_plot_size(struct canvas *canvas, float size);
-
-int canvas_can_plot(struct canvas *canvas);
 
 
 #endif /* CANVAS_H */
