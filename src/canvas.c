@@ -26,15 +26,7 @@ static void canvas_update_content(struct canvas *canvas)
 
     if (sf_array_cnt(&canvas->plots)) {
         if (!canvas->isbuffet_inited) {
-            glDisable(GL_BLEND);
-            renderer2d_set_render_target(&canvas->buffer);
-            renderer2d_push_viewport(0, 0, canvas->buffer.w,
-                                     canvas->buffer.h);
-            renderer2d_draw_texture(0, 0, 0, 0, &canvas->content,
-                                    0, canvas->content.h,
-                                    0, -canvas->content.h);
-            renderer2d_pop_viewport();
-            glEnable(GL_BLEND);
+            texture_cpy(&canvas->buffer, &canvas->content);
             canvas->isbuffet_inited = SF_TRUE;
         }
         renderer2d_set_render_target(&canvas->content);

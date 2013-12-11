@@ -443,11 +443,16 @@ int record_to_texture(struct record *record, struct texture *texture,
     struct canvas canvas;
     int ow, oh;
 
+    canvas_init(&canvas, w, h);
+
+    texture_init_2d(texture, w, h);
+
     ow = record->w;
     oh = record->h;
     record_adjust(record, w, h);
 
-
+    record_undo(record, &canvas);
+    record_redo(record, &canvas);
 
     record_adjust(record, ow, oh);
 

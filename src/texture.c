@@ -15,6 +15,7 @@
 
 #include "texture.h"
 #include "filesystem.h"
+#include "renderer2d.h"
 
 
 struct texture_inner {
@@ -237,4 +238,17 @@ void texture_destroy(struct texture *tex) {
         glDeleteTextures(1, &tex->tid);
         tex->tid = 0;
     }
+}
+
+int texture_cpy(struct texture *dst, struct texture *src)
+{
+    glDisable(GL_BLEND);
+    renderer2d_set_render_target(dst);
+    renderer2d_push_viewport(0, 0, src->w, src->h);
+    renderer2d_draw_texture(0, 0, 0, 0, src,
+                            0, src->h, 0, -src->h);
+    renderer2d_pop_viewport();
+    glEnable(GL_BLEND);
+
+    return SF_OK;
 }

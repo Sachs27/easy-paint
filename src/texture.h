@@ -6,7 +6,6 @@
 #else
 # include <GL/gl.h>
 #endif
-#include <zip.h>
 
 struct texture {
     GLuint  tid;
@@ -15,12 +14,11 @@ struct texture {
     int     h;
 };
 
+int texture_cpy(struct texture *dst, struct texture *src);
 
 int texture_init_2d(struct texture *tex, int w, int h);
 
 int texture_load_2d(struct texture *tex, const char *pathname);
-int texture_load_2d_zip(struct texture *tex, struct zip *archive,
-                        const char *pathname);
 
 void texture_set_parameteri(struct texture *tex, GLenum pname, GLint param);
 
