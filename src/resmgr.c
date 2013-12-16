@@ -367,6 +367,8 @@ size_t rm_get_user_define_record_count(void)
 {
     int count = 1;  /* for LastReocrd.epr */
 
+    fs_cd(rm.save_path);
+
     fs_file_walker(count_filename, &count);
 
     return count;
