@@ -24,10 +24,10 @@ struct ui_replay_panel {
     int                 record_id;
 
     int                 nreplayed;
-    int                 isresizing;
-    int                 isfirstframe;
-    int                 isadjust;
-    int                 isreplay;
+    int8_t              isresizing;
+    int8_t              isfirstframe;
+    int8_t              isadjust;
+    int8_t              isreplay;
     int                 isstop;
     double              dt;
 

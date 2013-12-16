@@ -194,8 +194,8 @@ int texture_load_2d(struct texture *tex, const char *pathname) {
     glTexImage2D(GL_TEXTURE_2D, 0, tex_inner.format,
                  tex_inner.width, tex_inner.height, 0,
                  tex_inner.format, tex_inner.type, tex_inner.pixels);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     sf_free(tex_inner.pixels);
@@ -220,8 +220,8 @@ int texture_init_2d(struct texture *tex, int w, int h) {
     glBindTexture(GL_TEXTURE_2D, tex->tid);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                  NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     return 0;
@@ -240,13 +240,14 @@ void texture_destroy(struct texture *tex) {
     }
 }
 
-int texture_cpy(struct texture *dst, struct texture *src)
+int texture_copy(struct texture *dst, struct texture *src)
 {
     glDisable(GL_BLEND);
     renderer2d_set_render_target(dst);
     renderer2d_push_viewport(0, 0, src->w, src->h);
     renderer2d_draw_texture(0, 0, 0, 0, src,
                             0, src->h, 0, -src->h);
+    renderer2d_set_render_target(NULL);
     renderer2d_pop_viewport();
     glEnable(GL_BLEND);
 

@@ -65,5 +65,9 @@ size_t rm_get_user_define_record_count(void);
 /* there are at least one record (LastRecord.epr) */
 size_t rm_get_all_user_define_records(struct record **records, size_t len);
 
+int rm_del_user_define_record(const char *filename);
+
+int rm_del_last_record(void);
+
 
 #endif /* RESMGR_H */

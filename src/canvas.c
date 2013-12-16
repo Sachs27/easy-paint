@@ -26,7 +26,7 @@ static void canvas_update_content(struct canvas *canvas)
 
     if (sf_array_cnt(&canvas->plots)) {
         if (!canvas->isbuffet_inited) {
-            texture_cpy(&canvas->buffer, &canvas->content);
+            texture_copy(&canvas->buffer, &canvas->content);
             canvas->isbuffet_inited = SF_TRUE;
         }
         renderer2d_set_render_target(&canvas->content);
@@ -45,14 +45,19 @@ static void canvas_update_content(struct canvas *canvas)
     }
 }
 
+static void canvas_render_background(struct canvas *canvas)
+{
+    /* draw background */
+    renderer2d_clear(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
 static void canvas_on_render(struct ui *ui)
 {
     struct canvas *canvas = (struct canvas *) ui;
 
     canvas_update_content(canvas);
 
-    /* draw background */
-    renderer2d_clear(1.0f, 1.0f, 1.0f, 0);
+    canvas_render_background(canvas);
 
     /* draw content */
     renderer2d_draw_texture(0, 0, 0, 0, &canvas->content, 0, 0, 0, 0);
@@ -110,6 +115,8 @@ int canvas_init(struct canvas *canvas, int w, int h) {
     UI_CALLBACK(canvas, resize, canvas_on_resize);
     UI_CALLBACK(canvas, destroy, canvas_on_destroy);
 
+    canvas_render_background(canvas);
+
     return 0;
 }
 
@@ -118,6 +125,8 @@ void canvas_destroy(struct canvas *canvas) {
 }
 
 void canvas_clear(struct canvas *canvas) {
+    canvas_render_background(canvas);
+
     canvas->iscontent_inited = SF_FALSE;
     canvas->isbuffet_inited = SF_FALSE;
     canvas->isploting = SF_FALSE;

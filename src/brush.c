@@ -333,7 +333,7 @@ void brush_drawline(struct brush *brush, struct canvas *canvas,
     int err;
 
     canvas_set_plot_color(canvas, brush->color);
-    canvas_set_plot_size(canvas, brush->radius);
+    canvas_set_plot_size(canvas, brush->radius > 2.0f ? brush->radius : 2.0f);
 
     dx = x1 - x0;
     dy = y1 - y0;

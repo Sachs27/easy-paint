@@ -593,3 +593,14 @@ size_t fs_file_size(const char *filename)
         return sb.st_size;
     }
 }
+
+int fs_file_del(const char *filename)
+{
+    if (is_cwd_zip()) {
+        assert(0);
+        return 0;
+    } else {
+        return remove(filename);
+    }
+
+}

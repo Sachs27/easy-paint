@@ -14,7 +14,7 @@ struct texture {
     int     h;
 };
 
-int texture_cpy(struct texture *dst, struct texture *src);
+int texture_copy(struct texture *dst, struct texture *src);
 
 int texture_init_2d(struct texture *tex, int w, int h);
 

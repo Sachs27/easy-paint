@@ -4,6 +4,7 @@
 
 #include "user_paint_panel.h"
 #include "user_learn_panel.h"
+#include "ui_select_record.h"
 #include "ui_menu.h"
 
 
@@ -18,6 +19,7 @@ struct input_manager;
 enum app_stage {
     APP_STAGE_DOODLE = 1,
     APP_STAGE_TEACHING,
+    APP_STAGE_SELECT,
     APP_STAGE_SETTING,
 };
 
@@ -41,6 +43,7 @@ struct app {
 
     struct user_paint_panel     upp;
     struct user_learn_panel     ulp;
+    struct ui_select_record     sr;
 };
 
 

@@ -371,3 +371,15 @@ size_t rm_get_user_define_record_count(void)
 
     return count;
 }
+
+int rm_del_user_define_record(const char *filename)
+{
+    fs_cd(rm.save_path);
+
+    return fs_file_del(filename);
+}
+
+int rm_del_last_record(void)
+{
+    return rm_del_user_define_record(RM_LAST_RECORD_FILENAME);
+}

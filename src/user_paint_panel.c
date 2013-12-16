@@ -272,7 +272,9 @@ static int save_on_press(struct ui *ui, int x, int y)
 
         strftime(buf, 64, "%F-%H-%M-%S.epr", localtime(&rawtime));
 
-        rm_save_as_user_define_record(upp->record, buf);
+        if (rm_save_as_user_define_record(upp->record, buf) == SF_OK) {
+            rm_del_last_record();
+        }
     } else {
         rm_save_user_define_record(upp->record);
     }
@@ -285,6 +287,8 @@ static void user_paint_panel_on_show(struct ui *ui)
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
     ui_hide(&upp->blank);
     ui_hide((struct ui *) &upp->urp);
+
+    canvas_clear(&upp->canvas);
 
     upp->record = rm_load_last_record();
 

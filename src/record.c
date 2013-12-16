@@ -453,8 +453,11 @@ int record_to_texture(struct record *record, struct texture *texture,
 
     record_undo(record, &canvas);
     record_redo(record, &canvas);
+    texture_copy(texture, &canvas.content);
 
     record_adjust(record, ow, oh);
+
+    canvas_destroy(&canvas);
 
     return SF_OK;
 }
@@ -499,6 +502,10 @@ int record_adjust(struct record *record, int w, int h)
 
             rp->drawline.y0 = rp->drawline.y0 * yradio;
             rp->drawline.y1 = rp->drawline.y1 * yradio;
+        } else if (rp->type == RECORD_SET_BRUSH) {
+            float r = rp->set_brush.brush.radius;
+            r =  r * (xradio + yradio) / 2;
+            rp->set_brush.brush.radius = r;
         }
     } while (sf_list_iter_next(&iter));
 

@@ -60,6 +60,8 @@ int fs_file_open(struct fs_file *f, const char *filename, const char *mode);
 
 int fs_file_close(struct fs_file *f);
 
+int fs_file_del(const char *filename);
+
 ssize_t fs_file_write(struct fs_file *f, const void *buf, size_t count);
 
 ssize_t fs_file_read(const struct fs_file *f, void *buf, size_t count);

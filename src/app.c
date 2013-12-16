@@ -33,6 +33,11 @@ static int menu_on_press(struct ui *ui, int x, int y)
 static void app_change_stage(int stage)
 {
     switch (stage) {
+    case APP_STAGE_SELECT:
+        ui_hide((struct ui *) &g_app.ulp);
+        ui_hide((struct ui *) &g_app.upp);
+        ui_show((struct ui *) &g_app.sr);
+        break;
     case APP_STAGE_DOODLE:
         ui_hide((struct ui *) &g_app.ulp);
         ui_show((struct ui *) &g_app.upp);
@@ -77,6 +82,9 @@ int app_init(const char *res_path, const char *save_path)
     ui_manager_init(&g_app.uim);
 
     ui_init(&g_app.root, g_app.window->w, g_app.window->h);
+
+    ui_select_record_init(&g_app.sr, g_app.window->w, g_app.window->h);
+    ui_add_child(&g_app.root, (struct ui *) &g_app.sr, 0, 0);
 
     user_paint_panel_init(&g_app.upp, g_app.window->w, g_app.window->h);
     ui_add_child(&g_app.root, (struct ui *) &g_app.upp, 0, 0);
@@ -132,7 +140,7 @@ int app_init(const char *res_path, const char *save_path)
     ui_hide((struct ui *) &g_app.menu);
     ui_show((struct ui *) &g_app.menuicon);
 
-    app_change_stage(APP_STAGE_DOODLE);
+    app_change_stage(APP_STAGE_SELECT);
 
     return 0;
 }
@@ -161,6 +169,8 @@ void app_on_resize(struct window *win, int w, int h)
     renderer2d_resize(w, h);
 
     rm_set_record_size(w, h);
+
+    ui_resize((struct ui *) &g_app.sr, w, h);
 
     ui_resize((struct ui *) &g_app.upp, w, h);
     ui_resize((struct ui *) &g_app.ulp, w, h);
