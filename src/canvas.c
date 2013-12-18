@@ -15,12 +15,7 @@
 static void canvas_update_content(struct canvas *canvas)
 {
     if (!canvas->iscontent_inited) {
-        renderer2d_set_render_target(&canvas->content);
-        renderer2d_push_viewport(0, 0, canvas->content.w,
-                                 canvas->content.h);
-        renderer2d_clear(0.0f, 0.0f, 0.0f, 0.0f);
-        renderer2d_set_render_target(NULL);
-        renderer2d_pop_viewport();
+        texture_clear(&canvas->content, 0.0f, 0.0f, 0.0f, 0.0f);
         canvas->iscontent_inited = SF_TRUE;
     }
 
@@ -115,8 +110,6 @@ int canvas_init(struct canvas *canvas, int w, int h) {
     UI_CALLBACK(canvas, resize, canvas_on_resize);
     UI_CALLBACK(canvas, destroy, canvas_on_destroy);
 
-    canvas_render_background(canvas);
-
     return 0;
 }
 
@@ -125,8 +118,6 @@ void canvas_destroy(struct canvas *canvas) {
 }
 
 void canvas_clear(struct canvas *canvas) {
-    canvas_render_background(canvas);
-
     canvas->iscontent_inited = SF_FALSE;
     canvas->isbuffet_inited = SF_FALSE;
     canvas->isploting = SF_FALSE;

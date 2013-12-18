@@ -14,6 +14,8 @@ struct texture {
     int     h;
 };
 
+void texture_clear(struct texture *tex, float r, float g, float b, float a);
+
 int texture_copy(struct texture *dst, struct texture *src);
 
 int texture_init_2d(struct texture *tex, int w, int h);

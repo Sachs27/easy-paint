@@ -226,7 +226,7 @@ void app_on_update(double dt) {
     }
 
     ui_manager_update(&g_app.uim, g_app.im, dt);
-    input_manager_update();
+    input_manager_update(dt);
 }
 
 void app_on_render(void) {

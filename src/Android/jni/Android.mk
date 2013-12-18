@@ -35,6 +35,7 @@ LOCAL_SRC_FILES :=						\
 	$(MY_SRC_PATH)/ui_imagebox.c		\
 	$(MY_SRC_PATH)/ui_menu.c			\
 	$(MY_SRC_PATH)/ui_replay_panel.c	\
+	$(MY_SRC_PATH)/ui_select_record.c	\
 	$(MY_SRC_PATH)/ui_toolbox.c			\
 	$(MY_SRC_PATH)/user_learn_panel.c	\
 	$(MY_SRC_PATH)/user_paint_panel.c	\

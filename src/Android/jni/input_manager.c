@@ -55,7 +55,7 @@ void input_manager_touch_up(void) {
     input_manager->keys[KEY_MB_LEFT] = KEY_RELEASE;
 }
 
-void input_manager_update(void) {
+void input_manager_update(double dt) {
     struct input_manager *im = input_manager;
 
     if (sf_list_cnt(&im->mb_left_buffer) > 1) {

@@ -240,6 +240,15 @@ void texture_destroy(struct texture *tex) {
     }
 }
 
+void texture_clear(struct texture *tex, float r, float g, float b, float a)
+{
+    renderer2d_set_render_target(tex);
+    renderer2d_push_viewport(0, 0, tex->w, tex->h);
+    renderer2d_clear(r, g, b, a);
+    renderer2d_set_render_target(NULL);
+    renderer2d_pop_viewport();
+}
+
 int texture_copy(struct texture *dst, struct texture *src)
 {
     glDisable(GL_BLEND);

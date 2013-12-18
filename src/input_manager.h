@@ -12,6 +12,8 @@ enum key_state {
     KEY_RELEASE,
     KEY_PRESS,
     KEY_REPEAT,
+    KEY_TAP,
+    KEY_LONG_PRESS,
 };
 
 enum key {
@@ -36,6 +38,7 @@ enum key {
 
 struct input_manager {
     sf_list_t mb_left_buffer;   /* elt: struct ivec2 */
+    float     mb_left_time;
 
     struct ivec2 mouse;
 
@@ -49,7 +52,7 @@ struct input_manager *input_manager_create(struct window *win);
 
 void input_manager_destroy(void);
 
-void input_manager_update();
+void input_manager_update(double dt);
 
 #ifdef ANDROID
 void input_manager_touch_down(int x, int y);

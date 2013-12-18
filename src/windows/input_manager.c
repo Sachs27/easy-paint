@@ -136,12 +136,14 @@ void input_manager_destroy(void) {
     input_manager = NULL;
 }
 
-void input_manager_update(void) {
+void input_manager_update(double dt) {
     struct input_manager *im = input_manager;
 
     if (sf_list_cnt(&im->mb_left_buffer) > 1) {
         sf_log(SF_LOG_INFO, "input_manager cache %u positions.",
                sf_list_cnt(&im->mb_left_buffer));
+    } else if (sf_list_cnt(&im->mb_left_buffer) == 0) {
+        im->mb_left_time += dt;
     }
 
     sf_list_clear(&im->mb_left_buffer);

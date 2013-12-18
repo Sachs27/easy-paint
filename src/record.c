@@ -451,9 +451,13 @@ int record_to_texture(struct record *record, struct texture *texture,
     oh = record->h;
     record_adjust(record, w, h);
 
-    record_undo(record, &canvas);
-    record_redo(record, &canvas);
-    texture_copy(texture, &canvas.content);
+    if (record_canundo(record)) {
+        record_undo(record, &canvas);
+        record_redo(record, &canvas);
+        texture_copy(texture, &canvas.content);
+    } else {
+        texture_clear(texture, 0.0f, 0.0f, 0.0f, 0.0f);
+    }
 
     record_adjust(record, ow, oh);
 
