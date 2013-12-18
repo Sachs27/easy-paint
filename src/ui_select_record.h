@@ -5,6 +5,7 @@
 #include <sf/array.h>
 
 #include "ui.h"
+#include "ui_imagebox.h"
 
 
 struct ui_select_record {
@@ -16,6 +17,9 @@ struct ui_select_record {
     int                 texture_w, texture_h;
     int                 padding;
     int                 yoffset;
+
+    struct texture     *new_image;
+    struct ui_imagebox  ib_new;
 };
 
 
