@@ -449,14 +449,14 @@ int record_to_texture(struct record *record, struct texture *texture,
                       int w, int h)
 {
     struct canvas canvas;
-    int ow, oh;
+    /*int ow, oh;*/
 
     canvas_init(&canvas, w, h);
 
     texture_init_2d(texture, w, h);
 
-    ow = record->w;
-    oh = record->h;
+    /*ow = record->w;*/
+    /*oh = record->h;*/
     record_adjust(record, w, h);
 
     if (record_canundo(record)) {
@@ -467,7 +467,7 @@ int record_to_texture(struct record *record, struct texture *texture,
         texture_clear(texture, 0.0f, 0.0f, 0.0f, 0.0f);
     }
 
-    record_adjust(record, ow, oh);
+    /*record_adjust(record, ow, oh);*/
 
     canvas_destroy(&canvas);
 

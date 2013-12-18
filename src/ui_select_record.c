@@ -9,6 +9,14 @@
 #include "renderer2d.h"
 
 
+static void ui_select_record_on_destroy(struct ui *ui)
+{
+    struct ui_select_record *sr = (struct ui_select_record *) ui;
+
+    sf_array_destroy(&sr->records);
+    sf_array_destroy(&sr->textures);
+}
+
 static void generate_textures(struct ui_select_record *sr)
 {
     struct texture tex;
@@ -160,6 +168,7 @@ int ui_select_record_init(struct ui_select_record *sr, int w, int h)
     ui_add_child((struct ui *) sr, (struct ui *) &sr->ib_new,
                  0, 0);
 
+    UI_CALLBACK(sr, destroy, ui_select_record_on_destroy);
     UI_CALLBACK(sr, show, ui_select_record_on_show);
     UI_CALLBACK(sr, hide, ui_select_record_on_hide);
     UI_CALLBACK(sr, render, ui_select_record_on_render);
