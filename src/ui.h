@@ -110,6 +110,7 @@ void ui_get_screen_pos(struct ui *ui, int *o_x, int *o_y);
 /* ======================================================================= */
 
 struct ui_manager {
+    int         last_action;
     struct ui  *ui_pressed; /* only one ui can be
                              * pressed at one time.  */
     struct ui  *root;

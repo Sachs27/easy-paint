@@ -57,7 +57,7 @@ static void ui_select_record_on_render(struct ui *ui)
     renderer2d_clear(0.7, 0.7, 0.7, 0.0);
 
     x = sr->padding;
-    y = sr->padding;
+    y = sr->padding + sr->yoffset;
     for (i = 0; i < sf_array_cnt(&sr->textures); ++i) {
         renderer2d_fill_rect(x, y, sr->texture_w, sr->texture_h,
                              255, 255, 255, 255);
@@ -94,7 +94,7 @@ static int ui_select_record_on_tap(struct ui *ui, int x, int y)
     int i, tx, ty;
 
     tx = sr->padding;
-    ty = sr->padding;
+    ty = sr->padding + sr->yoffset;
     for (i = 0; i < sf_array_cnt(&sr->textures); ++i) {
         struct sf_rect area;
         area.x = tx;
@@ -124,6 +124,11 @@ static int ui_select_record_on_long_press(struct ui *ui, int x, int y)
     return 0;
 }
 
+static void ui_select_record_release(struct ui *ui)
+{
+    sf_log(SF_LOG_DEBUG, "RELEASE");
+}
+
 static void texture_free(void *elt)
 {
     texture_destroy(elt);
@@ -135,6 +140,8 @@ int ui_select_record_init(struct ui_select_record *sr, int w, int h)
     sf_array_def_t def;
 
     ui_init((struct ui *) sr, w, h);
+
+    sr->yoffset = 0;
 
     sf_memzero(&def, sizeof(def));
     def.size = sizeof(struct record *);
@@ -154,6 +161,7 @@ int ui_select_record_init(struct ui_select_record *sr, int w, int h)
     UI_CALLBACK(sr, resize, ui_select_record_on_resize);
     UI_CALLBACK(sr, long_press, ui_select_record_on_long_press);
     UI_CALLBACK(sr, tap, ui_select_record_on_tap);
+    UI_CALLBACK(sr, release, ui_select_record_release);
 
     return SF_OK;
 }

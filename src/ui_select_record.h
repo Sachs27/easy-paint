@@ -15,6 +15,7 @@ struct ui_select_record {
     sf_array_t          textures;
     int                 texture_w, texture_h;
     int                 padding;
+    int                 yoffset;
 };
 
 

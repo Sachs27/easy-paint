@@ -42,7 +42,8 @@ static void handle_mouse_button(struct input_manager *im,
             im->keys[KEY_MB_LEFT] = KEY_PRESS;
             im->is_mb_move = 0;
         } else if (action == GLFW_RELEASE) {
-            if (im->is_mb_move) {
+            if (im->keys[KEY_MB_LEFT] == KEY_LONG_PRESS
+                || im->is_mb_move) {
                 im->keys[KEY_MB_LEFT] = KEY_RELEASE;
             } else if (im->mb_left_time < IM_KEY_TAP_TIME) {
                 im->keys[KEY_MB_LEFT] = KEY_TAP;
@@ -158,8 +159,6 @@ void input_manager_update(double dt) {
             }
         }
     } else if (im->keys[KEY_MB_LEFT] == KEY_TAP) {
-        im->keys[KEY_MB_LEFT] = KEY_RELEASE;
-    } else if (im->keys[KEY_MB_LEFT] == KEY_LONG_PRESS) {
         im->keys[KEY_MB_LEFT] = KEY_RELEASE;
     }
 

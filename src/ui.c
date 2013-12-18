@@ -137,6 +137,7 @@ void ui_get_screen_pos(struct ui *ui, int *o_x, int *o_y) {
 int ui_manager_init(struct ui_manager *uim) {
     uim->ui_pressed = NULL;
     uim->root = NULL;
+    uim->last_action = KEY_RELEASE;
     return 0;
 }
 
@@ -173,18 +174,27 @@ static int handle_press_event(struct ui_manager *uim, int action,
     if (ispass && (uim->ui_pressed != NULL ? uim->ui_pressed == ui : 1)) {
         switch (action) {
         case KEY_PRESS:
-            if (ui->on_press && uim->ui_pressed == NULL) {
-                ispass = ui->on_press(ui, x, y);
+            if (uim->last_action == KEY_RELEASE) {
+                if (ui->on_press) {
+                    ispass = ui->on_press(ui, x, y);
+                }
+                uim->last_action = KEY_PRESS;
             }
             break;
         case KEY_LONG_PRESS:
-            if (ui->on_long_press) {
-                ispass = ui->on_long_press(ui, x, y);
+            if (uim->last_action == KEY_PRESS) {
+                if (ui->on_long_press) {
+                    ispass = ui->on_long_press(ui, x, y);
+                }
+                uim->last_action = KEY_LONG_PRESS;
             }
             break;
         case KEY_TAP:
-            if (ui->on_tap) {
-                ispass = ui->on_tap(ui, x, y);
+            if (uim->last_action == KEY_PRESS) {
+                if (ui->on_tap) {
+                    ispass = ui->on_tap(ui, x, y);
+                }
+                uim->last_action = KEY_TAP;
             }
             break;
         }
@@ -213,16 +223,17 @@ void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
                        double dt) {
     if (uim->root && uim->root->state == UI_STATE_SHOW
         && im->keys[KEY_MB_LEFT] != KEY_RELEASE) {
-        int x, y;
-        x = im->mouse.x - uim->root->area.x;
-        y = im->mouse.y - uim->root->area.y;
-        handle_press_event(uim, im->keys[KEY_MB_LEFT], uim->root, x, y);
+            int x, y;
+            x = im->mouse.x - uim->root->area.x;
+            y = im->mouse.y - uim->root->area.y;
+            handle_press_event(uim, im->keys[KEY_MB_LEFT], uim->root, x, y);
     } else if (im->keys[KEY_MB_LEFT] == KEY_RELEASE) {
         if (uim->ui_pressed) {
             if (uim->ui_pressed->on_release) {
                 uim->ui_pressed->on_release(uim->ui_pressed);
             }
             uim->ui_pressed = NULL;
+            uim->last_action = KEY_RELEASE;
         }
     }
 
