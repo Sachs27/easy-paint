@@ -57,6 +57,8 @@ void app_on_render(void);
 
 void app_on_resize(struct window *win, int w, int h);
 
+void app_change_stage(int stage);
+
 
 extern struct app g_app;
 

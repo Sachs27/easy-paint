@@ -19,6 +19,7 @@ static void handle_mouse_pos(struct input_manager *im,
         pos.x = x;
         pos.y = y;
         sf_list_push(&im->mb_left_buffer, &pos);
+        im->is_mb_move = 1;
     }
 
     im->mouse.x = x;
@@ -37,7 +38,17 @@ static void handle_mouse_button(struct input_manager *im,
 
     switch (button) {
     case GLFW_MOUSE_BUTTON_LEFT:
-        im->keys[KEY_MB_LEFT] = action;
+        if (action == GLFW_PRESS) {
+            im->keys[KEY_MB_LEFT] = KEY_PRESS;
+            im->is_mb_move = 0;
+        } else if (action == GLFW_RELEASE) {
+            if (im->is_mb_move) {
+                im->keys[KEY_MB_LEFT] = KEY_RELEASE;
+            } else if (im->mb_left_time < IM_KEY_TAP_TIME) {
+                im->keys[KEY_MB_LEFT] = KEY_TAP;
+            }
+            im->mb_left_time = 0.0f;
+        }
         break;
     case GLFW_MOUSE_BUTTON_RIGHT:
         im->keys[KEY_MB_RIGHT] = action;
@@ -139,11 +150,17 @@ void input_manager_destroy(void) {
 void input_manager_update(double dt) {
     struct input_manager *im = input_manager;
 
-    if (sf_list_cnt(&im->mb_left_buffer) > 1) {
-        sf_log(SF_LOG_INFO, "input_manager cache %u positions.",
-               sf_list_cnt(&im->mb_left_buffer));
-    } else if (sf_list_cnt(&im->mb_left_buffer) == 0) {
-        im->mb_left_time += dt;
+    if (im->keys[KEY_MB_LEFT] == KEY_PRESS) {
+        if (!im->is_mb_move) {
+            im->mb_left_time += dt;
+            if (im->mb_left_time >= IM_KEY_LONG_PRESS_TIME) {
+                im->keys[KEY_MB_LEFT] = KEY_LONG_PRESS;
+            }
+        }
+    } else if (im->keys[KEY_MB_LEFT] == KEY_TAP) {
+        im->keys[KEY_MB_LEFT] = KEY_RELEASE;
+    } else if (im->keys[KEY_MB_LEFT] == KEY_LONG_PRESS) {
+        im->keys[KEY_MB_LEFT] = KEY_RELEASE;
     }
 
     sf_list_clear(&im->mb_left_buffer);

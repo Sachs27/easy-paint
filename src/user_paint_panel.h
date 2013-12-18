@@ -67,5 +67,8 @@ struct user_paint_panel {
 
 int user_paint_panel_init(struct user_paint_panel *upp, int w, int h);
 
+void user_paint_panel_set_record(struct user_paint_panel *upp,
+                                 struct record *r);
+
 
 #endif /* USER_PAINT_PANEL_H */

@@ -189,6 +189,10 @@ int record_canundo(struct record *record)
     sf_list_iter_t iter;
     struct record_point *rp;
 
+    if (record == NULL) {
+        return 0;
+    }
+
     if (record->nrecords == 0) {
         return 0;
     }
@@ -251,6 +255,10 @@ int record_canredo(struct record *record)
     int i;
     sf_list_iter_t iter;
     struct record_point *rp;
+
+    if (record == NULL) {
+        return 0;
+    }
 
     i = sf_list_cnt(&record->records);
     if (i == 0 || i <= record->nrecords) {

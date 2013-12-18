@@ -30,7 +30,7 @@ static int menu_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static void app_change_stage(int stage)
+void app_change_stage(int stage)
 {
     switch (stage) {
     case APP_STAGE_SELECT:
@@ -41,10 +41,12 @@ static void app_change_stage(int stage)
     case APP_STAGE_DOODLE:
         ui_hide((struct ui *) &g_app.ulp);
         ui_show((struct ui *) &g_app.upp);
+        ui_hide((struct ui *) &g_app.sr);
         break;
     case APP_STAGE_TEACHING:
         ui_hide((struct ui *) &g_app.upp);
         ui_show((struct ui *) &g_app.ulp);
+        ui_hide((struct ui *) &g_app.sr);
         break;
     }
 }

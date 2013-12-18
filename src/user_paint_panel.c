@@ -167,7 +167,9 @@ static int canvas_on_press(struct ui *ui, int x, int y)
 
     canvas_begin_plot(canvas);
 
-    record_begin_plot(upp->record, upp->cur_brush);
+    if (upp->record) {
+        record_begin_plot(upp->record, upp->cur_brush);
+    }
 
     return 0;
 }
@@ -179,7 +181,10 @@ static void canvas_on_release(struct ui *ui)
         sf_container_of(canvas, struct user_paint_panel, canvas);
 
     canvas_end_plot(canvas);
-    record_end_plot(upp->record);
+
+    if (upp->record) {
+        record_end_plot(upp->record);
+    }
 }
 
 static void canvas_on_update(struct ui *ui, struct input_manager *im,
@@ -202,8 +207,10 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
                 upp->cansave = 1;
                 brush_drawline(upp->cur_brush, canvas,
                                canvas_lastx, canvas_lasty, mx, my);
-                record_drawline(upp->record, canvas_lastx, canvas_lasty,
-                                mx, my);
+                if (upp->record) {
+                    record_drawline(upp->record, canvas_lastx, canvas_lasty,
+                                    mx, my);
+                }
                 canvas_lastx = mx;
                 canvas_lasty = my;
             }
@@ -260,23 +267,19 @@ static int save_on_press(struct ui *ui, int x, int y)
     struct user_paint_panel *upp =
         sf_container_of(save, struct user_paint_panel, save);
 
-    if (!upp->cansave) {
+    if (!upp->cansave || !upp->record) {
         return 0;
     }
 
     upp->cansave = 0;
 
-    if (upp->record == rm_load_last_record()) {
+    if (upp->record) {
         time_t rawtime = time(0);
         char buf[64];
 
         strftime(buf, 64, "%F-%H-%M-%S.epr", localtime(&rawtime));
 
-        if (rm_save_as_user_define_record(upp->record, buf) == SF_OK) {
-            rm_del_last_record();
-        }
-    } else {
-        rm_save_user_define_record(upp->record);
+        rm_save_as_user_define_record(upp->record, buf);
     }
 
     return 0;
@@ -290,7 +293,7 @@ static void user_paint_panel_on_show(struct ui *ui)
 
     canvas_clear(&upp->canvas);
 
-    upp->record = rm_load_last_record();
+    /*upp->record = rm_load_last_record();*/
 
     upp->isadject = 1;
 }
@@ -298,6 +301,20 @@ static void user_paint_panel_on_show(struct ui *ui)
 static void user_paint_panel_on_hide(struct ui *ui)
 {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
+
+    if (upp->cansave) {
+        if (upp->record == rm_load_last_record()) {
+            rm_save_user_define_record(upp->record);
+        } else if (upp->record) {
+            time_t rawtime = time(0);
+            char buf[64];
+
+            strftime(buf, 64, "%F-%H-%M-%S.epr", localtime(&rawtime));
+
+            rm_save_as_user_define_record(upp->record, buf);
+        }
+        upp->cansave = 0;
+    }
 
     upp->record = NULL;
 }
@@ -370,11 +387,7 @@ static void user_paint_panel_on_render(struct ui *ui)
 
 static void user_paint_panel_on_destroy(struct ui *ui)
 {
-    struct user_paint_panel *upp = (struct user_paint_panel *) ui;
-
-    if (upp->record) {
-        rm_save_user_define_record(upp->record);
-    }
+    user_paint_panel_on_hide(ui);
 }
 
 int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
@@ -471,4 +484,10 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     UI_CALLBACK(upp, destroy, user_paint_panel_on_destroy);
 
     return 0;
+}
+
+void user_paint_panel_set_record(struct user_paint_panel *upp,
+                                 struct record *r)
+{
+    upp->record = r;
 }

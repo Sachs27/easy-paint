@@ -79,15 +79,14 @@ void ui_remove_child(struct ui *ui, struct ui *child) {
 void ui_show(struct ui *ui) {
     sf_list_iter_t iter;
 
-    ui->state = UI_STATE_SHOW;
-
     if (ui->childen && sf_list_begin(ui->childen, &iter)) do {
         ui_show(*(struct ui **) sf_list_iter_elt(&iter));
     } while (sf_list_iter_next(&iter));
 
-    if (ui->on_show) {
+    if (ui->state != UI_STATE_SHOW && ui->on_show) {
         ui->on_show(ui);
     }
+    ui->state = UI_STATE_SHOW;
 }
 
 void ui_hide(struct ui *ui) {
@@ -97,10 +96,10 @@ void ui_hide(struct ui *ui) {
         ui_hide(*(struct ui **) sf_list_iter_elt(&iter));
     } while (sf_list_iter_next(&iter));
 
-    ui->state = UI_STATE_HIDE;
-    if (ui->on_hide) {
+    if (ui->state != UI_STATE_HIDE && ui->on_hide) {
         ui->on_hide(ui);
     }
+    ui->state = UI_STATE_HIDE;
 }
 
 void ui_move(struct ui *ui, int x, int y) {
@@ -150,8 +149,8 @@ void ui_manager_destroy(struct ui_manager *uim) {
  *         0     - no
  *         other - yes
  */
-static int handle_press_event(struct ui_manager *uim, struct ui *ui,
-                              int x, int y) {
+static int handle_press_event(struct ui_manager *uim, int action,
+                              struct ui *ui, int x, int y) {
     sf_list_iter_t  iter;
     int             ispass = 1;
 
@@ -163,15 +162,32 @@ static int handle_press_event(struct ui_manager *uim, struct ui *ui,
             continue;
         }
 
-        ispass = handle_press_event(uim, ui, x - ui->area.x, y - ui->area.y);
+        ispass = handle_press_event(uim, action, ui,
+                                    x - ui->area.x, y - ui->area.y);
 
         if (!ispass) {
             break;
         }
     } while (sf_list_iter_next(&iter));
 
-    if (ispass && ui->on_press) {
-        ispass = ui->on_press(ui, x, y);
+    if (ispass && (uim->ui_pressed != NULL ? uim->ui_pressed == ui : 1)) {
+        switch (action) {
+        case KEY_PRESS:
+            if (ui->on_press && uim->ui_pressed == NULL) {
+                ispass = ui->on_press(ui, x, y);
+            }
+            break;
+        case KEY_LONG_PRESS:
+            if (ui->on_long_press) {
+                ispass = ui->on_long_press(ui, x, y);
+            }
+            break;
+        case KEY_TAP:
+            if (ui->on_tap) {
+                ispass = ui->on_tap(ui, x, y);
+            }
+            break;
+        }
 
         /* for now, just notify the top ui for the press event */
         ispass = 0;
@@ -195,12 +211,12 @@ static void update_ui(struct ui *ui, struct input_manager *im, double dt) {
 
 void ui_manager_update(struct ui_manager *uim, struct input_manager *im,
                        double dt) {
-    if (uim->root && !uim->ui_pressed && uim->root->state == UI_STATE_SHOW
-        && im->keys[KEY_MB_LEFT] == KEY_PRESS) {
+    if (uim->root && uim->root->state == UI_STATE_SHOW
+        && im->keys[KEY_MB_LEFT] != KEY_RELEASE) {
         int x, y;
         x = im->mouse.x - uim->root->area.x;
         y = im->mouse.y - uim->root->area.y;
-        handle_press_event(uim, uim->root, x, y);
+        handle_press_event(uim, im->keys[KEY_MB_LEFT], uim->root, x, y);
     } else if (im->keys[KEY_MB_LEFT] == KEY_RELEASE) {
         if (uim->ui_pressed) {
             if (uim->ui_pressed->on_release) {

@@ -31,6 +31,10 @@ typedef void (ui_on_render_t)(struct ui *);
  */
 typedef int (ui_on_press_t)(struct ui *ui, int x, int y);
 
+typedef int (ui_on_long_press_t)(struct ui *ui, int x, int y);
+
+typedef int (ui_on_tap_t)(struct ui *ui, int x, int y);
+
 typedef void (ui_on_release_t)(struct ui *ui);
 
 typedef void (ui_on_show_t)(struct ui *ui);
@@ -58,6 +62,8 @@ struct ui {
     UI_CB_DEC(update);
     UI_CB_DEC(render);
     UI_CB_DEC(press);
+    UI_CB_DEC(long_press);
+    UI_CB_DEC(tap);
     UI_CB_DEC(release);
     UI_CB_DEC(show);
     UI_CB_DEC(hide);

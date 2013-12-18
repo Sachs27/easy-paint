@@ -8,6 +8,9 @@
 #include "window.h"
 
 
+#define IM_KEY_LONG_PRESS_TIME 0.6
+#define IM_KEY_TAP_TIME        0.3
+
 enum key_state {
     KEY_RELEASE,
     KEY_PRESS,
@@ -39,6 +42,7 @@ enum key {
 struct input_manager {
     sf_list_t mb_left_buffer;   /* elt: struct ivec2 */
     float     mb_left_time;
+    int       is_mb_move;
 
     struct ivec2 mouse;
 

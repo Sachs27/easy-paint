@@ -255,6 +255,8 @@ int rm_save_as_user_define_record(struct record *r, const char *filename)
 
     assert(ptr != NULL);
 
+    rm_del_user_define_record(ptr->name);
+
     ptr->name = sf_pool_alloc(&rm.str_pool, strlen(filename) + 1);
     strcpy(ptr->name, filename);
 
