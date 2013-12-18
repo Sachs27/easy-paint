@@ -444,7 +444,7 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     UI_CALLBACK(&upp->replay, press, replay_on_press);
 
     upp->save_image = rm_load_texture(RES_TEXTURE_ICON_SAVE);
-    ui_imagebox_init(&upp->save, 0, 0, upp->save_image);
+    ui_imagebox_init(&upp->save, 48, 48, upp->save_image);
     UI_CALLBACK(&upp->save, press, save_on_press);
     UI_CALLBACK(&upp->save, render, save_on_render);
 
