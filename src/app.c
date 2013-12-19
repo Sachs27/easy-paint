@@ -15,9 +15,10 @@
 #include "resmgr.h"
 #include "renderer2d.h"
 
-
 struct app g_app;
 
+
+#if 0
 static int menuicon_on_press(struct ui *ui, int x, int y)
 {
     ui_show((struct ui *) &g_app.menu);
@@ -29,28 +30,31 @@ static int menu_on_press(struct ui *ui, int x, int y)
     ui_hide((struct ui *) &g_app.menu);
     return 0;
 }
-
+#endif
 void app_change_stage(int stage)
 {
     switch (stage) {
     case APP_STAGE_SELECT:
+        ui_hide((struct ui *) &g_app.previous);
         ui_hide((struct ui *) &g_app.ulp);
         ui_hide((struct ui *) &g_app.upp);
         ui_show((struct ui *) &g_app.sr);
         break;
     case APP_STAGE_DOODLE:
+        ui_show((struct ui *) &g_app.previous);
         ui_hide((struct ui *) &g_app.ulp);
         ui_show((struct ui *) &g_app.upp);
         ui_hide((struct ui *) &g_app.sr);
         break;
     case APP_STAGE_TEACHING:
+        ui_show((struct ui *) &g_app.previous);
         ui_hide((struct ui *) &g_app.upp);
         ui_show((struct ui *) &g_app.ulp);
         ui_hide((struct ui *) &g_app.sr);
         break;
     }
 }
-
+#if 0
 static int menu_item_on_press(struct ui *ui, int x, int y)
 {
     int i = 0;
@@ -66,6 +70,13 @@ static int menu_item_on_press(struct ui *ui, int x, int y)
         ++i;
     } while (sf_list_iter_next(&iter));
 
+    return 0;
+}
+#endif
+
+static int previous_on_press(struct ui *ui, int x, int y)
+{
+    app_change_stage(APP_STAGE_SELECT);
     return 0;
 }
 
@@ -90,7 +101,7 @@ int app_init(const char *res_path, const char *save_path)
 
     user_paint_panel_init(&g_app.upp, g_app.window->w, g_app.window->h);
     ui_add_child(&g_app.root, (struct ui *) &g_app.upp, 0, 0);
-
+#if 0
     user_learn_panel_init(&g_app.ulp, g_app.window->w, g_app.window->h);
     ui_add_child(&g_app.root, (struct ui *) &g_app.ulp, 0, 0);
 
@@ -133,6 +144,13 @@ int app_init(const char *res_path, const char *save_path)
     }
 
     ui_add_child(&g_app.root, (struct ui *) &g_app.menu, 0, 0);
+#endif
+    ui_imagebox_init(&g_app.previous, 48, 48,
+                     rm_load_texture(RES_TEXTURE_ICON_PREVIOUS));
+    UI_CALLBACK(&g_app.previous, press, previous_on_press);
+    ui_add_child(&g_app.root, (struct ui *) &g_app.previous,
+                 0, g_app.window->h - g_app.previous.ui.area.h);
+
 
     ui_manager_set_root(&g_app.uim, &g_app.root);
 

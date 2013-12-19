@@ -65,7 +65,7 @@ static int rewind_on_press(struct ui *ui, int x, int y)
     if (urp->replay_speed < REPLAY_SPEED_MIN) {
         urp->replay_speed = REPLAY_SPEED_MIN;
     }
-#endif
+
     urp->record_id -= 1;
 
     /* skip 0 */
@@ -81,16 +81,16 @@ static int rewind_on_press(struct ui *ui, int x, int y)
     }
 
     canvas_clear(&urp->canvas);
-#if 0
+
     record_adjust(urp->record, 0, 0,
                   urp->canvas.ui.area.w, urp->canvas.ui.area.h);
     record_reset(urp->record);
-#endif
+
     urp->nreplayed = 0;
     urp->isadjust = 1;
     ui_replay_panel_stop(urp);
     ui_replay_panel_reset(urp);
-
+#endif
     return 0;
 }
 
@@ -104,7 +104,7 @@ static int fastforward_on_press(struct ui *ui, int x, int y)
     if (urp->replay_speed > REPLAY_SPEED_MAX) {
         urp->replay_speed = REPLAY_SPEED_MAX;
     }
-#endif
+
     urp->record_id = (urp->record_id + 1) % sf_array_cnt(&urp->records);
     /* skip 0 */
     if (urp->record_id == 0) {
@@ -117,15 +117,16 @@ static int fastforward_on_press(struct ui *ui, int x, int y)
         urp->record = NULL;
     }
     canvas_clear(&urp->canvas);
-#if 0
+
     record_adjust(urp->record, 0, 0,
                   urp->canvas.ui.area.w, urp->canvas.ui.area.h);
     record_reset(urp->record);
-#endif
+
     urp->nreplayed = 0;
     urp->isadjust = 1;
     ui_replay_panel_stop(urp);
     ui_replay_panel_reset(urp);
+#endif
     return 0;
 }
 
@@ -207,23 +208,6 @@ static void ui_replay_panel_on_resize(struct ui *ui, int w, int h)
     urp->isadjust = 1;
 }
 
-static void ui_replay_panel_on_show(struct ui *ui)
-{
-    struct ui_replay_panel *urp = (struct ui_replay_panel *) ui;
-
-    if (urp->record == NULL) {
-        if (urp->record_id == 0) {
-            urp->record_id = (urp->record_id + 1) % sf_array_cnt(&urp->records);
-        }
-        if (urp->record_id) {
-            urp->record = *(struct record **)
-                           sf_array_nth(&urp->records, urp->record_id);
-        } else {
-            urp->record = NULL;
-        }
-    }
-}
-
 static void ui_replay_panel_on_hide(struct ui *ui)
 {
     struct ui_replay_panel *urp = (struct ui_replay_panel *) ui;
@@ -249,12 +233,7 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
     sf_memzero(&def, sizeof(def));
     def.size = sizeof(struct record *);
     def.nalloc = rm_get_user_define_record_count();
-    sf_array_init(&urp->records, &def);
-    urp->records.nelts = rm_get_all_user_define_records(
-                             sf_array_head(&urp->records),
-                             urp->records.def.nalloc
-                         );
-    urp->record_id = 0;
+
     urp->record = NULL;
     urp->isresizing = 0;
     urp->isadjust = 0;
@@ -284,7 +263,6 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
     ui_add_child((struct ui *) urp, (struct ui *) &urp->toolbox,
                  0, urp->canvas.ui.area.h - TOOLBOX_HEIGHT);
 
-    UI_CALLBACK(urp, show, ui_replay_panel_on_show);
     UI_CALLBACK(urp, hide, ui_replay_panel_on_hide);
     UI_CALLBACK(urp, render, ui_replay_panel_on_render);
     UI_CALLBACK(urp, resize, ui_replay_panel_on_resize);

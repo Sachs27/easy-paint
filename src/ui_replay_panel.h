@@ -19,9 +19,7 @@ struct ui_replay_panel {
 
     struct canvas       canvas;
 
-    sf_array_t          records;
     struct record      *record;
-    int                 record_id;
 
     int                 nreplayed;
     int8_t              isresizing;

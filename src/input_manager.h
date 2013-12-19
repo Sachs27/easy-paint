@@ -51,6 +51,7 @@ struct input_manager {
     struct window *win;
 };
 
+extern struct input_manager *input_manager;
 
 struct input_manager *input_manager_create(struct window *win);
 
@@ -58,9 +59,9 @@ void input_manager_destroy(void);
 
 void input_manager_update(double dt);
 
-#ifdef ANDROID
 void input_manager_touch_down(int x, int y);
+
 void input_manager_touch_up(void);
-#endif /* ANDROID */
+
 
 #endif /* INPUT_MANAGER_H */

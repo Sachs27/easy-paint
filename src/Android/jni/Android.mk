@@ -23,6 +23,7 @@ LOCAL_SRC_FILES :=						\
 	$(MY_SRC_PATH)/brush.c				\
 	$(MY_SRC_PATH)/canvas.c				\
 	$(MY_SRC_PATH)/filesystem.c			\
+	$(MY_SRC_PATH)/input_manager.c		\
 	$(MY_SRC_PATH)/matrix.c				\
 	$(MY_SRC_PATH)/record.c				\
 	$(MY_SRC_PATH)/renderer2d.c			\

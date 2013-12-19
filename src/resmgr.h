@@ -23,6 +23,7 @@ struct record;
 #define RES_TEXTURE_ICON_FASTFORWARD "assets/icons/fastforward.png"
 #define RES_TEXTURE_ICON_REWIND "assets/icons/rewind.png"
 #define RES_TEXTURE_ICON_PARENT "assets/icons/parent.png"
+#define RES_TEXTURE_ICON_PREVIOUS "assets/icons/previous.png"
 #define RES_TEXTURE_ICON_LOGO "assets/icons/logo.png"
 #define RES_TEXTURE_ICON_LABEL1 "assets/icons/label1.png"
 #define RES_TEXTURE_ICON_LABEL2 "assets/icons/label2.png"

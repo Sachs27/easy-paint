@@ -41,6 +41,8 @@ struct app {
     struct ui_menu              menu;
     struct ui_imagebox          menuicon;
 
+    struct ui_imagebox          previous;
+
     struct user_paint_panel     upp;
     struct user_learn_panel     ulp;
     struct ui_select_record     sr;
