@@ -194,9 +194,10 @@ void app_on_resize(struct window *win, int w, int h)
 
     ui_resize((struct ui *) &g_app.upp, w, h);
     ui_resize((struct ui *) &g_app.ulp, w, h);
-    ui_move((struct ui *) &g_app.menuicon, 0, h - g_app.menuicon.ui.area.h);
+    /*ui_move((struct ui *) &g_app.menuicon, 0, h - g_app.menuicon.ui.area.h);*/
+    ui_move((struct ui *) &g_app.previous, 0, h - g_app.previous.ui.area.h);
 
-    ui_resize((struct ui *) &g_app.menu, g_app.menu.ui.area.w, h);
+    /*ui_resize((struct ui *) &g_app.menu, g_app.menu.ui.area.w, h);*/
 }
 
 #if 0
