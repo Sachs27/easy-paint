@@ -18,6 +18,9 @@ struct ui_select_record {
     int                 padding;
     int                 yoffset;
 
+    int                 ispressed;
+    int                 lastx, lasty;
+
     struct texture     *new_image;
     struct ui_imagebox  ib_new;
 };

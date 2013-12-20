@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include <sf/log.h>
 #include <sf/utils.h>
 
@@ -94,6 +96,8 @@ static void ui_select_record_on_resize(struct ui *ui, int w, int h)
     sr->texture_h = sr->texture_w;
 
     generate_textures(sr);
+
+    ui_move((struct ui *) &sr->ib_new, 0, sr->yoffset);
 }
 
 static int ui_select_record_on_tap(struct ui *ui, int x, int y)
@@ -126,15 +130,84 @@ static int ui_select_record_on_tap(struct ui *ui, int x, int y)
     return 0;
 }
 
+static int ui_select_record_on_press(struct ui *ui, int x, int y)
+{
+    struct ui_select_record *sr = (struct ui_select_record *) ui;
+
+    sr->ispressed = 1;
+    sr->lastx = x;
+    sr->lasty = y;
+    return 0;
+}
+
 static int ui_select_record_on_long_press(struct ui *ui, int x, int y)
 {
+    struct ui_select_record *sr = (struct ui_select_record *) ui;
+
+    sr->ispressed = 0;
+
     sf_log(SF_LOG_DEBUG, "LONG PRESS");
     return 0;
 }
 
 static void ui_select_record_release(struct ui *ui)
 {
+    struct ui_select_record *sr = (struct ui_select_record *) ui;
+
+    sr->ispressed = 0;
     sf_log(SF_LOG_DEBUG, "RELEASE");
+}
+
+static void ui_select_record_on_update(struct ui *ui, struct input_manager *im,
+                                       double dt)
+{
+    struct ui_select_record *sr = (struct ui_select_record *) ui;
+
+    if (sr->ispressed) {
+        int dx, dy;
+        int x, y;
+
+        ui_get_screen_pos(ui, &x, &y);
+
+        x = im->mouse.x - x;
+        y = im->mouse.y - y;
+        dx = x - sr->lastx;
+        dy = y - sr->lasty;
+        sr->lastx = x;
+        sr->lasty = y;
+
+        if (dx != 0 || dy != 0) {
+            if (abs(dy) > abs(dx)) {
+                sr->yoffset += dy;
+
+                if (sr->yoffset < 0) {
+                    int i;
+
+                    x = sr->padding;
+                    y = sr->padding;
+                    for (i = 0; i < sf_array_cnt(&sr->textures); ++i) {
+                        x += sr->texture_w + sr->padding;
+                        if (x + sr->texture_w > ui->area.w) {
+                            x = sr->padding;
+                            y += sr->texture_h + sr->padding;
+                        }
+                    }
+                    y += sr->texture_h + sr->padding;
+                    y = sr->ui.area.h - y;
+                    if (sr->yoffset < y) {
+                        sr->yoffset = y;
+                    }
+                }
+
+                if (sr->yoffset >= 0) {
+                    sr->yoffset = 0;
+                }
+
+                ui_move((struct ui *) &sr->ib_new, 0, sr->yoffset);
+            }
+        }
+
+    }
 }
 
 static void texture_free(void *elt)
@@ -166,13 +239,15 @@ int ui_select_record_init(struct ui_select_record *sr, int w, int h)
     sr->new_image = rm_load_texture(RES_TEXTURE_ICON_NEW);
     ui_imagebox_init(&sr->ib_new, 48, 48, sr->new_image);
     ui_add_child((struct ui *) sr, (struct ui *) &sr->ib_new,
-                 0, 0);
+                 0, sr->yoffset);
 
     UI_CALLBACK(sr, destroy, ui_select_record_on_destroy);
     UI_CALLBACK(sr, show, ui_select_record_on_show);
     UI_CALLBACK(sr, hide, ui_select_record_on_hide);
     UI_CALLBACK(sr, render, ui_select_record_on_render);
+    UI_CALLBACK(sr, update, ui_select_record_on_update);
     UI_CALLBACK(sr, resize, ui_select_record_on_resize);
+    UI_CALLBACK(sr, press, ui_select_record_on_press);
     UI_CALLBACK(sr, long_press, ui_select_record_on_long_press);
     UI_CALLBACK(sr, tap, ui_select_record_on_tap);
     UI_CALLBACK(sr, release, ui_select_record_release);
