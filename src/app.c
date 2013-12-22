@@ -15,6 +15,8 @@
 #include "resmgr.h"
 #include "renderer2d.h"
 
+int TOOLBOX_HEIGHT = 48;
+
 struct app g_app;
 
 
@@ -186,6 +188,12 @@ void app_destory(void)
 
 void app_on_resize(struct window *win, int w, int h)
 {
+    if (h > WINDOW_HEIGHT) {
+        TOOLBOX_HEIGHT = 76;
+    } else {
+        TOOLBOX_HEIGHT = 48;
+    }
+
     renderer2d_resize(w, h);
 
     rm_set_record_size(w, h);
@@ -195,6 +203,7 @@ void app_on_resize(struct window *win, int w, int h)
     ui_resize((struct ui *) &g_app.upp, w, h);
     ui_resize((struct ui *) &g_app.ulp, w, h);
     /*ui_move((struct ui *) &g_app.menuicon, 0, h - g_app.menuicon.ui.area.h);*/
+    ui_resize((struct ui *) &g_app.previous, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
     ui_move((struct ui *) &g_app.previous, 0, h - g_app.previous.ui.area.h);
 
     /*ui_resize((struct ui *) &g_app.menu, g_app.menu.ui.area.w, h);*/

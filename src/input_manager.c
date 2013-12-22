@@ -27,9 +27,9 @@ void input_manager_touch_up(void)
     struct input_manager *im = input_manager;
 
     if (im->keys[KEY_MB_LEFT] == KEY_LONG_PRESS
-        || im->is_mb_move || im->mb_left_time > IM_KEY_TAP_TIME) {
+        || im->is_mb_move || im->mb_left_time >= IM_KEY_LONG_PRESS_TIME) {
         im->keys[KEY_MB_LEFT] = KEY_RELEASE;
-    } else if (im->mb_left_time < IM_KEY_TAP_TIME) {
+    } else {
         im->keys[KEY_MB_LEFT] = KEY_TAP;
     }
 

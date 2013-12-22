@@ -4,14 +4,10 @@
 
 #include <sf/utils.h>
 
+#include "app.h"
 #include "user_paint_panel.h"
-#include "system.h"
 #include "resmgr.h"
 #include "renderer2d.h"
-
-
-#define TOOLBOX_HEIGHT 48
-#define TOOLBOX_MIN_WIDTH 288
 
 
 /*
@@ -330,14 +326,27 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h)
 
     ui_resize((struct ui *) &upp->urp, w,  h);
 
-    ui_resize((struct ui *) &upp->toolbox, w, upp->toolbox.ui.area.h);
+    ui_resize((struct ui *) &upp->undo, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &upp->redo, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &upp->brush, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &upp->brushbox, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &upp->brush_pen_icon,
+              TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &upp->brush_pencil_icon,
+              TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &upp->brush_eraser_icon,
+              TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &upp->save, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &upp->replay, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+
+    ui_resize((struct ui *) &upp->toolbox, w, TOOLBOX_HEIGHT);
     ui_move((struct ui *) &upp->toolbox, 0, upp->canvas.ui.area.h);
 
     ui_resize(&upp->blank, w, h - upp->toolbox.ui.area.h);
 
-    ui_resize((struct ui *) &upp->brushbox, w, upp->brushbox.ui.area.h);
+    ui_resize((struct ui *) &upp->brushbox, w, TOOLBOX_HEIGHT);
     ui_move((struct ui *) &upp->brushbox, 0,
-            upp->toolbox.ui.area.y - TOOLBOX_HEIGHT);
+            upp->toolbox.ui.area.y - upp->brushbox.ui.area.h);
 
     ui_resize((struct ui *) &upp->color_picker,
               w, upp->color_picker.ui.area.h);

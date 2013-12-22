@@ -21,12 +21,12 @@ struct ui_replay_panel {
 
     struct record      *record;
 
+    int                 step;
     int                 nreplayed;
     int8_t              isresizing;
-    int8_t              isfirstframe;
     int8_t              isadjust;
     int8_t              isreplay;
-    int                 isstop;
+    int8_t              isstop;
     double              dt;
 
     struct ui_toolbox   toolbox;

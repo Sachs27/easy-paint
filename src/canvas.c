@@ -27,12 +27,14 @@ static void canvas_update_content(struct canvas *canvas)
         renderer2d_set_render_target(&canvas->content);
         renderer2d_push_viewport(0, 0, canvas->content.w,
                                  canvas->content.h);
-        renderer2d_blend_points(&canvas->buffer,
+        renderer2d_blend_points(canvas->blend_mode, &canvas->buffer,
                                 sf_array_head(&canvas->plots),
                                 sf_array_cnt(&canvas->plots),
                                 canvas->plot_size,
-                                canvas->plot_color[0], canvas->plot_color[1],
-                                canvas->plot_color[2], canvas->plot_color[3]);
+                                canvas->plot_color[0],
+                                canvas->plot_color[1],
+                                canvas->plot_color[2],
+                                canvas->plot_color[3]);
         renderer2d_set_render_target(NULL);
         renderer2d_pop_viewport();
 
@@ -136,12 +138,14 @@ void canvas_screen_to_canvas(struct canvas *canvas, int x, int y,
     *o_y = canvas->viewport.y + y;
 }
 
-void canvas_begin_plot(struct canvas *canvas) {
+void canvas_begin_plot(struct canvas *canvas)
+{
     assert(canvas->isploting == SF_FALSE);
     canvas->isploting = SF_TRUE;
 }
 
-void canvas_plot(struct canvas *canvas, float x, float y) {
+void canvas_plot(struct canvas *canvas, float x, float y)
+{
     struct vec2 plot;
 
     assert(canvas->isploting);
@@ -152,7 +156,12 @@ void canvas_plot(struct canvas *canvas, float x, float y) {
     sf_array_push(&canvas->plots, &plot);
 }
 
-void canvas_end_plot(struct canvas *canvas) {
+void canvas_erase(struct canvas *canvas, float x, float y)
+{
+}
+
+void canvas_end_plot(struct canvas *canvas)
+{
     assert(canvas->isploting = SF_TRUE);
     canvas->isploting = SF_FALSE;
     canvas->isbuffet_inited = SF_FALSE;
@@ -160,12 +169,19 @@ void canvas_end_plot(struct canvas *canvas) {
     canvas_update_content(canvas);
 }
 
-void canvas_set_plot_color(struct canvas *canvas, float color[4]) {
+void canvas_set_plot_color(struct canvas *canvas, float color[4])
+{
     memcpy(canvas->plot_color, color, 4 * sizeof(float));
 }
 
-void canvas_set_plot_size(struct canvas *canvas, float size) {
+void canvas_set_plot_size(struct canvas *canvas, float size)
+{
     canvas->plot_size = size;
+}
+
+void canvas_set_blend_mode(struct canvas *canvas, float blend_mode)
+{
+    canvas->blend_mode = blend_mode;
 }
 
 #if 0

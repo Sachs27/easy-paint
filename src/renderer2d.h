@@ -14,6 +14,14 @@
 #include "texture.h"
 
 
+enum blend_mode {
+    BLEND_NORMAL = 0,
+    BLEND_ERASE,
+    BLEND_RNORMAL,
+    BLEND_SUB,
+};
+
+
 /**
  * w, h are the screen's width and height
  */
@@ -25,9 +33,12 @@ void renderer2d_resize(int w, int h);
 
 void renderer2d_clear(float r, float g, float b, float a);
 
-void renderer2d_blend_points(struct texture *dst, struct vec2 *points,
-                             size_t npoints, float size,
+void renderer2d_blend_points(int blend_mode, struct texture *dst,
+                             struct vec2 *points, size_t npoints, float size,
                              float r, float g, float b, float a);
+
+void renderer2d_erase_points(struct vec2 *points, size_t npoints, float size,
+                             float a);
 
 /**
  * If rt is NULL, the render target is screen.

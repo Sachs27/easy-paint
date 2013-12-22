@@ -9,8 +9,10 @@
 
 
 #define WINDOW_TITLE "Easy Paint"
-#define WINDOW_WIDTH 800
+#define WINDOW_WIDTH 808
 #define WINDOW_HEIGHT 600
+
+extern int TOOLBOX_HEIGHT;
 
 struct window;
 struct renderer2d;

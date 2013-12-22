@@ -12,12 +12,6 @@ enum BRUSH_TYPE {
     BRUSH_ERASER,
 };
 
-typedef enum blend_mode {
-    BLEND_NORMAL,
-    BLEND_RNORMAL,
-    BLEND_ERASER,
-} blend_mode_t;
-
 struct brush {
     int   blend_mode;
     float color[4];

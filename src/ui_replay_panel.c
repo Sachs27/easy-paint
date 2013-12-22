@@ -1,17 +1,11 @@
 #include <sf/utils.h>
 
+#include "app.h"
 #include "ui_replay_panel.h"
 #include "system.h"
 #include "resmgr.h"
 
-
-#define TOOLBOX_HEIGHT 48
-#define TOOLBOX_MIN_WIDTH 288
-
-#define REPLAY_SPEED_MIN     128
-#define REPLAY_SPEED_MAX     5120
-#define REPLAY_SPEED_DEFAULT 512
-#define REPLAY_SPPED_DELTA   128
+#define REPLAY_STEP_MAX 8
 
 
 static void ui_replay_panel_reset(struct ui_replay_panel *urp)
@@ -60,6 +54,11 @@ static int rewind_on_press(struct ui *ui, int x, int y)
     struct ui_imagebox *rewind = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
         sf_container_of(rewind, struct ui_replay_panel, rewind);
+
+    --urp->step;
+    if (urp->step < 1) {
+        urp->step = 1;
+    }
 #if 0
     urp->replay_speed -= REPLAY_SPPED_DELTA;
     if (urp->replay_speed < REPLAY_SPEED_MIN) {
@@ -99,6 +98,11 @@ static int fastforward_on_press(struct ui *ui, int x, int y)
     struct ui_imagebox *fastforward = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
         sf_container_of(fastforward, struct ui_replay_panel, fastforward);
+
+    ++urp->step;
+    if (urp->step > REPLAY_STEP_MAX) {
+        urp->step = REPLAY_STEP_MAX;
+    }
 #if 0
     urp->replay_speed += REPLAY_SPPED_DELTA;
     if (urp->replay_speed > REPLAY_SPEED_MAX) {
@@ -163,7 +167,7 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
             canvas_clear(&urp->canvas);
         }
         ++urp->nreplayed;
-        if (record_replay(urp->record, &urp->canvas, 1) == 0) {
+        if (record_replay(urp->record, &urp->canvas, urp->step) == 0) {
             ui_replay_panel_stop(urp);
         }
     }
@@ -199,7 +203,12 @@ static void ui_replay_panel_on_resize(struct ui *ui, int w, int h)
 
     ui_resize((struct ui *) &urp->canvas, w, h - TOOLBOX_HEIGHT);
 
-    ui_resize((struct ui *) &urp->toolbox, w, urp->toolbox.ui.area.h);
+    ui_resize((struct ui *) &urp->stop, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &urp->replay, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &urp->fastforward, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+    ui_resize((struct ui *) &urp->rewind, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
+
+    ui_resize((struct ui *) &urp->toolbox, w, TOOLBOX_HEIGHT);
     ui_move((struct ui *) &urp->toolbox, 0, urp->canvas.ui.area.h);
 
     ui_replay_panel_stop(urp);
@@ -220,6 +229,7 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
 {
     ui_init((struct ui *) urp, w, h);
 
+    urp->step = 1;
     urp->isreplay = 0;
     urp->isstop = 1;
     urp->dt = 0;

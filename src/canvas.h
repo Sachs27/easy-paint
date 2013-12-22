@@ -29,6 +29,7 @@ struct canvas {
     sf_bool_t           isbuffet_inited;
     struct texture      buffer;
 
+    int                 blend_mode;
     float               plot_color[4];
     float               plot_size;
     sf_array_t          plots;          /* elts: (struct vec2) */
@@ -60,6 +61,8 @@ void canvas_end_plot(struct canvas *canvas);
 void canvas_set_plot_color(struct canvas *canvas, float color[4]);
 
 void canvas_set_plot_size(struct canvas *canvas, float size);
+
+void canvas_set_blend_mode(struct canvas *canvas, float blend_mode);
 
 
 #endif /* CANVAS_H */

@@ -115,6 +115,7 @@ static struct shader_info renderer2d_point_shaders[] = {
 "uniform sampler2D utarget;                     \n"
 "uniform vec2 utexsize;                         \n"
 "uniform vec4 ucolor;                           \n"
+"uniform int  ublend_mode;                      \n"
 "void main(void) {                              \n"
 "    vec2 t = gl_PointCoord - vec2(0.5);        \n"
 "    vec2 pixelcoord;                           \n"
@@ -123,11 +124,19 @@ static struct shader_info renderer2d_point_shaders[] = {
 "    if (f > 0.25) {                            \n"
 "        discard;                               \n"
 "    }                                          \n"
-"    dst = texture2D(utarget, gl_FragCoord.xy / utexsize);                  \n"
-"    o.a = dst.a * (1.0 - ucolor.a) + ucolor.a;                             \n"
-"    o.rgb = (dst.rgb * dst.a * (1.0 - ucolor.a) + ucolor.rgb * ucolor.a)   \n"
-"            / o.a;                                                         \n"
-"    gl_FragColor = o;\n"
+"    dst = texture2D(utarget, gl_FragCoord.xy / utexsize);                   \n"
+"    if (ublend_mode == 0) {                    \n"
+"        o.a = dst.a * (1.0 - ucolor.a) + ucolor.a;                          \n"
+"        o.rgb = (dst.rgb * dst.a * (1.0 - ucolor.a) + ucolor.rgb * ucolor.a)\n"
+"                / o.a;                                                      \n"
+"    } else /* i == 1 */ {                      \n"
+"       o = dst;                                \n"
+"       o.a = dst.a - ucolor.a;                 \n"
+"       if (o.a < 0.0) {                        \n"
+"           o.a = 0.0;                          \n"
+"       }                                       \n"
+"    }                                          \n"
+"    gl_FragColor = o;                          \n"
 "}"
     },
     {GL_NONE, NULL}
@@ -293,13 +302,13 @@ void renderer2d_clear(float r, float g, float b, float a)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void renderer2d_blend_points(struct texture *dst,
+void renderer2d_blend_points(int blend_mode, struct texture *dst,
                              struct vec2 *points, size_t npoints, float size,
                              float r, float g, float b, float a)
 {
     size_t bufsiz = npoints * sizeof(*points);
     GLuint loc_proj, loc_pos, loc_pointsize, loc_color, loc_target,
-           loc_texsize;
+           loc_texsize, loc_blend_mode;;
 
     glDisable(GL_BLEND);
 
@@ -311,12 +320,14 @@ void renderer2d_blend_points(struct texture *dst,
     loc_color = glGetUniformLocation(renderer2d.prog_point, "ucolor");
     loc_target = glGetUniformLocation(renderer2d.prog_point, "utarget");
     loc_texsize = glGetUniformLocation(renderer2d.prog_point, "utexsize");
+    loc_blend_mode = glGetUniformLocation(renderer2d.prog_point, "ublend_mode");
 
     glUniform1f(loc_pointsize, size);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, dst->tid);
     glUniform1i(loc_target, 0);
     glUniform2f(loc_texsize, dst->w, dst->h);
+    glUniform1i(loc_blend_mode, blend_mode);
     glUniformMatrix4fv(loc_proj, 1, MATRIX_GL_TRANSPOSE,
                        (GLfloat *) &renderer2d.projection);
 
@@ -332,21 +343,7 @@ void renderer2d_blend_points(struct texture *dst,
     glBufferSubData(GL_ARRAY_BUFFER, 0, npoints * sizeof(*points), points);
     glVertexAttribPointer(loc_pos, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(loc_pos);
-#if 0
-#ifndef GLES2
-    glUniform4f(loc_color, r, g, b, a);
-    {
-        size_t ndrawed = 0;
-        while (ndrawed < npoints) {
-            glDrawArrays(GL_POINTS, ndrawed++, 1);
-            glFlush();
-        }
-    }
-#else
-    glUniform4f(loc_color, r, g, b, 1.0f);
-    glDrawArrays(GL_POINTS, 0, npoints);
-#endif
-#endif
+
     glUniform4f(loc_color, r, g, b, a);
     glDrawArrays(GL_POINTS, 0, npoints);
 
