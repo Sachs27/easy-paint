@@ -33,8 +33,9 @@ static void png_read_func(png_structp png_ptr, png_bytep data,
     fs_file_read(png_read_file, data, length);
 }
 
+#define PNG_BYTES_TO_CHECK 8
 static int readpng(struct texture_inner *tex_inner, const char *filename) {
-    unsigned char       sig[8];
+    unsigned char       sig[PNG_BYTES_TO_CHECK];
     png_structp         png;
     png_infop           info;
     int                 bit_depth;
@@ -49,9 +50,9 @@ static int readpng(struct texture_inner *tex_inner, const char *filename) {
     }
     png_read_file = &file;
 
-    fs_file_read(&file, sig, 8);
+    fs_file_read(&file, sig, PNG_BYTES_TO_CHECK);
 
-    if (png_sig_cmp(sig, 0, 8)) {
+    if (png_sig_cmp(sig, 0, PNG_BYTES_TO_CHECK)) {
         fs_file_close(&file);
         return -1;
     }
@@ -77,7 +78,7 @@ static int readpng(struct texture_inner *tex_inner, const char *filename) {
 
     png_set_read_fn(png, NULL, png_read_func);
 
-    png_set_sig_bytes(png, 8);
+    png_set_sig_bytes(png, PNG_BYTES_TO_CHECK);
     png_read_info(png, info);
     png_get_IHDR(png, info, (png_uint_32 *) &tex_inner->width,
                  (png_uint_32 *) &tex_inner->height,

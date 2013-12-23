@@ -2,13 +2,14 @@
 #define FILESYSTEM_H
 
 
+#include <stdio.h>
+
 #ifdef __WIN32__
 #include <stdlib.h>
 #define NAME_MAX 256
 #define FS_PATH_SEPERATOR '\\'
 #else
 #include <linux/limits.h>
-#include <stdio.h>
 #define FS_PATH_SEPERATOR '/'
 #endif
 

@@ -12,7 +12,7 @@ set_target_properties(easy_paint PROPERTIES RUNTIME_OUTPUT_DIRECTORY
                       ${PROJECT_SOURCE_DIR}/bin)
 
 if (WIN32)
-    set(LIBS sf glfw3 glew32s glu32 opengl32 DevIL)
+    set(LIBS sf glfw3 glew32s glu32 opengl32 DevIL png zip z)
 else (WIN32)
     set(LIBS sf m glfw3 GLEW GL png zip z X11 Xrandr Xi Xxf86vm pthread)
 endif (WIN32)

@@ -236,14 +236,22 @@ static int mkdir_rc(const char *pathname)
 
     while ((ptr = strchr(ptr, '/'))) {
         *ptr = '\0';
+#if _POSIX_C_SOURCE
         if (!fs_is_file_exist(buf) && (ret = mkdir(buf, S_IRWXU))) {
+#else
+        if (!fs_is_file_exist(buf) && (ret = mkdir(buf))) {
+#endif
             return ret;
         }
         *ptr = '/';
         ++ptr;
     }
 
+#if _POSIX_C_SOURCE
     return mkdir(buf, S_IRWXU);
+#else
+    return mkdir(buf);
+#endif
 }
 
 int fs_mkdir(const char *pathname)
@@ -400,8 +408,9 @@ int fs_cd(const char *pathname)
 
         strncpy(buf, pathname, PATH_MAX);
 
-        delim[0] = seperator;
-        delim[1] = '\0';
+        delim[0] = '/';
+        delim[1] = seperator;
+        delim[2] = '\0';
 
         ptr = strtok(buf, delim);
         while (ptr) {
