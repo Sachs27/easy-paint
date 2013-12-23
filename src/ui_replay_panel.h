@@ -23,10 +23,8 @@ struct ui_replay_panel {
 
     int                 step;
     int                 nreplayed;
-    int8_t              isresizing;
-    int8_t              isadjust;
-    int8_t              isreplay;
-    int8_t              isstop;
+    int16_t             isreplay;
+    int16_t             isstop;
     double              dt;
 
     struct ui_toolbox   toolbox;

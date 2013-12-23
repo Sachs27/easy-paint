@@ -21,11 +21,13 @@ struct user_paint_panel {
                                          * the first element of the struct  */
     struct canvas           canvas;
     struct record          *record;
-    int                     isplaying;
-    int                     isresizing;
-    int                     isfirstframe;
-    int                     isadject;
+    struct record          *replay_record;
+    int8_t                  isplaying;
+    int8_t                  isresizing;
+    int8_t                  isfirstframe;
+    int8_t                  isadject;
     struct ui_replay_panel  urp;
+    struct ui_replay_panel  mini_urp;
     int                     cansave;
 
     struct ui_color_picker  color_picker;
@@ -69,6 +71,9 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h);
 
 void user_paint_panel_set_record(struct user_paint_panel *upp,
                                  struct record *r);
+
+void user_paint_panel_set_replay_record(struct user_paint_panel *upp,
+                                        struct record *r);
 
 
 #endif /* USER_PAINT_PANEL_H */

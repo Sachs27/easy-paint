@@ -1,5 +1,6 @@
 #include <sf/utils.h>
 
+#include "app.h"
 #include "renderer2d.h"
 #include "ui_toolbox.h"
 
@@ -19,6 +20,7 @@ static void ui_toolbox_update_buttons(struct ui_toolbox *tb) {
 
     if (sf_list_begin(&tb->buttons, &iter)) do {
         struct ui *button = *(struct ui**) sf_list_iter_elt(&iter);
+        ui_resize(button, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
         ui_move(button, x - button->area.w / 2, 0);
         x += xstep;
     } while (sf_list_iter_next(&iter));

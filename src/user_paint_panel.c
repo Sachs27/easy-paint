@@ -32,7 +32,7 @@ static void undo_on_render(struct ui *ui)
     }
 }
 
-static int undo_on_press(struct ui *ui, int x, int y)
+static int undo_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *undo = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
@@ -68,7 +68,7 @@ static void redo_on_render(struct ui *ui)
     }
 }
 
-static int redo_on_press(struct ui *ui, int x, int y)
+static int redo_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *redo = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
@@ -86,7 +86,7 @@ static int redo_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static int brush_on_press(struct ui *ui, int x, int y)
+static int brush_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *brush = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
@@ -100,7 +100,7 @@ static int brush_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static int brush_pen_on_press(struct ui *ui, int x, int y)
+static int brush_pen_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *brush_pen_icon = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp = sf_container_of(brush_pen_icon,
@@ -112,7 +112,7 @@ static int brush_pen_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static int brush_pencil_on_press(struct ui *ui, int x, int y)
+static int brush_pencil_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *brush_pencil_icon = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp = sf_container_of(brush_pencil_icon,
@@ -124,7 +124,7 @@ static int brush_pencil_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static int brush_eraser_on_press(struct ui *ui, int x, int y)
+static int brush_eraser_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *brush_eraser_icon = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp = sf_container_of(brush_eraser_icon,
@@ -136,7 +136,7 @@ static int brush_eraser_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static int blank_on_press(struct ui *blank, int x, int y)
+static int blank_on_tap(struct ui *blank, int x, int y)
 {
     struct user_paint_panel *upp =
         sf_container_of(blank, struct user_paint_panel, blank);
@@ -220,7 +220,7 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
 #endif
 }
 
-static int replay_on_press(struct ui *ui, int x, int y)
+static int replay_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *replay = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
@@ -232,6 +232,7 @@ static int replay_on_press(struct ui *ui, int x, int y)
 
     upp->isplaying = 1;
     ui_hide((struct ui *) &upp->canvas);
+    ui_hide((struct ui *) &upp->mini_urp);
     ui_hide((struct ui *) &upp->toolbox);
     ui_hide((struct ui *) &upp->blank);
 
@@ -257,7 +258,7 @@ static void save_on_render(struct ui *ui)
     }
 }
 
-static int save_on_press(struct ui *ui, int x, int y)
+static int save_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *save = (struct ui_imagebox *) ui;
     struct user_paint_panel *upp =
@@ -273,7 +274,7 @@ static int save_on_press(struct ui *ui, int x, int y)
         time_t rawtime = time(0);
         char buf[64];
 
-        strftime(buf, 64, "%F-%H-%M-%S.epr", localtime(&rawtime));
+        strftime(buf, 64, "%Y-%m-%d-%H-%M-%S.epr", localtime(&rawtime));
 
         rm_save_as_user_define_record(upp->record, buf);
     }
@@ -284,8 +285,20 @@ static int save_on_press(struct ui *ui, int x, int y)
 static void user_paint_panel_on_show(struct ui *ui)
 {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
+
     ui_hide(&upp->blank);
     ui_hide((struct ui *) &upp->urp);
+
+    if (upp->replay_record) {
+        ui_replay_panel_set_record(&upp->mini_urp, upp->replay_record);
+        ui_resize((struct ui *) &upp->mini_urp,
+                  upp->replay_record->w, upp->replay_record->h + TOOLBOX_HEIGHT);
+        ui_move((struct ui *) &upp->mini_urp,
+                upp->ui.area.w - upp->mini_urp.ui.area.w, 0);
+        ui_show((struct ui *) &upp->mini_urp);
+    } else {
+        ui_hide((struct ui *) &upp->mini_urp);
+    }
 
     canvas_clear(&upp->canvas);
 
@@ -305,7 +318,7 @@ static void user_paint_panel_on_hide(struct ui *ui)
             time_t rawtime = time(0);
             char buf[64];
 
-            strftime(buf, 64, "%F-%H-%M-%S.epr", localtime(&rawtime));
+            strftime(buf, 64, "%Y-%m-%d-%H-%M-%S.epr", localtime(&rawtime));
 
             rm_save_as_user_define_record(upp->record, buf);
         }
@@ -313,6 +326,7 @@ static void user_paint_panel_on_hide(struct ui *ui)
     }
 
     upp->record = NULL;
+    upp->replay_record = NULL;
 }
 
 static void user_paint_panel_on_resize(struct ui *ui, int w, int h)
@@ -325,19 +339,6 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h)
     upp->isresizing = 1;
 
     ui_resize((struct ui *) &upp->urp, w,  h);
-
-    ui_resize((struct ui *) &upp->undo, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &upp->redo, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &upp->brush, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &upp->brushbox, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &upp->brush_pen_icon,
-              TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &upp->brush_pencil_icon,
-              TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &upp->brush_eraser_icon,
-              TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &upp->save, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &upp->replay, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
 
     ui_resize((struct ui *) &upp->toolbox, w, TOOLBOX_HEIGHT);
     ui_move((struct ui *) &upp->toolbox, 0, upp->canvas.ui.area.h);
@@ -352,6 +353,16 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h)
               w, upp->color_picker.ui.area.h);
     ui_move((struct ui *) &upp->color_picker, 0,
             upp->brushbox.ui.area.y - upp->color_picker.ui.area.h);
+
+    ui_resize((struct ui *) &upp->mini_urp, w / 2, h / 2);
+    if (upp->replay_record) {
+        ui_replay_panel_set_record(&upp->mini_urp, upp->replay_record);
+        ui_resize((struct ui *) &upp->mini_urp,
+                  upp->replay_record->w, upp->replay_record->h + TOOLBOX_HEIGHT);
+        ui_move((struct ui *) &upp->mini_urp,
+                upp->ui.area.w - upp->mini_urp.ui.area.w, 0);
+    }
+
 }
 
 static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
@@ -365,6 +376,10 @@ static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
             ui_hide((struct ui *) &upp->urp);
             ui_show((struct ui *) &upp->canvas);
             ui_show((struct ui *) &upp->toolbox);
+            if (upp->replay_record) {
+                ui_replay_panel_set_record(&upp->mini_urp, upp->replay_record);
+                ui_show((struct ui *) &upp->mini_urp);
+            }
         }
     } else {
         ui_color_picker_get_color(&upp->color_picker, upp->cur_brush->color);
@@ -406,17 +421,17 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     brush_init(&upp->brush_pen, BRUSH_PEN);
     upp->brush_pen_image = rm_load_texture(RES_TEXTURE_ICON_PEN);
     ui_imagebox_init(&upp->brush_pen_icon, 0, 0, upp->brush_pen_image);
-    UI_CALLBACK(&upp->brush_pen_icon, press, brush_pen_on_press);
+    UI_CALLBACK(&upp->brush_pen_icon, tap, brush_pen_on_tap);
 
     brush_init(&upp->brush_pencil, BRUSH_PENCIL);
     upp->brush_pencil_image = rm_load_texture(RES_TEXTURE_ICON_PENCIL);
     ui_imagebox_init(&upp->brush_pencil_icon, 0, 0, upp->brush_pencil_image);
-    UI_CALLBACK(&upp->brush_pencil_icon, press, brush_pencil_on_press);
+    UI_CALLBACK(&upp->brush_pencil_icon, tap, brush_pencil_on_tap);
 
     brush_init(&upp->brush_eraser, BRUSH_ERASER);
     upp->brush_eraser_image = rm_load_texture(RES_TEXTURE_ICON_ERASER);
     ui_imagebox_init(&upp->brush_eraser_icon, 0, 0, upp->brush_eraser_image);
-    UI_CALLBACK(&upp->brush_eraser_icon, press, brush_eraser_on_press);
+    UI_CALLBACK(&upp->brush_eraser_icon, tap, brush_eraser_on_tap);
 
     upp->cur_brush = &upp->brush_pen;
 
@@ -435,26 +450,30 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     ui_replay_panel_init(&upp->urp, w, h);
     ui_add_child((struct ui *) upp, (struct ui *) &upp->urp, 0, 0);
 
+    ui_replay_panel_init(&upp->mini_urp, w / 2, h / 2);
+    ui_add_child((struct ui *) upp, (struct ui *) &upp->mini_urp,
+                 w - upp->mini_urp.ui.area.w, 0);
+
     upp->undo_image = rm_load_texture(RES_TEXTURE_ICON_UNDO);
     ui_imagebox_init(&upp->undo, 0, 0, upp->undo_image);
-    UI_CALLBACK(&upp->undo, press, undo_on_press);
+    UI_CALLBACK(&upp->undo, tap, undo_on_tap);
     UI_CALLBACK(&upp->undo, render, undo_on_render);
 
     upp->redo_image = rm_load_texture(RES_TEXTURE_ICON_REDO);
     ui_imagebox_init(&upp->redo, 0, 0, upp->redo_image);
-    UI_CALLBACK(&upp->redo, press, redo_on_press);
+    UI_CALLBACK(&upp->redo, tap, redo_on_tap);
     UI_CALLBACK(&upp->redo, render, redo_on_render);
 
     ui_imagebox_init(&upp->brush, 0, 0, upp->brush_pen_image);
-    UI_CALLBACK(&upp->brush, press, brush_on_press);
+    UI_CALLBACK(&upp->brush, tap, brush_on_tap);
 
     upp->replay_image = rm_load_texture(RES_TEXTURE_ICON_PLAY);
     ui_imagebox_init(&upp->replay, 0, 0, upp->replay_image);
-    UI_CALLBACK(&upp->replay, press, replay_on_press);
+    UI_CALLBACK(&upp->replay, tap, replay_on_tap);
 
     upp->save_image = rm_load_texture(RES_TEXTURE_ICON_SAVE);
     ui_imagebox_init(&upp->save, 48, 48, upp->save_image);
-    UI_CALLBACK(&upp->save, press, save_on_press);
+    UI_CALLBACK(&upp->save, tap, save_on_tap);
     UI_CALLBACK(&upp->save, render, save_on_render);
 
     ui_toolbox_init(&upp->toolbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 255);
@@ -467,7 +486,7 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
                  0, upp->canvas.ui.area.h);
 
     ui_init(&upp->blank, w, h - upp->toolbox.ui.area.h);
-    UI_CALLBACK(&upp->blank, press, blank_on_press);
+    UI_CALLBACK(&upp->blank, tap, blank_on_tap);
     ui_add_child((struct ui *) upp, &upp->blank, 0, 0);
 
     ui_toolbox_init(&upp->brushbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 240);
@@ -500,3 +519,10 @@ void user_paint_panel_set_record(struct user_paint_panel *upp,
 {
     upp->record = r;
 }
+
+void user_paint_panel_set_replay_record(struct user_paint_panel *upp,
+                                        struct record *r)
+{
+    upp->replay_record = r;
+}
+

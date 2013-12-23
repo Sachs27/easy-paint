@@ -188,7 +188,7 @@ void app_destory(void)
 
 void app_on_resize(struct window *win, int w, int h)
 {
-    if (h > WINDOW_HEIGHT) {
+    if (h > 1000 || w > 1000) {
         TOOLBOX_HEIGHT = 76;
     } else {
         TOOLBOX_HEIGHT = 48;

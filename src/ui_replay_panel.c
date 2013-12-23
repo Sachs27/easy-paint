@@ -23,7 +23,7 @@ static void ui_replay_panel_reset(struct ui_replay_panel *urp)
     }
 }
 
-static int replay_on_press(struct ui *ui, int x, int y)
+static int replay_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *replay = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
@@ -38,7 +38,7 @@ static int replay_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static int stop_on_press(struct ui *ui, int x, int y)
+static int stop_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *stop = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
@@ -49,7 +49,7 @@ static int stop_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static int rewind_on_press(struct ui *ui, int x, int y)
+static int rewind_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *rewind = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
@@ -93,7 +93,7 @@ static int rewind_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static int fastforward_on_press(struct ui *ui, int x, int y)
+static int fastforward_on_tap(struct ui *ui, int x, int y)
 {
     struct ui_imagebox *fastforward = (struct ui_imagebox *) ui;
     struct ui_replay_panel *urp =
@@ -134,7 +134,7 @@ static int fastforward_on_press(struct ui *ui, int x, int y)
     return 0;
 }
 
-static int canvas_on_press(struct ui *ui, int x, int y)
+static int canvas_on_tap(struct ui *ui, int x, int y)
 {
     struct canvas *canvas = (struct canvas *) ui;
     struct ui_replay_panel *urp = sf_container_of(canvas,
@@ -173,48 +173,22 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
     }
 }
 
-static void ui_replay_panel_on_render(struct ui *ui)
-{
-    struct ui_replay_panel *urp = (struct ui_replay_panel *) ui;
-
-    if (urp->record) {
-        int needredraw = 0;
-
-        if (urp->isadjust) {
-            record_adjust(urp->record, urp->canvas.ui.area.w, urp->canvas.ui.area.h);
-            urp->isadjust = 0;
-            needredraw = 1;
-        }
-
-        if (urp->isresizing) {
-            urp->isresizing = 0;
-            needredraw = 1;
-        }
-
-        if (needredraw) {
-            ui_replay_panel_reset(urp);
-        }
-    }
-}
-
 static void ui_replay_panel_on_resize(struct ui *ui, int w, int h)
 {
     struct ui_replay_panel *urp = (struct ui_replay_panel *) ui;
 
     ui_resize((struct ui *) &urp->canvas, w, h - TOOLBOX_HEIGHT);
 
-    ui_resize((struct ui *) &urp->stop, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &urp->replay, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &urp->fastforward, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-    ui_resize((struct ui *) &urp->rewind, TOOLBOX_HEIGHT, TOOLBOX_HEIGHT);
-
     ui_resize((struct ui *) &urp->toolbox, w, TOOLBOX_HEIGHT);
     ui_move((struct ui *) &urp->toolbox, 0, urp->canvas.ui.area.h);
 
     ui_replay_panel_stop(urp);
 
-    urp->isresizing = 1;
-    urp->isadjust = 1;
+    if (urp->record) {
+        record_adjust(urp->record,
+                      urp->canvas.ui.area.w, urp->canvas.ui.area.h);
+    }
+    ui_replay_panel_reset(urp);
 }
 
 static void ui_replay_panel_on_hide(struct ui *ui)
@@ -236,7 +210,7 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
 
     canvas_init(&urp->canvas, w, h - TOOLBOX_HEIGHT);
     UI_CALLBACK(&urp->canvas, update, canvas_on_update);
-    UI_CALLBACK(&urp->canvas, press, canvas_on_press);
+    UI_CALLBACK(&urp->canvas, tap, canvas_on_tap);
     ui_add_child((struct ui *) urp, (struct ui *) &urp->canvas, 0, 0);
 
     sf_array_def_t def;
@@ -245,25 +219,23 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
     def.nalloc = rm_get_user_define_record_count();
 
     urp->record = NULL;
-    urp->isresizing = 0;
-    urp->isadjust = 0;
 
     urp->stop_image = rm_load_texture(RES_TEXTURE_ICON_STOP);
     ui_imagebox_init(&urp->stop, 0, 0, urp->stop_image);
-    UI_CALLBACK(&urp->stop, press, stop_on_press);
+    UI_CALLBACK(&urp->stop, tap, stop_on_tap);
 
     urp->pause_image = rm_load_texture(RES_TEXTURE_ICON_PAUSE);
     urp->play_image = rm_load_texture(RES_TEXTURE_ICON_PLAY);
     ui_imagebox_init(&urp->replay, 0, 0, urp->play_image);
-    UI_CALLBACK(&urp->replay, press, replay_on_press);
+    UI_CALLBACK(&urp->replay, tap, replay_on_tap);
 
     urp->fastforward_image = rm_load_texture(RES_TEXTURE_ICON_FASTFORWARD);
     ui_imagebox_init(&urp->fastforward, 0, 0, urp->fastforward_image);
-    UI_CALLBACK(&urp->fastforward, press, fastforward_on_press);
+    UI_CALLBACK(&urp->fastforward, tap, fastforward_on_tap);
 
     urp->rewind_image = rm_load_texture(RES_TEXTURE_ICON_REWIND);
     ui_imagebox_init(&urp->rewind, 0, 0, urp->rewind_image);
-    UI_CALLBACK(&urp->rewind, press, rewind_on_press);
+    UI_CALLBACK(&urp->rewind, tap, rewind_on_tap);
 
     ui_toolbox_init(&urp->toolbox, w, TOOLBOX_HEIGHT, 128, 128, 128, 255);
     ui_toolbox_add_button(&urp->toolbox, (struct ui *) &urp->rewind);
@@ -274,7 +246,6 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
                  0, urp->canvas.ui.area.h - TOOLBOX_HEIGHT);
 
     UI_CALLBACK(urp, hide, ui_replay_panel_on_hide);
-    UI_CALLBACK(urp, render, ui_replay_panel_on_render);
     UI_CALLBACK(urp, resize, ui_replay_panel_on_resize);
 
     return 0;
@@ -284,6 +255,7 @@ void ui_replay_panel_set_record(struct ui_replay_panel *urp, struct record *r)
 {
     urp->record = r;
     record_reset(r);
+    record_adjust(urp->record, urp->canvas.ui.area.w, urp->canvas.ui.area.h);
 }
 
 void ui_replay_panel_play(struct ui_replay_panel *urp)

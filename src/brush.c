@@ -307,7 +307,7 @@ static int brush_pencil_init(struct brush *pencil) {
 static int brush_pen_init(struct brush *pen) {
     pen->radius = 8;
     pen->blend_mode = BLEND_NORMAL;
-    brush_set_color(pen, 1, 0, 0, 0.5);
+    brush_set_color(pen, 0, 0, 0, 0.5);
     return 0;
 }
 

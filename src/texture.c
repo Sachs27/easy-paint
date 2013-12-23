@@ -50,7 +50,10 @@ static int readpng(struct texture_inner *tex_inner, const char *filename) {
     }
     png_read_file = &file;
 
-    fs_file_read(&file, sig, PNG_BYTES_TO_CHECK);
+    if (fs_file_read(&file, sig, PNG_BYTES_TO_CHECK) != PNG_BYTES_TO_CHECK) {
+        fs_file_close(&file);
+        return -1;
+    }
 
     if (png_sig_cmp(sig, 0, PNG_BYTES_TO_CHECK)) {
         fs_file_close(&file);

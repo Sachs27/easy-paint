@@ -16,6 +16,8 @@ struct ui_select_record {
     sf_array_t          selections;
     int                 isselecting;
 
+    int                 target;
+
     sf_array_t          records;
     sf_array_t          textures;
     int                 texture_w, texture_h;
@@ -25,11 +27,15 @@ struct ui_select_record {
     int                 ispressed;
     int                 lastx, lasty;
 
+    struct ui_imagebox  ib_round;
+    struct ui_imagebox  ib_paste;
+    struct ui_imagebox  ib_delete;
+    struct ui_imagebox  ib_close;
+
     struct ui_toolbox   tb;
 
     struct texture     *new_image;
-    struct ui_imagebox  ib_new;
-
+    struct texture     *target_image;
     struct texture     *checked_image;
     struct texture     *unchecked_image;
 };

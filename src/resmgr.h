@@ -16,6 +16,7 @@ struct record;
 #define RES_TEXTURE_ICON_UNDO "assets/icons/undo.png"
 #define RES_TEXTURE_ICON_REDO "assets/icons/redo.png"
 #define RES_TEXTURE_ICON_NEW  "assets/icons/new.png"
+#define RES_TEXTURE_ICON_TARGET "assets/icons/target.png"
 #define RES_TEXTURE_ICON_SAVE "assets/icons/save.png"
 #define RES_TEXTURE_ICON_STOP "assets/icons/stop.png"
 #define RES_TEXTURE_ICON_PAUSE "assets/icons/pause.png"
@@ -26,6 +27,10 @@ struct record;
 #define RES_TEXTURE_ICON_PREVIOUS "assets/icons/previous.png"
 #define RES_TEXTURE_ICON_CHECKED "assets/icons/checked.png"
 #define RES_TEXTURE_ICON_UNCHECKED "assets/icons/unchecked.png"
+#define RES_TEXTURE_ICON_ROUND "assets/icons/round.png"
+#define RES_TEXTURE_ICON_PASTE "assets/icons/paste.png"
+#define RES_TEXTURE_ICON_DELETE "assets/icons/delete.png"
+#define RES_TEXTURE_ICON_CLOSE "assets/icons/close.png"
 #define RES_TEXTURE_ICON_LOGO "assets/icons/logo.png"
 #define RES_TEXTURE_ICON_LABEL1 "assets/icons/label1.png"
 #define RES_TEXTURE_ICON_LABEL2 "assets/icons/label2.png"
@@ -62,6 +67,8 @@ int rm_save_user_define_record(struct record *r);
  */
 int rm_save_as_user_define_record(struct record *r, const char *filename);
 
+int rm_copy_to_user_define_record(struct record *r, const char *filename);
+
 struct record *rm_load_user_define_record(const char *filename);
 
 size_t rm_get_user_define_record_count(void);
@@ -70,6 +77,8 @@ size_t rm_get_user_define_record_count(void);
 size_t rm_get_all_user_define_records(struct record **records, size_t len);
 
 int rm_del_user_define_record(const char *filename);
+
+int rm_del_user_define_record_by_ref(struct record *r);
 
 int rm_del_last_record(void);
 

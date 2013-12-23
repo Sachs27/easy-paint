@@ -101,6 +101,32 @@ void record_destroy(struct record *record)
     sf_list_destroy(&record->records);
 }
 
+int record_copy(struct record *dst, struct record *src)
+{
+    sf_list_def_t def;
+    int           i;
+
+    dst->version  = src->version;
+    dst->w        = src->w;
+    dst->h        = src->h;
+    dst->nrecords = src->nrecords;
+    dst->play_pos = 0;
+    dst->brush    = NULL;
+
+    sf_memzero(&def, sizeof(def));
+    def.size = sizeof(struct record_point);
+    def.free = record_point_destroy;
+    if (sf_list_init(&dst->records, &def) != SF_OK) {
+        return SF_ERR;
+    }
+
+    for (i = 0; i < dst->nrecords; ++i) {
+        sf_list_push(&dst->records, sf_list_nth(&src->records, i));
+    }
+
+    return SF_OK;
+}
+
 void record_begin_plot(struct record *record, struct brush *brush)
 {
     struct record_point rp;

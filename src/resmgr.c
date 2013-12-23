@@ -265,6 +265,20 @@ int rm_save_as_user_define_record(struct record *r, const char *filename)
     return record_save(r, filename);
 }
 
+int rm_copy_to_user_define_record(struct record *r, const char *filename)
+{
+    struct record_slot  rs;
+    struct record_slot *ptr;
+
+    ptr = sf_list_push(&rm.user_define_records, &rs);
+    ptr->name = sf_pool_alloc(&rm.str_pool, strlen(filename) + 1);
+    strcpy(ptr->name, filename);
+    record_copy(&ptr->record, r);
+
+    fs_cd(rm.save_path);
+    return record_save(&ptr->record, ptr->name);
+}
+
 struct record *rm_load_user_define_record(const char *filename)
 {
     struct record_slot *ptr;
@@ -381,6 +395,15 @@ int rm_del_user_define_record(const char *filename)
     fs_cd(rm.save_path);
 
     return fs_file_del(filename);
+}
+
+int rm_del_user_define_record_by_ref(struct record *r)
+{
+    struct record_slot *ptr = find_record_by_ref(r);
+
+    assert(ptr != NULL);
+
+    return rm_del_user_define_record(ptr->name);
 }
 
 int rm_del_last_record(void)

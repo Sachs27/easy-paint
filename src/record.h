@@ -24,6 +24,8 @@ int record_init(struct record *record, int w, int h);
 
 void record_destroy(struct record *record);
 
+int record_copy(struct record *dst, struct record *src);
+
 void record_begin_plot(struct record *record, struct brush *brush);
 
 void record_drawline(struct record *record, float x0, float y0,

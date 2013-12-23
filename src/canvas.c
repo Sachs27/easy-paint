@@ -45,7 +45,10 @@ static void canvas_update_content(struct canvas *canvas)
 static void canvas_render_background(struct canvas *canvas)
 {
     /* draw background */
-    renderer2d_clear(1.0f, 1.0f, 1.0f, 1.0f);
+    glDisable(GL_BLEND);
+    renderer2d_fill_rect(0, 0, canvas->ui.area.w, canvas->ui.area.h,
+                         255, 255, 255, 0);
+    glEnable(GL_BLEND);
 }
 
 static void canvas_on_render(struct ui *ui)
