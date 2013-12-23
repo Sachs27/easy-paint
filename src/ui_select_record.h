@@ -31,6 +31,7 @@ struct ui_select_record {
     struct ui_imagebox  ib_new;
 
     struct texture     *checked_image;
+    struct texture     *unchecked_image;
 };
 
 

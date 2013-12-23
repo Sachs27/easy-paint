@@ -89,6 +89,11 @@ static void ui_select_record_on_render(struct ui *ui)
                                             TOOLBOX_HEIGHT,
                                             sr->checked_image,
                                             0, 0, 0, 0);
+                } else {
+                    renderer2d_draw_texture(tx, ty, TOOLBOX_HEIGHT,
+                                            TOOLBOX_HEIGHT,
+                                            sr->unchecked_image,
+                                            0, 0, 0, 0);
                 }
             }
         }
@@ -310,6 +315,7 @@ int ui_select_record_init(struct ui_select_record *sr, int w, int h)
                  0, sr->yoffset);
 
     sr->checked_image = rm_load_texture(RES_TEXTURE_ICON_CHECKED);
+    sr->unchecked_image = rm_load_texture(RES_TEXTURE_ICON_UNCHECKED);
 
     ui_toolbox_init(&sr->tb, w, TOOLBOX_HEIGHT, 128, 128, 128, 255);
     ui_add_child((struct ui *) sr, (struct ui *) &sr->tb,

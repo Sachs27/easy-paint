@@ -405,12 +405,15 @@ int fs_cd(const char *pathname)
         char buf[PATH_MAX];
         char *ptr;
         char delim[2];
+        int i = 0;
 
         strncpy(buf, pathname, PATH_MAX);
 
-        delim[0] = '/';
-        delim[1] = seperator;
-        delim[2] = '\0';
+        delim[i++] = '/';
+#ifdef __WIN32__
+        delim[i++] = seperator;
+#endif
+        delim[i] = '\0';
 
         ptr = strtok(buf, delim);
         while (ptr) {
