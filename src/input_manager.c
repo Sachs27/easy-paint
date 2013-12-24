@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "input_manager.h"
 
 struct input_manager *input_manager = NULL;
@@ -9,13 +11,16 @@ void input_manager_touch_down(int x, int y)
     if (im->keys[KEY_MB_LEFT] != KEY_PRESS) {
         im->keys[KEY_MB_LEFT] = KEY_PRESS;
         im->is_mb_move = 0;
-    } else if (im->keys[KEY_MB_LEFT] == KEY_PRESS
-        && (x != im->mouse.x || y != im->mouse.y)) {
+    } else if (im->keys[KEY_MB_LEFT] == KEY_PRESS) {
         struct ivec2 pos;
         pos.x = x;
         pos.y = y;
         sf_list_push(&im->mb_left_buffer, &pos);
-        im->is_mb_move = 1;
+
+        if (abs(x - im->mouse.x) > IM_KEY_MOVE_DELTA_PIXEL
+            || abs(y -  im->mouse.y) > IM_KEY_MOVE_DELTA_PIXEL) {
+            im->is_mb_move = 1;
+        }
     }
 
     im->mouse.x = x;

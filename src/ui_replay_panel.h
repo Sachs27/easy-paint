@@ -23,7 +23,8 @@ struct ui_replay_panel {
 
     int                 step;
     int                 nreplayed;
-    int16_t             isreplay;
+    int8_t              islong_pressed;
+    int8_t              isreplay;
     int16_t             isstop;
     double              dt;
 

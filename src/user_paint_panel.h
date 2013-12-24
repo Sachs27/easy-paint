@@ -26,9 +26,12 @@ struct user_paint_panel {
     int8_t                  isresizing;
     int8_t                  isfirstframe;
     int8_t                  isadject;
+    int                     cansave;
     struct ui_replay_panel  urp;
     struct ui_replay_panel  mini_urp;
-    int                     cansave;
+
+    int                     lastx;
+    int                     lasty;
 
     struct ui_color_picker  color_picker;
     struct ui_toolbox       toolbox;

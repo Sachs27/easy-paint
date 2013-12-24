@@ -1,4 +1,5 @@
 #include <sf/utils.h>
+#include <sf/log.h>
 
 #include "app.h"
 #include "ui_replay_panel.h"
@@ -134,6 +135,18 @@ static int fastforward_on_tap(struct ui *ui, int x, int y)
     return 0;
 }
 
+static int canvas_on_long_press(struct ui *ui, int x, int y)
+{
+    struct canvas *canvas = (struct canvas *) ui;
+    struct ui_replay_panel *urp = sf_container_of(canvas,
+                                                  struct ui_replay_panel,
+                                                  canvas);
+
+    urp->islong_pressed = 1;
+    sf_log(SF_LOG_DEBUG, "URP LONG PRESSED");
+    return 0;
+}
+
 static int canvas_on_tap(struct ui *ui, int x, int y)
 {
     struct canvas *canvas = (struct canvas *) ui;
@@ -148,6 +161,16 @@ static int canvas_on_tap(struct ui *ui, int x, int y)
     }
 
     return 0;
+}
+
+static void canvas_on_release(struct ui *ui)
+{
+    struct canvas *canvas = (struct canvas *) ui;
+    struct ui_replay_panel *urp = sf_container_of(canvas,
+                                                  struct ui_replay_panel,
+                                                  canvas);
+
+    urp->islong_pressed = 0;
 }
 
 static void canvas_on_update(struct ui *ui, struct input_manager *im,
@@ -204,13 +227,16 @@ int ui_replay_panel_init(struct ui_replay_panel *urp, int w, int h)
     ui_init((struct ui *) urp, w, h);
 
     urp->step = 1;
+    urp->islong_pressed = 0;
     urp->isreplay = 0;
     urp->isstop = 1;
     urp->dt = 0;
 
     canvas_init(&urp->canvas, w, h - TOOLBOX_HEIGHT);
     UI_CALLBACK(&urp->canvas, update, canvas_on_update);
+    UI_CALLBACK(&urp->canvas, long_press, canvas_on_long_press);
     UI_CALLBACK(&urp->canvas, tap, canvas_on_tap);
+    UI_CALLBACK(&urp->canvas, release, canvas_on_release);
     ui_add_child((struct ui *) urp, (struct ui *) &urp->canvas, 0, 0);
 
     sf_array_def_t def;

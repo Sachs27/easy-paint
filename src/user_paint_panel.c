@@ -3,6 +3,7 @@
 #include <time.h>
 
 #include <sf/utils.h>
+#include <sf/log.h>
 
 #include "app.h"
 #include "user_paint_panel.h"
@@ -145,9 +146,6 @@ static int blank_on_tap(struct ui *blank, int x, int y)
     return 0;
 }
 
-static int canvas_lastx = -1;
-static int canvas_lasty = -1;
-
 static int canvas_on_press(struct ui *ui, int x, int y)
 {
     struct canvas *canvas = (struct canvas *) ui;
@@ -159,7 +157,7 @@ static int canvas_on_press(struct ui *ui, int x, int y)
 
     ui_get_screen_pos(ui, &xscreen, &yscreen);
     canvas_screen_to_canvas(canvas, x + xscreen, y + yscreen,
-                            &canvas_lastx, &canvas_lasty);
+                            &upp->lastx, &upp->lasty);
 
     canvas_begin_plot(canvas);
 
@@ -199,16 +197,16 @@ static void canvas_on_update(struct ui *ui, struct input_manager *im,
             struct ivec2 *pos = sf_list_iter_elt(&iter);
             canvas_screen_to_canvas(canvas, pos->x, pos->y, &mx, &my);
 
-            if (mx != canvas_lastx || my != canvas_lasty) {
+            if (mx != upp->lastx || my != upp->lasty) {
                 upp->cansave = 1;
                 brush_drawline(upp->cur_brush, canvas,
-                               canvas_lastx, canvas_lasty, mx, my);
+                               upp->lastx, upp->lasty, mx, my);
                 if (upp->record) {
-                    record_drawline(upp->record, canvas_lastx, canvas_lasty,
+                    record_drawline(upp->record, upp->lastx, upp->lasty,
                                     mx, my);
                 }
-                canvas_lastx = mx;
-                canvas_lasty = my;
+                upp->lastx = mx;
+                upp->lasty = my;
             }
         } while (sf_list_iter_next(&iter));
     }
@@ -362,7 +360,6 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h)
         ui_move((struct ui *) &upp->mini_urp,
                 upp->ui.area.w - upp->mini_urp.ui.area.w, 0);
     }
-
 }
 
 static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
@@ -383,6 +380,26 @@ static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
         }
     } else {
         ui_color_picker_get_color(&upp->color_picker, upp->cur_brush->color);
+        if (upp->mini_urp.islong_pressed) {
+            int x, y;
+
+            ui_get_screen_pos(ui, &x, &y);
+            x = im->mouse.x - x;
+            y = im->mouse.y - y;
+            if (upp->lastx != -1 && upp->lasty != -1) {
+                int dx = x - upp->lastx;
+                int dy = y - upp->lasty;
+                int ox = upp->mini_urp.ui.area.x;
+                int oy = upp->mini_urp.ui.area.y;
+
+                ui_move((struct ui *) &upp->mini_urp, ox + dx, oy + dy);
+            }
+            upp->lastx = x;
+            upp->lasty = y;
+        } else if (!upp->canvas.isploting) {
+            upp->lastx = -1;
+            upp->lasty = -1;
+        }
     }
 
 }

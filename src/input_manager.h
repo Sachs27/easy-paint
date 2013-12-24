@@ -8,8 +8,8 @@
 #include "window.h"
 
 
-#define IM_KEY_LONG_PRESS_TIME 0.6
-#define IM_KEY_TAP_TIME        0.3
+#define IM_KEY_LONG_PRESS_TIME 0.4
+#define IM_KEY_MOVE_DELTA_PIXEL 2
 
 enum key_state {
     KEY_RELEASE,
