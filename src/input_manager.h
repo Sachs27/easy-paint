@@ -43,6 +43,7 @@ struct input_manager {
     sf_list_t mb_left_buffer;   /* elt: struct ivec2 */
     float     mb_left_time;
     int       is_mb_move;
+    int       xpressed, ypressed;
 
     struct ivec2 mouse;
 

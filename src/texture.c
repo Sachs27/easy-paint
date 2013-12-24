@@ -45,7 +45,7 @@ static int readpng(struct texture_inner *tex_inner, const char *filename) {
     int                 i;
     struct fs_file      file;
 
-    if (fs_file_open(&file, filename, "r") != SF_OK) {
+    if (fs_file_open(&file, filename, "rb") != SF_OK) {
         return -1;
     }
     png_read_file = &file;

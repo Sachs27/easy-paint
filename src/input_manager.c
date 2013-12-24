@@ -11,14 +11,16 @@ void input_manager_touch_down(int x, int y)
     if (im->keys[KEY_MB_LEFT] != KEY_PRESS) {
         im->keys[KEY_MB_LEFT] = KEY_PRESS;
         im->is_mb_move = 0;
+        im->xpressed = x;
+        im->ypressed = y;
     } else if (im->keys[KEY_MB_LEFT] == KEY_PRESS) {
         struct ivec2 pos;
         pos.x = x;
         pos.y = y;
         sf_list_push(&im->mb_left_buffer, &pos);
 
-        if (abs(x - im->mouse.x) > IM_KEY_MOVE_DELTA_PIXEL
-            || abs(y -  im->mouse.y) > IM_KEY_MOVE_DELTA_PIXEL) {
+        if (abs(x - im->xpressed) > IM_KEY_MOVE_DELTA_PIXEL
+            || abs(y - im->ypressed) > IM_KEY_MOVE_DELTA_PIXEL) {
             im->is_mb_move = 1;
         }
     }
