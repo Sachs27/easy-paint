@@ -13,6 +13,7 @@ set_target_properties(easy_paint PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 
 if (WIN32)
     set(LIBS sf glfw3 glew32s glu32 opengl32 DevIL png zip zlib)
+    set(CMAKE_C_FLAGS -mwindows)
 else (WIN32)
     set(LIBS sf m glfw3 GLEW GL png zip z X11 Xrandr Xi Xxf86vm pthread)
 endif (WIN32)
