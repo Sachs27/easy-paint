@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+#include <sf/log.h>
+
 #include "input_manager.h"
 
 struct input_manager *input_manager = NULL;
@@ -8,12 +10,13 @@ void input_manager_touch_down(int x, int y)
 {
     struct input_manager *im = input_manager;
 
-    if (im->keys[KEY_MB_LEFT] != KEY_PRESS) {
+    if (im->keys[KEY_MB_LEFT] == KEY_RELEASE) {
         im->keys[KEY_MB_LEFT] = KEY_PRESS;
         im->is_mb_move = 0;
         im->xpressed = x;
         im->ypressed = y;
-    } else if (im->keys[KEY_MB_LEFT] == KEY_PRESS) {
+    } else if (im->keys[KEY_MB_LEFT] == KEY_PRESS
+               || im->keys[KEY_MB_LEFT] == KEY_LONG_PRESS) {
         struct ivec2 pos;
         pos.x = x;
         pos.y = y;
@@ -33,8 +36,7 @@ void input_manager_touch_up(void)
 {
     struct input_manager *im = input_manager;
 
-    if (im->keys[KEY_MB_LEFT] == KEY_LONG_PRESS
-        || im->is_mb_move || im->mb_left_time >= IM_KEY_LONG_PRESS_TIME) {
+    if (im->keys[KEY_MB_LEFT] == KEY_LONG_PRESS || im->is_mb_move) {
         im->keys[KEY_MB_LEFT] = KEY_RELEASE;
     } else {
         im->keys[KEY_MB_LEFT] = KEY_TAP;

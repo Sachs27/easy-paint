@@ -231,6 +231,7 @@ static int replay_on_tap(struct ui *ui, int x, int y)
     upp->isplaying = 1;
     ui_hide((struct ui *) &upp->canvas);
     ui_hide((struct ui *) &upp->mini_urp);
+    ui_hide((struct ui *) &upp->border);
     ui_hide((struct ui *) &upp->toolbox);
     ui_hide((struct ui *) &upp->blank);
 
@@ -280,6 +281,17 @@ static int save_on_tap(struct ui *ui, int x, int y)
     return 0;
 }
 
+static void border_on_render(struct ui *ui)
+{
+    int w = ui->area.w;
+    int h = ui->area.h;
+
+    renderer2d_draw_line(4, 0, 0, w, 0, 64, 64, 64, 240);
+    renderer2d_draw_line(4, 0, 0, 0, h, 64, 64, 64, 240);
+    renderer2d_draw_line(4, w, 0, w, h, 64, 64, 64, 240);
+    renderer2d_draw_line(4, 0, h, w, h, 64, 64, 64, 240);
+}
+
 static void user_paint_panel_on_show(struct ui *ui)
 {
     struct user_paint_panel *upp = (struct user_paint_panel *) ui;
@@ -294,8 +306,15 @@ static void user_paint_panel_on_show(struct ui *ui)
         ui_move((struct ui *) &upp->mini_urp,
                 upp->ui.area.w - upp->mini_urp.ui.area.w, 0);
         ui_show((struct ui *) &upp->mini_urp);
+
+        ui_resize((struct ui *) &upp->border,
+                  upp->mini_urp.ui.area.w + 4, upp->mini_urp.ui.area.h + 4);
+        ui_move((struct ui *) &upp->border,
+                upp->mini_urp.ui.area.x - 2, upp->mini_urp.ui.area.y - 2);
+        ui_show((struct ui *) &upp->border);
     } else {
         ui_hide((struct ui *) &upp->mini_urp);
+        ui_hide((struct ui *) &upp->border);
     }
 
     canvas_clear(&upp->canvas);
@@ -360,6 +379,10 @@ static void user_paint_panel_on_resize(struct ui *ui, int w, int h)
         ui_move((struct ui *) &upp->mini_urp,
                 upp->ui.area.w - upp->mini_urp.ui.area.w, 0);
     }
+    ui_resize((struct ui *) &upp->border,
+              upp->mini_urp.ui.area.w + 4, upp->mini_urp.ui.area.h + 4);
+    ui_move((struct ui *) &upp->border,
+            upp->mini_urp.ui.area.x - 2, upp->mini_urp.ui.area.y - 2);
 }
 
 static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
@@ -376,6 +399,7 @@ static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
             if (upp->replay_record) {
                 ui_replay_panel_set_record(&upp->mini_urp, upp->replay_record);
                 ui_show((struct ui *) &upp->mini_urp);
+                ui_show((struct ui *) &upp->border);
             }
         }
     } else {
@@ -393,6 +417,9 @@ static void user_paint_panel_on_update(struct ui *ui, struct input_manager *im,
                 int oy = upp->mini_urp.ui.area.y;
 
                 ui_move((struct ui *) &upp->mini_urp, ox + dx, oy + dy);
+                ui_move((struct ui *) &upp->border,
+                        upp->mini_urp.ui.area.x - 2,
+                        upp->mini_urp.ui.area.y - 2);
             }
             upp->lastx = x;
             upp->lasty = y;
@@ -468,6 +495,13 @@ int user_paint_panel_init(struct user_paint_panel *upp, int w, int h)
     ui_add_child((struct ui *) upp, (struct ui *) &upp->urp, 0, 0);
 
     ui_replay_panel_init(&upp->mini_urp, w / 2, h / 2);
+
+    ui_init(&upp->border, upp->mini_urp.ui.area.w + 4,
+            upp->mini_urp.ui.area.h + 4);
+    UI_CALLBACK(&upp->border, render, border_on_render);
+    ui_add_child((struct ui *) upp, (struct ui *) &upp->border,
+                 upp->mini_urp.ui.area.x - 2, upp->mini_urp.ui.area.y - 2);
+
     ui_add_child((struct ui *) upp, (struct ui *) &upp->mini_urp,
                  w - upp->mini_urp.ui.area.w, 0);
 

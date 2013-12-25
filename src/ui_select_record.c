@@ -119,6 +119,7 @@ static int ib_delete_on_tap(struct ui *ui, int x, int y)
     }
 
     if (isdeleted) {
+        sr->yoffset = 0;
         ui_select_record_on_show((struct ui *) sr);
     }
 
@@ -174,8 +175,6 @@ static void ui_select_record_on_show(struct ui *ui)
     struct ui_select_record *sr = (struct ui_select_record *) ui;
     int i, nrecords;
     struct record **records;
-
-    sr->yoffset = 0;
 
     nrecords = rm_get_user_define_record_count();
     records = sf_alloc(sizeof(struct record *) * nrecords);
@@ -381,6 +380,12 @@ static void ui_select_record_on_update(struct ui *ui, struct input_manager *im,
                                        double dt)
 {
     struct ui_select_record *sr = (struct ui_select_record *) ui;
+
+    if (sf_array_cnt(&sr->records) == 1) {
+        ui_select_record_on_tap((struct ui *) sr, sr->padding + 1,
+                                sr->padding + sr->yoffset + 1);
+        return;
+    }
 
     if (sr->ispressed) {
         int dx, dy;

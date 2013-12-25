@@ -29,6 +29,7 @@ struct user_paint_panel {
     int                     cansave;
     struct ui_replay_panel  urp;
     struct ui_replay_panel  mini_urp;
+    struct ui               border;
 
     int                     lastx;
     int                     lasty;

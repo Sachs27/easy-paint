@@ -36,7 +36,7 @@ static void ui_toolbox_on_render(struct ui *ui)
                          tb->background_color[2],
                          tb->background_color[3]);
 
-    renderer2d_draw_line(2, 0, 0, tb->ui.area.w, 0,
+    renderer2d_draw_line(4, 0, 0, tb->ui.area.w, 0,
                          tb->background_color[0] / 2,
                          tb->background_color[1] / 2,
                          tb->background_color[2] / 2,

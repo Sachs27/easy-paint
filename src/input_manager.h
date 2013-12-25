@@ -9,7 +9,7 @@
 
 
 #define IM_KEY_LONG_PRESS_TIME 0.4
-#define IM_KEY_MOVE_DELTA_PIXEL 2
+#define IM_KEY_MOVE_DELTA_PIXEL 8
 
 enum key_state {
     KEY_RELEASE,

@@ -236,7 +236,7 @@ static int mkdir_rc(const char *pathname)
 
     while ((ptr = strchr(ptr, '/'))) {
         *ptr = '\0';
-#if _POSIX_C_SOURCE
+#if !defined(__WIN32__)
         if (!fs_is_file_exist(buf) && (ret = mkdir(buf, S_IRWXU))) {
 #else
         if (!fs_is_file_exist(buf) && (ret = mkdir(buf))) {
@@ -247,7 +247,7 @@ static int mkdir_rc(const char *pathname)
         ++ptr;
     }
 
-#if _POSIX_C_SOURCE
+#if !defined(__WIN32__)
     return mkdir(buf, S_IRWXU);
 #else
     return mkdir(buf);

@@ -293,21 +293,21 @@ static void plot_circle(struct canvas *canvas, struct brush *brush,
 static int brush_eraser_init(struct brush *eraser) {
     eraser->radius = 16;
     eraser->blend_mode = BLEND_ERASE;
-    brush_set_color(eraser, 0, 0, 0, 0.8f);
+    brush_set_color(eraser, 0.0f, 0.0f, 0.0f, 0.8f);
     return 0;
 }
 
 static int brush_pencil_init(struct brush *pencil) {
     pencil->radius = 2;
     pencil->blend_mode = BLEND_NORMAL;
-    brush_set_color(pencil, 0, 0, 0, 0.8);
+    brush_set_color(pencil, 0.0f, 0.0f, 0.0f, 0.8f);
     return 0;
 }
 
 static int brush_pen_init(struct brush *pen) {
     pen->radius = 8;
     pen->blend_mode = BLEND_NORMAL;
-    brush_set_color(pen, 0, 0, 0, 0.5);
+    brush_set_color(pen, 0.0f, 0.0f, 0.0f, 0.5f);
     return 0;
 }
 

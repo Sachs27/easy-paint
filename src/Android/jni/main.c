@@ -152,10 +152,12 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) 
             input_manager_touch_down(AMotionEvent_getRawX(event, 0),
                                      AMotionEvent_getRawY(event, 0));
             return 1;
+        } else if (AMotionEvent_getAction(event) == AMOTION_EVENT_ACTION_UP) {
+            input_manager_touch_up();
+            return 1;
         }
     }
 
-    input_manager_touch_up();
     return 0;
 }
 

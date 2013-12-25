@@ -11,7 +11,8 @@ static void handle_mouse_pos(struct input_manager *im,
     int x = xpos;
     int y = ypos;
 
-    if (im->keys[KEY_MB_LEFT] == KEY_PRESS
+    if ((im->keys[KEY_MB_LEFT] == KEY_PRESS
+         || im->keys[KEY_MB_LEFT] == KEY_LONG_PRESS)
         && (x != im->mouse.x || y != im->mouse.y)) {
         input_manager_touch_down(x, y);
     }
